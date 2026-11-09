@@ -1,0 +1,39 @@
+/* The three main actions stay visible, with secondary tactics behind Tab. */
+#court:focus{outline:none}#court{touch-action:none}
+.learn-launch{display:flex;align-items:center;justify-content:space-between;gap:24px;width:min(100%,445px);margin-top:17px;padding:12px 15px;background:#dff3a313;border:1px solid #dff3a348;border-radius:4px;text-align:left}
+.learn-launch span{font-size:10px;color:#edf2d4b0;letter-spacing:.5px}.learn-launch b{font-size:11px;color:var(--lime);font-weight:500;white-space:nowrap}.learn-launch:hover{background:#dff3a324}
+#advanced-btn{position:absolute;top:79px;right:30px;padding:8px 10px;border:1px solid #eef4d526;border-radius:4px;color:#dee7c99c;background:#102d2777;font-size:9px;pointer-events:auto}
+body:not(.advanced-controls) #tactics,body:not(.advanced-controls) #aim-widget,body:not(.advanced-controls) #action-tools,body:not(.advanced-controls) .shot-bar{display:none}
+body:not(.advanced-controls) #reticle{display:none}
+body:not(.advanced-controls) #stance-readout{top:117px}
+body.playing.controls-visible #hud>#control-dock,body.playing.controls-visible #hud>#focus-btn{display:block!important}
+#control-dock{position:absolute;left:50%;bottom:90px;transform:translateX(-50%);width:438px;text-align:center;pointer-events:none}
+#control-dock>p{font-size:11px;line-height:1.6;letter-spacing:.6px;color:#f2f5dd;text-shadow:0 1px 8px #031c14;margin:0 0 10px}
+.primary-controls{display:flex;gap:7px;align-items:stretch;justify-content:center}
+#control-dock #easy-cue{display:contents!important}
+.primary-controls>button,#control-dock #quick-hit{position:relative;overflow:hidden;pointer-events:auto;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;height:66px;min-width:103px;margin:0;padding:10px 13px;border:1px solid #e2ecd149;border-radius:6px;background:#16362fe6;backdrop-filter:blur(12px);color:#f3f5e0;box-shadow:0 4px 14px #071c1a40;touch-action:none;user-select:none}
+.primary-controls span{position:relative;font-size:15px;font-weight:500;letter-spacing:2px;z-index:1}.primary-controls kbd,#control-dock #quick-hit kbd{display:block;border:0;padding:0;margin:0;color:#e2ebca9c;font-size:9px;font-family:inherit;letter-spacing:.6px;z-index:1;white-space:nowrap}
+#control-dock #quick-hit{background:#dbed9b;color:#17382d;border-color:#dbed9b}#control-dock #quick-hit kbd{color:#244d38b0}#drop-btn{border-color:#b6e8d18a;background:#245144e8}
+#smash-btn{border-color:#efc29080;background:#503d29d6}
+#jump-btn{border-color:#b2d4e88a}#jump-btn[data-airborne=true]{background:#214b53e6;border-color:#c2e5f1;box-shadow:0 0 22px #a5d5e333}
+#jump-height{position:absolute;bottom:0;left:0;right:0;height:0;background:#a6d9e52e;transition:height .06s linear}
+#control-dock>small{display:block;height:12px;margin-top:8px;color:#dae9cba1;font-size:9px;letter-spacing:.7px}
+.primary-controls button:active,#control-dock #quick-hit:active{transform:translateY(2px);filter:brightness(1.15)}
+body.focus #control-dock{bottom:90px}body.focus #control-dock>p,body.focus #control-dock>small{display:none}body.focus #control-dock #quick-hit{opacity:1}
+#lesson-card{position:absolute;top:113px;left:30px;width:282px;padding:18px;background:#102d29ed;border:1px solid #d9efaa65;box-shadow:0 8px 30px #071c1a50;border-radius:7px;pointer-events:auto}
+#lesson-card>div:first-child{display:flex;align-items:center;justify-content:space-between;font-size:10px;letter-spacing:1px;color:#dbeaaf}
+#lesson-exit{font-size:20px;background:none;color:#eaf3d6}#lesson-key{display:inline-block;border:1px solid #ddedb77c;background:#e6f7b511;color:var(--lime);font:600 21px 'Segoe UI',sans-serif;letter-spacing:2px;padding:10px 14px;border-radius:5px;margin-top:17px}
+#lesson-card h2{font-size:19px;letter-spacing:1px;font-weight:450;margin:15px 0 9px}#lesson-card p{font-size:11px;line-height:1.9;color:#e0eac4b0;margin:0;min-height:42px}
+#lesson-progress{display:flex;gap:5px;margin-top:17px}#lesson-progress i{flex:1;height:3px;background:#d7e7ba24}#lesson-progress i.done{background:var(--lime)}
+#lesson-finish{display:flex;gap:7px;margin-top:17px}#lesson-finish button{flex:1;padding:10px;font-size:10px;background:#dcec9e;color:#163a2b;border-radius:4px}
+#lesson-finish button:last-child{background:#dcec9e17;color:#dcecbd}
+body:has(#lesson-card:not(.hidden)) #stance-readout{display:none!important}
+@media(max-height:750px) and (min-width:801px){.hero{top:15%}.hero h1{font-size:49px;margin:13px 0 10px}.hero .menu-actions{margin-top:15px}.hero .menu-options{margin-top:12px}.hero .showroom-link{margin-top:15px}.learn-launch{margin-top:13px;padding:10px 13px}.hero .intro{font-size:11px;line-height:1.9}#control-dock{bottom:87px}}
+@media(max-width:800px){#advanced-btn{top:72px;right:15px}#control-dock{bottom:84px;width:min(96vw,430px)}body:not(.advanced-controls) #stance-readout{top:112px;max-width:155px}#lesson-card{left:17px;top:112px;width:245px}.menu-screen .hero{margin-top:158px}.learn-launch{width:100%;gap:10px}.learn-launch span{font-size:9px}.learn-launch b{font-size:10px}.primary-controls>button,#control-dock #quick-hit{min-width:86px;height:62px;padding:8px}.primary-controls span{font-size:12px}.hero .menu-options{font-size:9px}.controls-strip{display:none}}
+@media(max-width:480px){#focus-btn{top:76px;right:99px}#advanced-btn{top:76px}#control-dock{width:min(96vw,390px);bottom:78px}.primary-controls>button,#control-dock #quick-hit{min-width:0;flex:1;height:61px}.primary-controls{gap:4px}#control-dock>p{font-size:9px}.primary-controls span{font-size:11px}.primary-controls kbd{font-size:7px}#control-dock>small{font-size:8px}#lesson-card{width:222px;padding:14px}#lesson-key{font-size:17px;padding:8px 12px}#lesson-card h2{font-size:16px}.hero .menu-actions{flex-wrap:wrap}.learn-launch{padding:10px}.hero .menu-options{gap:12px}.menu-screen .menu-footer{margin-top:25px}.bottom-hud{bottom:20px}.primary-controls #smash-btn{background:#503d29e6}}
+@media(pointer:coarse){#mobile-hit,#mobile-jump{display:none!important}#control-dock{left:auto;right:12px;bottom:83px;transform:none;width:min(96vw,390px)}.primary-controls>button,#control-dock #quick-hit{min-width:0;flex:1;height:61px;padding:6px 2px}.primary-controls{gap:4px}.primary-controls span{font-size:11px;letter-spacing:.5px}.primary-controls kbd,#control-dock #quick-hit kbd{font-size:7px}#control-dock>p{font-size:8px}#control-dock>small{font-size:7px}#joystick{left:18px;bottom:95px;width:88px;height:88px}#joystick i{left:23px;top:23px}body.focus #control-dock{bottom:83px}}
+:root{font-family:'Segoe UI Variable Text','Aptos','Microsoft YaHei UI','Noto Sans SC',sans-serif;text-rendering:optimizeLegibility}
+#control-dock>p{font-size:12px;letter-spacing:.3px}.primary-controls span{font-size:16px;letter-spacing:1px}.primary-controls kbd,#control-dock #quick-hit kbd{font-size:10px}#control-dock>small{font-size:10px;letter-spacing:.3px}.serve-hint>span:last-child{font-size:12px;letter-spacing:.2px}.serve-hint b{font-size:13px}.score-person{font-size:12px}.score-mid{font-size:10px}.score-mid small{font-size:9px}
+
+.hero .intro{font-size:14px;line-height:2}.hero .menu-options{font-size:10px}#difficulty-detail,.grade-note,.career-note{font-size:10px!important;line-height:1.8!important}.career-note{font-size:10px!important}.setting-row{font-size:12px}.setting-row small{font-size:9px;line-height:1.6}.help-grid span{font-size:10px;line-height:1.75}
+@media(max-width:800px){.hero .intro{font-size:12px}.hero .menu-options{font-size:9px}#difficulty-detail,.grade-note,.career-note{font-size:8px!important}.setting-row small{font-size:8px}}
