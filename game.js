@@ -1,20 +1,21 @@
-import * as THREE from './vendor/three/build/three.module.js';
-import { mergeGeometries } from './vendor/three/addons/utils/BufferGeometryUtils.js';
-import { COURT, advance, solveShot, predict, winnerOnLanding, clamp, damp } from './physics.mjs';
-import { HitIntent, canContact, receivingTarget, swingWindow } from './controls.mjs';
-import { JumpMotion, MovementOwnership, keyCommand, pointerCommand } from './interaction.mjs';
-import { freeLook, landingFromMap, moveLanding, normalizeLanding, landingName, LANDING_PRESETS } from './aiming.mjs';
-import { createAthlete } from './athlete.mjs';
-import { movementVector, gradeContact, strokeOutcome, shotTarget, SHOT_DEPTHS, Dash, targetDistance, DRILL_TARGETS, practiceFeed, smartStroke, racketPowerBoost } from './gameplay.mjs';
-import { OPPONENT_LEVELS, LEVEL_DESCRIPTIONS, LEVEL_REFERENCES, opponentLevel, placementSpread, matchFinished, rankName, freshCareer, parseCareer, settleMatch } from './competition.mjs';
-import {planOpponentStroke,recoveryBase,opponentFootwork,opponentReceiveMissChance,opponentStrokeExecution,opponentServeTarget} from './opponent-ai.mjs';
-import { trackAngles, stepTracking } from './tracking.mjs';
-import { loadSurfaceMaps, createEnvironment, CourtPresentation } from './presentation.mjs';
-import { createViewmodel } from './viewmodel.mjs';
-import { swingPose, moveVelocity, groundedCameraOffset } from './motion.mjs';
-import { dressHall } from './hall-details.mjs';
-import { createNetMaterial } from './net-material.mjs';
-import { PLAYER_STYLES, OPPONENT_STYLES, effectiveOpponentLevel, playerStatsFromInputs, playerStatsForStyle } from './player-styles.mjs';
+import * as THREE from './vendor/three/build/three.module.js?v=6.4.0';
+import { mergeGeometries } from './vendor/three/addons/utils/BufferGeometryUtils.js?v=6.4.0';
+import { COURT, advance, solveShot, predict, winnerOnLanding, clamp, damp, groundCrossing, createGroundMotion, stepGroundMotion } from './physics.mjs?v=6.4.0';
+import { FlightRecorder, EagleEyeReview } from './eagle-eye.mjs?v=6.4.0';
+import { HitIntent, canContact, receivingTarget, swingWindow } from './controls.mjs?v=6.4.0';
+import { JumpMotion, MovementOwnership, keyCommand, pointerCommand } from './interaction.mjs?v=6.4.0';
+import { freeLook, landingFromMap, moveLanding, normalizeLanding, landingName, LANDING_PRESETS } from './aiming.mjs?v=6.4.0';
+import { createAthlete } from './athlete.mjs?v=6.4.0';
+import { movementVector, gradeContact, strokeOutcome, shotTarget, SHOT_DEPTHS, Dash, targetDistance, DRILL_TARGETS, practiceFeed, smartStroke, racketPowerBoost } from './gameplay.mjs?v=6.4.0';
+import { OPPONENT_LEVELS, LEVEL_DESCRIPTIONS, LEVEL_REFERENCES, opponentLevel, placementSpread, matchFinished, rankName, freshCareer, parseCareer, settleMatch } from './competition.mjs?v=6.4.0';
+import {planOpponentStroke,recoveryBase,opponentFootwork,opponentReceiveMissChance,opponentStrokeExecution,opponentServeTarget} from './opponent-ai.mjs?v=6.4.0';
+import { trackAngles, stepTracking } from './tracking.mjs?v=6.4.0';
+import { loadSurfaceMaps, createEnvironment, CourtPresentation } from './presentation.mjs?v=6.4.0';
+import { createViewmodel } from './viewmodel.mjs?v=6.4.0';
+import { swingPose, moveVelocity, groundedCameraOffset } from './motion.mjs?v=6.4.0';
+import { dressHall } from './hall-details.mjs?v=6.4.0';
+import { createNetMaterial } from './net-material.mjs?v=6.4.0';
+import { PLAYER_STYLES, OPPONENT_STYLES, effectiveOpponentLevel, playerStatsFromInputs, playerStatsForStyle } from './player-styles.mjs?v=6.4.0';
 
 const $ = (s) => document.querySelector(s);
 const canvas = $('#court');
@@ -48,6 +49,26 @@ const jumping=new JumpMotion(),movementOwner=new MovementOwnership();
 const player = { pos: V(.45, 0, 4.45), vel: V(), speed: 0,step:0 };
 const opponent = { pos: V(-.6, 0, -4.5), vel: V(), target: V(), swing: 0, step: 0, returns: 0, energy: 100 };
 const ball = { pos: V(.4, 1.12, 3.7), vel: V(), active: false, trail: [], flash: 0 };
+const flightRecorder = new FlightRecorder();
+let eagleEye, lastLineReview = null, reviewReturnScreen = 'play', reviewPending = -1;
+let groundMotion = null;
+
+function openLineReview(automatic = false) {
+  if (!lastLineReview || !['play', 'pause'].includes(state.screen) || (state.screen === 'play' && !['point', 'serve', 'opponentServe'].includes(state.phase))) return;
+  reviewReturnScreen = state.screen; state.screen = 'review'; reviewPending = -1;
+  keys.clear(); hitIntent.clear(); pointerDown = false; state.aimAlt = false; touchMove = { x: 0, y: 0 };
+  document.exitPointerLock?.();
+  eagleEye.open(lastLineReview, automatic);
+}
+function closeLineReview() {
+  state.screen = reviewReturnScreen;
+  accumulator = 0; clock.getDelta();
+  if (state.screen === 'play') {
+    if (!testing && (document.hidden || !document.hasFocus())) { pauseGame(state.finished); return; }
+    state.pointDelay = Math.max(state.pointDelay, .9);
+    canvas.focus({ preventScroll: true }); requestLock();
+  }
+}
 for(const entity of [player,opponent,ball]){entity.previous=entity.pos.clone();entity.renderPos=entity.pos.clone();}
 let renderer, scene, camera, racket, shuttle, bot, landingMarker, targetMarker, aimMarker, shuttleShadow, net, courtScore, presentation, surfaceMaps;
 let audio, master, trailLine, shuttleNoise, shuttleFilter, shuttleGain, shuttlePan, lastShuttleSoundUpdate=-1, menuTime = 0, accumulator = 0, fps = 60;
@@ -480,6 +501,8 @@ function feedback(title, subtitle) {
   $('#hit-feedback').style.opacity = 1; state.feedback = 1.5;
 }
 function startGame(mode = 'match', preserveSettings = false) {
+  groundMotion = null; lastLineReview = null; reviewPending = -1; flightRecorder.reset();
+  $('#eagle-point-review').classList.add('hidden'); $('#last-line-review').disabled = true;
   initAudio(); state.mode = mode; state.difficulty = $('#difficulty').value;
   state.playerStyle=$('#player-style').value;state.opponentStyle=$('#opponent-style').value;state.playerStats=playerStatsFromInputs();state.highBallAssist=$('#high-ball-toggle').checked;
   Object.assign(state, { screen: 'play', phase: 'serve', score: [0, 0], rally: 0, maxRally: 0, hits: 0, maxSpeed: 0, finished: false, stamina: 100, swing: 0, swingContact: false, swingMissed: false, jump: 0, jumpV: 0, timer: 0, serveCount: 0, yaw: 0, pitch: -.03,manualPitch:-.03,autoPitchOffset:0, aim: 0, countdown: 0, pointDelay: 0, charge: 0, hitstop: 0, lastMove: -10, lastLook: -10, targetIndex: -1, target: null, targetArmed: false, targetHits: 0, targetShots: 0, targetStreak: 0 });
@@ -512,6 +535,8 @@ function startGame(mode = 'match', preserveSettings = false) {
   updateHud();
 }
 function prepareServe() {
+  groundMotion = null; reviewPending = -1; flightRecorder.reset();
+  $('#eagle-point-review').classList.add('hidden');
   state.phase = 'serve'; state.rally = 0; ball.active = false; ball.trail.length = 0; state.prediction = null; state.lastHitter = 'player'; state.swing = 0;
   // Rally is a per-point hit count and returns to 1 on every serve.
   opponent.defenseRally = -1;
@@ -739,6 +764,17 @@ function scorePoint(winner, reason) {
   updateCourtScore();
 }
 
+function recordLanding(contact, incomingVelocity) {
+  lastLineReview = flightRecorder.finish(contact, incomingVelocity, state.lastHitter);
+  groundMotion = createGroundMotion(contact, incomingVelocity);
+  state.lastLanding = { ...lastLineReview.position };
+  $('#eagle-point-review').classList.remove('hidden'); $('#last-line-review').disabled = false;
+  if (lastLineReview.call.nearLine && $('#eagle-auto').checked && !state.tutorial) {
+    reviewPending = state.timer + .65;
+    state.pointDelay = Math.max(state.pointDelay, 2.5);
+  }
+}
+
 function completeTargetShot(landing = ball.pos) {
   if (state.mode !== 'targets' || state.phase !== 'rally' || !state.target) return false;
   const error = targetDistance(landing, state.target);
@@ -866,24 +902,47 @@ function updateOpponent(dt) {
   if(opponent.swing>0){opponent.swing+=dt;if(opponent.swing>.55)opponent.swing=0;}
 }
 function updateBall(dt) {
-  if (!ball.active) return;
+  if (!ball.active) {
+    if (groundMotion) {
+      const impacts = stepGroundMotion(groundMotion, dt);
+      ball.pos.set(groundMotion.pos.x, groundMotion.pos.y, groundMotion.pos.z);
+      ball.vel.set(groundMotion.vel.x, groundMotion.vel.y, groundMotion.vel.z);
+      if (impacts && groundMotion.age < .8) noise(.035, 820, .035 / (groundMotion.bounces + 1), 'lowpass');
+    }
+    return;
+  }
+  const flightKey = `${state.serveCount}:${state.rally}:${state.lastHitter}`;
+  const previous = { x: ball.pos.x, y: ball.pos.y, z: ball.pos.z };
+  if (flightRecorder.key !== flightKey) flightRecorder.record(flightKey, previous);
   const previousZ = ball.pos.z, previousY = ball.pos.y;
   advance(ball.pos, ball.vel, dt);
+  const contact = groundCrossing(previous, ball.pos);
+  flightRecorder.record(flightKey, contact || ball.pos, dt * (contact?.fraction ?? 1));
   if (previousZ * ball.pos.z < 0 && Math.abs(ball.pos.x) < 3.13) {
     const t = previousZ / (previousZ - ball.pos.z), netY = previousY + (ball.pos.y - previousY) * t;
     if (netY < COURT.netHeight + .035) {
       ball.vel.z *= -.12; ball.vel.x *= .4; ball.vel.y = -Math.abs(ball.vel.y) * .15; ball.pos.z = Math.sign(previousZ) * .055;
       noise(.13, 1600, .12); net.userData.wobble = .5;
       if (completeTargetShot(ball.pos)) return;
-      scorePoint(state.lastHitter === 'player' ? 'opponent' : 'player', '触网'); return;
+      scorePoint(state.lastHitter === 'player' ? 'opponent' : 'player', '触网');
+      // A dead shuttle still falls away from the net and settles on the mat.
+      groundMotion = createGroundMotion(ball.pos, ball.vel);
+      Object.assign(groundMotion.pos, { x: ball.pos.x, y: ball.pos.y, z: ball.pos.z });
+      Object.assign(groundMotion.vel, { x: ball.vel.x, y: ball.vel.y, z: ball.vel.z });
+      return;
     }
   }
-  if (ball.pos.y < .07) {
-    ball.pos.y = .07; noise(.1, 1000, .07);
-    if (completeTargetShot(ball.pos)) return;
-    const winner = winnerOnLanding(ball.pos, state.lastHitter);
-    const out = Math.abs(ball.pos.x) > COURT.halfWidth + .025 || Math.abs(ball.pos.z) > COURT.halfLength + .025;
-    scorePoint(winner, out ? '界外球' : ball.pos.z > 0 ? '落地 · 对手得分' : '落地 · 你的得分');
+  if (contact) {
+    ball.pos.set(contact.x, contact.y, contact.z);
+    const incomingVelocity = { x: ball.vel.x, y: ball.vel.y, z: ball.vel.z };
+    noise(.045, 780, clamp(Math.abs(ball.vel.y) * .007, .025, .1), 'lowpass');
+    const winner = winnerOnLanding(contact, state.lastHitter);
+    if (!completeTargetShot(contact)) {
+      const call = flightRecorder.finish(contact, incomingVelocity, state.lastHitter).call;
+      scorePoint(winner, !call.inside ? '界外球' : call.onLine ? '压线 · 界内球' : contact.z > 0 ? '落地 · 对手得分' : '落地 · 你的得分');
+    }
+    recordLanding(contact, incomingVelocity);
+    return;
   }
   if (Math.abs(ball.pos.x) > 12 || Math.abs(ball.pos.z) > 18 || ball.pos.y > 30) {
     if (completeTargetShot(ball.pos)) return;
@@ -942,7 +1001,11 @@ function updateOpponentModel(dt) {
 
 function updateEffects(dt) {
   shuttle.position.copy(ball.renderPos);
-  if (ball.vel.lengthSq() > .05 && ball.active) {
+  if (groundMotion) {
+    const q = new THREE.Quaternion().setFromAxisAngle(V(Math.cos(groundMotion.heading), 0, -Math.sin(groundMotion.heading)), groundMotion.tilt);
+    const roll = new THREE.Quaternion().setFromAxisAngle(UP, groundMotion.roll); q.multiply(roll);
+    shuttle.quaternion.copy(q);
+  } else if (ball.vel.lengthSq() > .05 && ball.active) {
     tmp.copy(ball.vel).normalize().negate();
     const q = new THREE.Quaternion().setFromUnitVectors(UP, tmp);
     // Brushed net shots visibly roll around their flight axis for a short
@@ -954,7 +1017,7 @@ function updateEffects(dt) {
   const d = camera.position.distanceTo(ball.pos);
   // Preserve a readable feather silhouette at distance without changing physics.
   const readableScale=d*2*Math.tan(camera.fov*Math.PI/360)*9/Math.max(1,innerHeight)/.064;
-  shuttle.scale.setScalar(clamp(Math.max(1+d*.025,readableScale),1,2.2));
+  shuttle.scale.setScalar(groundMotion ? 1 : clamp(Math.max(1+d*.025,readableScale),1,2.2));
   shuttleShadow.position.set(ball.renderPos.x, .016, ball.renderPos.z); shuttleShadow.scale.setScalar(.7 + ball.pos.y * .18); shuttleShadow.material.opacity = clamp(.28 - ball.pos.y * .022, .04, .26);
   if (ball.active) {
     ball.trail.unshift(ball.renderPos.clone()); if (ball.trail.length > (state.focus?5:9)) ball.trail.pop();
@@ -1091,6 +1154,7 @@ function fixedUpdate(dt) {
   if (state.phase==='serve' && hitIntent.sources.size>0) serve();
   const pad = pollGamepad();
   updatePlayer(dt, pad); updateOpponent(dt); updateSwing(dt); handleHitIntent(); updateBall(dt*ballTimeScale());
+  if (reviewPending >= 0 && state.timer >= reviewPending && state.phase === 'point') { openLineReview(true); return; }
   if(state.phase==='serving'){state.serveElapsed+=dt;const t=clamp(state.serveElapsed/.2,0,1);ball.pos.set(player.pos.x-.1,1.16+Math.sin(t*Math.PI)*.25-t*.035,player.pos.z-1.05);state.contactPoint=ball.pos.clone();if(state.serveElapsed>=.2)releaseServe();}
   if(state.phase==='serve')ball.pos.set(player.pos.x-.1,1.16+Math.sin(state.timer*2.5)*.018,player.pos.z-1.05);
   if (state.phase === 'point') {
@@ -1133,6 +1197,7 @@ function animate() {
     updateCamera(dt);updateOpponentModel(dt); updateEffects(dt); racket.visible = true;
     if (state.elapsed - lastHud > .075) { updateHud(); lastHud = state.elapsed; }
   }
+  if (state.screen === 'review') eagleEye.update(dt);
   if(state.screen==='menu'&&racket.userData.support)racket.userData.support.visible=false;
   updateShuttleSound();
   presentation.render(scene,camera);
@@ -1179,8 +1244,10 @@ function hideHelp() { $('#help-overlay').classList.add('hidden'); }
 
 function setFocus(value){state.focus=Boolean(value);document.body.classList.toggle('focus',state.focus);$('#focus-toggle').checked=state.focus;$('#focus-btn').classList.toggle('active',state.focus);$('#focus-btn').setAttribute('aria-pressed',String(state.focus));}
 function applyQuality(quality){renderer.setPixelRatio(Math.min(devicePixelRatio,quality==='ultra'?2:quality==='high'?1.5:1));renderer.setSize(innerWidth,innerHeight);presentation.setQuality(quality);}
-function savePreferences(){if(testing)return;try{localStorage.setItem('feather-court-3-settings',JSON.stringify({difficulty:$('#difficulty').value,scheme:$('#control-scheme').value,profile:$('#opponent-profile').value,points:$('#match-points').value,quality:$('#quality').value,focus:state.focus,motion:state.motion,sensitivity:state.sensitivity,lookSyncVersion:2,pace:state.pace,sound:state.sound,racketStyle:state.racketStyle,racketSkin:state.racketSkin,playerStyle:$('#player-style').value,opponentStyle:$('#opponent-style').value,playerStats:playerStatsFromInputs(),highBallAssist:$('#high-ball-toggle').checked}));}catch{}}
+function savePreferences(){if(testing)return;try{localStorage.setItem('feather-court-3-settings',JSON.stringify({difficulty:$('#difficulty').value,scheme:$('#control-scheme').value,profile:$('#opponent-profile').value,points:$('#match-points').value,quality:$('#quality').value,focus:state.focus,motion:state.motion,sensitivity:state.sensitivity,lookSyncVersion:2,pace:state.pace,sound:state.sound,racketStyle:state.racketStyle,racketSkin:state.racketSkin,playerStyle:$('#player-style').value,opponentStyle:$('#opponent-style').value,playerStats:playerStatsFromInputs(),highBallAssist:$('#high-ball-toggle').checked,eagleAuto:$('#eagle-auto').checked}));}catch{}}
 function restorePreferences(){
+  try { const settings=JSON.parse(localStorage.getItem('feather-court-3-settings')||'{}');$('#eagle-auto').checked=settings.eagleAuto!==false; } catch {}
+  $('#eagle-auto').addEventListener('change',savePreferences);
   try{if(!testing)career=parseCareer(localStorage.getItem(CAREER_KEY));}catch{}updateCareerUI();let prefs={};
   try{if(!testing)prefs=JSON.parse(localStorage.getItem('feather-court-3-settings')||'{}');}catch{}
   for(const [key,id] of [['points','match-points'],['difficulty','difficulty'],['scheme','control-scheme'],['profile','opponent-profile'],['quality','quality'],['playerStyle','player-style'],['opponentStyle','opponent-style']])if(prefs[key]&&[...$('#'+id).options].some(o=>o.value===prefs[key]))$('#'+id).value=prefs[key];
@@ -1198,6 +1265,8 @@ function restorePreferences(){
 function showPlayer(){state.screen='inspect';state.inspectYaw=.30;state.inspectDistance=3.1;state.inspectPitch=.12;state.inspectPose='idle';state.inspectTime=0;keys.clear();hitIntent.clear();document.exitPointerLock?.();$('#menu').classList.add('hidden');$('#hud').classList.add('hidden');$('#showroom').classList.remove('hidden');$('#pause-overlay').classList.add('hidden');document.body.classList.remove('playing');}
 
 function bindEvents() {
+  $('#eagle-point-review').addEventListener('click', () => openLineReview());
+  $('#last-line-review').addEventListener('click', () => openLineReview());
   $('#aim-edit').addEventListener('click',()=>setAimEditor(!state.aiming));
   $('#difficulty').addEventListener('change',updateDifficultyUI);
   document.querySelectorAll('[data-landing]').forEach(button=>button.addEventListener('click',()=>{chooseLanding(LANDING_PRESETS[Number(button.dataset.landing)]);canvas.focus({preventScroll:true});}));
@@ -1243,10 +1312,15 @@ function bindEvents() {
   window.addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);presentation.setSize(innerWidth,innerHeight);});
   window.addEventListener('contextmenu', e => { if (state.screen === 'play') e.preventDefault(); });
   window.addEventListener('keydown', e => {
+    if (state.screen === 'review') {
+      if (e.code === 'Escape' || e.code === 'KeyB') { e.preventDefault(); eagleEye.close(); }
+      return;
+    }
     const editing=/^(INPUT|SELECT|TEXTAREA)$/.test(e.target.tagName)||e.target.isContentEditable;
     if(editing&&e.code!=='Escape')return;
     if (['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Tab'].includes(e.code) && state.screen === 'play') e.preventDefault();
     if (e.repeat) return;
+    if (e.code === 'KeyB') { openLineReview(); return; }
     if (e.code === 'Escape' || e.code === 'KeyP') { if(state.screen==='inspect')exitGame();else if (state.screen === 'play') pauseGame(); else if (state.screen === 'pause') resumeGame(); return; }
     if (state.screen !== 'play') return;
     if(['AltLeft','AltRight'].includes(e.code)){e.preventDefault();state.aimAlt=true;hitIntent.clear();}
@@ -1315,6 +1389,7 @@ async function init() {
     scene = new THREE.Scene(); camera = new THREE.PerspectiveCamera(68, innerWidth / innerHeight, .045, 100);
     surfaceMaps=await loadSurfaceMaps(THREE,renderer);createEnvironment(THREE,renderer,scene);
     presentation=new CourtPresentation(THREE,renderer);presentation.setSize(innerWidth,innerHeight);
+    eagleEye = new EagleEyeReview(closeLineReview);
     createHall(); batchHall(); createPlayerRacket(); bot = createOpponent(); createEffects(); bindEvents();restorePreferences();updateDifficultyUI();
     setTimeout(() => { $('#loading').classList.add('fade'); setTimeout(() => $('#loading').classList.add('hidden'), 700); }, 350);
     if (testing) {
@@ -1326,6 +1401,41 @@ async function init() {
       };
       const panel=document.createElement('div');panel.id='test-panel';panel.style.cssText='position:fixed;left:20px;top:115px;z-index:50;background:#12382f;padding:12px;max-width:350px;font:12px sans-serif;border:1px solid #dcf49a';
       panel.innerHTML='<button id="run-play-test">运行长按 60 秒对打测试</button><button id="run-input-suite">验证左右球路与提前点击</button><button id="run-target-test">验证打点挑战</button><button id="run-v2-test">验证手动操作与比赛</button><button id="inspect-model">查看人物近景</button><button id="run-perf-test">测量 180 帧实际表现</button><button id="run-scene-test">检查当前场景坐标</button><pre id="test-result">等待测试</pre>';document.body.append(panel);
+      panel.style.zIndex = '45';
+      const eagleTest = document.createElement('button'); eagleTest.id = 'run-eagle-test'; eagleTest.textContent = '验证鹰眼与落地弹跳'; panel.prepend(eagleTest);
+      eagleTest.onclick = () => {
+        const checks = []; startGame('match'); state.sound = false; const auto = $('#eagle-auto').checked; $('#eagle-auto').checked = false;
+        for (const scenario of [{ x: 2.619, in: true, line: true }, { x: 2.645, in: false, line: false }, { x: .5, in: true, line: false }]) {
+          state.phase = 'rally'; state.lastHitter = 'player'; state.rally++; ball.active = true;
+          ball.pos.set(scenario.x, 1, -5); ball.vel.set(0, -9, -1); groundMotion = null; flightRecorder.reset();
+          const before = [...state.score];
+          for (let i = 0; i < 100 && ball.active; i++) updateBall(1 / 120);
+          const recorded = JSON.stringify(lastLineReview.position), score = [...state.score]; let maxHeight = ball.pos.y;
+          checks.push({ name: `first-contact-${scenario.x}`, pass: lastLineReview.call.inside === scenario.in && lastLineReview.call.onLine === scenario.line && state.score[scenario.in ? 0 : 1] === before[scenario.in ? 0 : 1] + 1 });
+          for (let i = 0; i < 240; i++) { updateBall(1 / 120); maxHeight = Math.max(maxHeight, ball.pos.y); }
+          checks.push({ name: `rebound-settles-${scenario.x}`, pass: groundMotion.settled && maxHeight > .07 && maxHeight < .20 && ball.vel.length() < .001 && JSON.stringify(lastLineReview.position) === recorded && JSON.stringify(state.score) === JSON.stringify(score), maxHeight });
+        }
+        // Leave a real simulated line contact ready for interactive playback.
+        state.phase = 'rally'; state.lastHitter = 'player'; state.rally++; ball.active = true; groundMotion = null; flightRecorder.reset();
+        ball.pos.set(2.618, 2.2, -4.3); ball.vel.set(0, -5, -3);
+        for (let i = 0; i < 120 && ball.active; i++) updateBall(1 / 120);
+        const score = JSON.stringify(state.score); openLineReview();
+        checks.push({ name: 'review-stops-match', pass: state.screen === 'review' && !ball.active });
+        fixedUpdate(1 / 120); eagleEye.close();
+        checks.push({ name: 'review-does-not-rescore', pass: state.screen === 'play' && score === JSON.stringify(state.score) });
+        const heldScore = JSON.stringify(state.score);
+        $('#eagle-auto').checked = true; state.pointDelay = 2.5; reviewPending = state.timer + .65;
+        for (let i = 0; i < 120 && state.screen === 'play'; i++) fixedUpdate(1 / 120);
+        const frozenTimer = state.timer;
+        checks.push({ name: 'near-line-auto-review', pass: state.screen === 'review' });
+        for (let i = 0; i < 30; i++) fixedUpdate(1 / 120);
+        checks.push({ name: 'review-freezes-countdown', pass: state.timer === frozenTimer });
+        for (let i = 0; i < 1200 && eagleEye.active; i++) eagleEye.update(1 / 120);
+        checks.push({ name: 'automatic-review-resumes-once', pass: state.screen === 'play' && state.phase === 'point' && heldScore === JSON.stringify(state.score) });
+        $('#eagle-auto').checked = auto;
+        $('#test-result').textContent = JSON.stringify({ pass: checks.every(c => c.pass), checks }, null, 2);
+        openLineReview();
+      };
       $('#run-scene-test').addEventListener('click',()=>{const projected=shuttle.position.clone().project(camera);$('#test-result').textContent=JSON.stringify({phase:state.phase,ball:ball.pos.toArray(),shuttle:shuttle.position.toArray(),projected:projected.toArray(),camera:camera.position.toArray(),pitch:state.pitch,render:ball.renderPos.toArray(),racket:racket.position.toArray()},null,2);});
       const v5=document.createElement('button');v5.id='run-v5-test';v5.textContent='验证高球、重杀失误、分级与积分';panel.insertBefore(v5,$('#test-result'));
       const v52=document.createElement('button');v52.id='run-v52-test';v52.textContent='验证自由视角、落点锁定与难度';panel.insertBefore(v52,$('#run-play-test'));
@@ -1395,7 +1505,11 @@ async function init() {
         const chosen=player.pos.clone();for(let i=0;i<180;i++)fixedUpdate(1/120);
         checks.push({name:'manual-placement-does-not-snap-back',pass:player.pos.distanceTo(chosen)<.01&&state.manualOverride,drift:+player.pos.distanceTo(chosen).toFixed(4)});
         startGame('practice');state.sound=false;performControl(pointerCommand(2),'pointer-smash');for(let i=0;i<30;i++)fixedUpdate(1/120);
-        checks.push({name:'right-click-serves-and-keeps-smash-armed',pass:state.phase==='rally'&&hitIntent.kind==='smash'&&hitIntent.armed(state.timer)});
+        // Since 6.3 only the smart/left button starts a serve; right is always a smash.
+        checks.push({name:'right-click-does-not-accidentally-serve',pass:state.phase==='serve'&&!ball.active});
+        performControl(pointerCommand(0),'pointer');for(let i=0;i<30;i++)fixedUpdate(1/120);
+        performControl(pointerCommand(2),'pointer-smash');
+        checks.push({name:'left-click-serves-and-right-click-arms-smash',pass:state.phase==='rally'&&hitIntent.kind==='smash'&&hitIntent.armed(state.timer)});
         startLesson();state.sound=false;keys.add('KeyW');for(let i=0;i<30;i++)fixedUpdate(1/120);keys.clear();
         checks.push({name:'lesson-movement-progresses',pass:state.tutorialStage===1});
         performControl(keyCommand('Space'),'Space');for(let i=0;i<100;i++)fixedUpdate(1/120);

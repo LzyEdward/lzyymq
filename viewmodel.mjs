@@ -1,4 +1,4 @@
-import {createAthlete} from './athlete-real.mjs';
+import {createAthlete} from './athlete-real.mjs?v=6.4.0';
 
 // Bake the actual articulated hand, including its smooth skinned normals.
 // Recomputing normals on an unindexed triangle soup makes every face visible.
