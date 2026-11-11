@@ -1,4 +1,5 @@
-import {createAthlete} from './athlete-real.mjs?v=6.6.0';
+import {createAthlete} from './athlete-real.mjs?v=6.7.0';
+import {refineSkin} from './skin-surface.mjs?v=6.7.0';
 
 // Fit the hand around a real handle axis before applying camera transforms.
 export function createViewmodel(THREE,createRacket){
@@ -7,7 +8,7 @@ export function createViewmodel(THREE,createRacket){
  const long=rig.bind['finger3-1.R'].clone().sub(wrist);long.addScaledVector(across,-long.dot(across)).normalize();
  const frame=new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().makeBasis(long,across,long.clone().cross(across).normalize()));
  const canonical=frame.clone().invert(),turn=new THREE.Quaternion().setFromAxisAngle(V(0,1,0),Math.PI);
- const size=.92,gripCenter=V(.110,.022,-.032),gripY=.075;
+ const size=.92,gripCenter=V(.118,.018,-.035),gripY=.075;
  const toView=p=>p.clone().sub(gripCenter).multiplyScalar(size).applyQuaternion(turn).add(V(0,gripY,0));
  const source=rig.meshes[1],attrs=source.geometry.attributes,index=source.geometry.index;
  const mat=source.material.clone();mat.roughness=.64;mat.clearcoat=.025;mat.sheen=.16;mat.bumpScale=.00022;
@@ -15,9 +16,9 @@ export function createViewmodel(THREE,createRacket){
  function poseHand(relaxed=false){
   for(const bone of Object.values(rig.bones))bone.quaternion.identity();
   rig.body.position.set(0,0,0);rig.body.rotation.set(0,0,0);
-  const curls=relaxed?[[.12,.18,.1],[.17,.22,.14],[.22,.26,.17],[.3,.3,.2]]:[[.63,1.02,.61],[.77,1.08,.59],[.83,1.12,.62],[.88,1.10,.65]];
+  const curls=relaxed?[[.12,.18,.1],[.17,.22,.14],[.22,.26,.17],[.3,.3,.2]]:[[.45,.91,.72],[.50,1.00,.72],[.48,.95,.68],[.38,.89,.72]];
   for(let f=2;f<=5;f++)for(let part=1;part<=3;part++)rig.bones[`finger${f}-${part}.R`].quaternion.setFromAxisAngle(across,curls[f-2][part-1]);
-  const directions=relaxed?[[.5,.78,-.18],[.88,.35,-.12],[.94,.2,-.1]]:[[.58,.62,-.53],[.94,.10,-.32],[.30,-.30,-.90]];
+  const directions=relaxed?[[.5,.78,-.18],[.88,.35,-.12],[.94,.2,-.1]]:[[.88,.05,.4],[.95,-.15,.1],[.65,-.75,-.2]];
   for(let part=1;part<=3;part++){
    const bone=rig.bones[`finger1-${part}.R`];
    const rest=part===3?rig.bind['finger1-3.R'].clone().sub(rig.bind['finger1-2.R']):rig.bind[`finger1-${part+1}.R`].clone().sub(rig.bind[`finger1-${part}.R`]);
@@ -50,6 +51,8 @@ export function createViewmodel(THREE,createRacket){
   let compressed=0;const fitted=[];
   for(let i=0;i<vertices.length;i+=3){
    let inside=vertices.slice(i,i+3);
+   // The support hand is open and approaches the grip from its side. Only
+   // the dominant hand wraps around the shaft, so keep its palm intact.
    if(relaxed){fitted.push(...inside);continue;}
    for(let plane=0;plane<16&&inside.length>=3;plane++){
     const angle=plane/16*Math.PI*2,nx=Math.cos(angle),nz=Math.sin(angle),outside=[],remain=[];
@@ -132,7 +135,8 @@ export function createViewmodel(THREE,createRacket){
   for(let i=0;i<attr.count;i++){const key=[attr.getX(i),attr.getY(i),attr.getZ(i)].map(n=>Math.round(n*1e6)).join(',');if(!smooth.has(key))smooth.set(key,{indices:[],normal:V()});const item=smooth.get(key);item.indices.push(i);item.normal.add(V().fromBufferAttribute(normalAttr,i));}
   for(const item of smooth.values()){item.normal.normalize();for(const i of item.indices)normalAttr.setXYZ(i,...item.normal.toArray());}
   geometry.computeBoundingSphere();
-  const mesh=new THREE.Mesh(geometry,mat);mesh.name='Continuous forearm';mesh.userData.handSurface=relaxed?'Open support hand':'Anatomical grip hand';mesh.userData.wristSeamGap=0;mesh.userData.boundaryVertices=ring.length;mesh.userData.capTriangles=previous.length;
+  const refined=refineSkin(THREE,geometry,2);geometry.dispose();
+  const mesh=new THREE.Mesh(refined,mat);mesh.name='Continuous forearm';mesh.userData.handSurface=relaxed?'Open support hand':'Anatomical grip hand';mesh.userData.wristSeamGap=0;mesh.userData.boundaryVertices=ring.length;mesh.userData.capTriangles=previous.length;
   const fingerJoints={};for(let f=1;f<=5;f++)for(let p=1;p<=3;p++)fingerJoints[`${f}-${p}`]=rig.bones[`finger${f}-${p}.R`].getWorldPosition(V()).sub(wrist).applyQuaternion(canonical).toArray();
   return {mesh,armEnd,axis,compressed,ringCount:segments+1,fingerJoints};
  }
