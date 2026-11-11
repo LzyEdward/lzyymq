@@ -26,7 +26,7 @@ server.on('error',error=>{
   console.error(`Cannot start Feather Court: ${error.message}`);process.exitCode=1;
 });
 server.on('listening',()=>{
-  const url=`http://${host==='0.0.0.0'?'localhost':host}:${port}`;console.log(`LZYYMQ Feather Court 6.4.1 is ready: ${url}`);
+  const url=`http://${host==='0.0.0.0'?'localhost':host}:${port}`;console.log(`LZYYMQ Feather Court 6.5 is ready: ${url}`);
   if(process.argv.includes('--open')&&process.platform==='win32'){
     const opener=spawn('cmd.exe',['/d','/c','start','',url],{windowsHide:true,stdio:'ignore'});opener.unref();
   }

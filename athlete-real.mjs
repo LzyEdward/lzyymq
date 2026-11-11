@@ -1,5 +1,5 @@
-import * as data from './assets/athlete-data.mjs?v=6.4.1';
-import {FootPlant} from './footwork.mjs?v=6.4.1';
+import * as data from './assets/athlete-data.mjs?v=6.5.0';
+import {FootPlant} from './footwork.mjs?v=6.5.0';
 
 // A continuous CC0 anatomical mesh, 48-bone skin, and two-bone limb IK.
 export function createAthlete(THREE, createRacket) {
@@ -103,7 +103,7 @@ export function createAthlete(THREE, createRacket) {
  }
  let stride=0;const footPlants=[new FootPlant(),new FootPlant()];
  function update({speed=0,dt=1/60,time=0,swing=0,lateral=0,forward=0,shot='clear',anticipation=0,lookY=1.5,lookX=0,grip=1,split=0,crossover=false,contact=null,lunge=0,netVariant=''}={}){
-  lunge=clamp(lunge,0,1);const netStroke=['net','push','netkill'].includes(shot),crossStep=crossover&&Math.abs(lateral)>.3;
+  lunge=clamp(lunge,0,1);const netStroke=['net','netcross','push','netkill'].includes(shot),crossStep=crossover&&Math.abs(lateral)>.3;
   stride+=Math.min(dt,.05)*speed*4.1;const run=clamp(speed/4,0,1),motion=Math.sin(stride),t=clamp(swing/.55,0,1),stroke=swing>0?Math.sin(t*Math.PI):0;
   body.position.y=-.055-Math.abs(motion)*.018*run+Math.sin(time*2.2)*.002+anticipation*.009-Math.sin(split*Math.PI)*.032-lunge*.155;
   bones.spine05.rotation.x=.035+run*.055+anticipation*.018+lunge*.16;bones.spine03.rotation.x=.04+run*.018+lunge*.075;bones.spine01.rotation.x=-.025-stroke*.035;bones.spine01.rotation.y=stroke*(t<.25?-.23:.25)*(netStroke?.35:1);bones.spine01.rotation.z=0;bones.spine03.rotation.y=0;bones.spine03.rotation.z=clamp(-lateral*.021,-.13,.13);
@@ -125,8 +125,9 @@ export function createAthlete(THREE, createRacket) {
    limb('upperleg01.'+suffix,footTarget,vec(side*.17+velocity.x*.1,.48,.8));
    const foot=bones['foot.'+suffix];foot.parent.getWorldQuaternion(parentQ);const desired=new THREE.Quaternion();root.getWorldQuaternion(desired);foot.quaternion.copy(parentQ.invert().multiply(desired));
   }
-  const overhead=shot==='smash'||shot==='clear',under=shot==='lift'||shot==='serve';let hand=vec(-.24,1.24,.28),pole=vec(-.47,1.08,-.02);
+  const overhead=['smash','slicesmash','clear','drop','slicedrop'].includes(shot),under=shot==='lift'||shot==='serve';let hand=vec(-.24,1.24,.28),pole=vec(-.47,1.08,-.02);
   if(swing>0){if(overhead){if(t<.25){const u=t/.25;hand.set(-.28-u*.03,1.27+u*.43,.16-u*.3);}else{const u=(t-.25)/.75;hand.set(-.30+u*.47,1.72-u*.66,-.14+Math.sin(u*Math.PI)*.5);}}else if(under){hand.set(-.27+stroke*.35,1.13-stroke*.32,.22+stroke*.3);pole.set(-.7,.95,.05);}else hand.set(-.29+stroke*.45,1.29+stroke*.08,.22+stroke*.32);}else{hand.y+=anticipation*.19;hand.x-=run*.025+motion*run*.025;hand.z+=Math.cos(stride)*run*.055;}
+  if(['slicesmash','slicedrop'].includes(shot)&&swing>0){bones.spine03.rotation.y+=stroke*.22;hand.x-=stroke*.13;pole.x-=stroke*.10;}
   let netWristRoll=0;
   if(netStroke){
    const cross=netVariant.includes('对角'),backhand=netVariant.includes('反手'),push=netVariant.includes('推')||netVariant.includes('扑'),brush=netVariant.includes('搓');

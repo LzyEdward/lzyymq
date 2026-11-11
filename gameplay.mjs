@@ -20,7 +20,7 @@ export function movementVector({ left = false, right = false, forward = false, b
 const SWEET_HEIGHT = Object.freeze({ clear: 1.82, drive: 1.55, drop: 2.02, smash: 2.48, lift: .94, serve: 1.25, net: 1.18, netcross: 1.18, push: 1.72, netkill: 1.92 });
 
 export function gradeContact({ position, player, kind = 'clear', assisted = true,side=1,speed=0,jump=0,stamina=100 }) {
-  const smash=kind==='smash',sweetHeight=smash?2.95+jump*.35:SWEET_HEIGHT[kind]??1.75;
+  const smash=kind==='smash'||kind==='slicesmash',sweetHeight=smash?2.95+jump*.35:SWEET_HEIGHT[kind==='slicedrop'?'drop':kind]??1.75;
   const lateral=Math.abs(position.x-player.x),front=(player.z-position.z)*side;
   const distance=Math.hypot(lateral,front),reach=assisted?2.2:1.85;
   const heightFit=smash?clamp((position.y-1.65)/1.15,0,1):clamp(1-Math.abs(position.y-sweetHeight)/1.5,0,1);
@@ -56,15 +56,16 @@ export function strokeOutcome({position,player,kind='clear',target,side=1,speed=
  const grade=gradeContact({position,player,kind,side,speed,jump,stamina,assisted});
  const effectiveQuality=clamp(grade.quality+qualityBonus,0,1),effectiveRating=effectiveQuality>=.9?'perfect':effectiveQuality>=.73?'clean':'scramble';
  let fault=null;
- if((kind==='smash'&&(position.y<1.95||grade.front<-.25))||(kind==='netkill'&&(position.y<1.4||grade.front<-.35)))fault='net';
- else if((['smash','netkill'].includes(kind)&&grade.lateral>(kind==='smash'?1.72:1.9))||(effectiveQuality<.60&&(grade.lateral>1.55||grade.front<-.15)))fault='out';
+ const smash=['smash','slicesmash'].includes(kind);
+ if((smash&&(position.y<1.95||grade.front<-.25))||(kind==='netkill'&&(position.y<1.4||grade.front<-.35)))fault='net';
+ else if((['smash','slicesmash','netkill'].includes(kind)&&grade.lateral>(smash?1.72:1.9))||(effectiveQuality<.60&&(grade.lateral>1.55||grade.front<-.15)))fault='out';
  const drift=(1-effectiveQuality)**2;
  const intended={...target};
  if(fault==='out')intended.x=(position.x-player.x>=0?1:-1)*(2.92+drift*.6);
  else {intended.x+=Math.sign(position.x-player.x||1)*drift*.45;intended.z+=side*drift*.65;}
  // A badly positioned smash remains a smash: it can hit the tape or fly out.
  // The caller simulates the entire faulty trajectory and scores on collision.
- const speedMps=kind==='smash'?(grade.heavy?65+grade.quality*12:26+grade.quality*18):kind==='netkill'?(grade.heavy?52+grade.quality*8:28+grade.quality*12):null;
+ const speedMps=smash?(grade.heavy?65+grade.quality*12:26+grade.quality*18)*(kind==='slicesmash'?.73:1):kind==='netkill'?(grade.heavy?52+grade.quality*8:28+grade.quality*12):null;
  return {...grade,quality:effectiveQuality,rating:effectiveRating,target:intended,fault,speedMps};
 }
 
@@ -72,10 +73,20 @@ export function targetDistance(landing, target) {
   return Math.hypot(landing.x - target.x, landing.z - target.z);
 }
 
-export const SHOT_DEPTHS = Object.freeze({ clear: -5.85, drive: -4.7, drop: -1.4, smash: -3.8, lift: -5.5, net: -.92, netcross: -.92, push: -4.85, netkill: -1.75, auto: -5.45 });
+export const SHOT_DEPTHS = Object.freeze({ clear: -5.85, drive: -4.7, drop: -1.15, slicedrop:-1.10, smash: -3.8, slicesmash:-3.5, lift: -5.5, net: -.85, netcross: -.85, push: -4.85, netkill: -1.75, auto: -5.45 });
+
+// A technique supplies a sensible landing only until the player sets a point.
+// Cross-court means opposite the *contact lane*, not opposite camera yaw.
+export function techniqueTarget({position={x:0,z:3},aim=0,kind='clear',manual=null}={}){
+ if(manual)return {...manual};
+ const cross=['netcross','slicesmash','slicedrop'].includes(kind);
+ const side=Math.abs(position.x)>.3?-Math.sign(position.x):Math.abs(aim)>.2?Math.sign(aim):-1;
+ const straight=['net','drop'].includes(kind)&&Math.abs(aim)<.05?position.x*.94/2.45:aim;
+ return shotTarget({aim:cross?side*.90:straight,kind});
+}
 
 export function racketPowerBoost(style='control',kind='smash'){
- if(!['smash','netkill'].includes(kind))return 0;
+ if(!['smash','slicesmash','netkill'].includes(kind))return 0;
  return ({control:0,attack:8,aero:4})[style]??0;
 }
 

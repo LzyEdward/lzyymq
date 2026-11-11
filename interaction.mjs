@@ -5,6 +5,8 @@ export function keyCommand(code){
  if(code==='KeyK')return {action:'hit',kind:'clear'};
  if(code==='KeyE')return {action:'hit',kind:'drop'};
  if(code==='KeyL')return {action:'hit',kind:'smash'};
+ if(code==='Digit8'||code==='Numpad8')return {action:'hit',kind:'slicesmash'};
+ if(code==='Digit9'||code==='Numpad9')return {action:'hit',kind:'slicedrop'};
  const shots={Digit1:'auto',Digit2:'clear',Digit3:'drop',Digit4:'smash',Digit5:'net',Digit6:'push',Digit7:'netcross',Numpad1:'auto',Numpad2:'clear',Numpad3:'drop',Numpad4:'smash',Numpad5:'net',Numpad6:'push',Numpad7:'netcross'};
  if(shots[code])return {action:'hit',kind:shots[code]};
  return null;

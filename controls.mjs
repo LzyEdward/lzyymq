@@ -1,4 +1,4 @@
-import {advance} from './physics.mjs?v=6.4.1';
+import {advance} from './physics.mjs?v=6.5.0';
 // Input intent is independent of the racket animation. A click may be early;
 // holding a button keeps the next return armed without repeated clicks.
 export class HitIntent {
@@ -18,7 +18,7 @@ export class HitIntent {
 export function canContact({ position, velocity, player, active, lastHitter, assisted, jump = 0, yaw = 0, preparing = false, reachBonus = 0 }) {
   if (!active || lastHitter !== 'opponent' || position.z < .38) return false;
   const dx = position.x - player.x, dz = position.z - player.z;
-  const reach = (assisted ? (preparing ? 3.05 : 2.55) : (preparing ? 2.15 : 1.85))+Math.max(0,reachBonus);
+  const reach = (assisted ? (preparing ? 3.05 : 2.55) : (preparing ? 2.15 : 1.85))+Math.max(-.6,Math.min(.6,reachBonus));
   const front = -dx * Math.sin(yaw) - dz * Math.cos(yaw);
   return Math.hypot(dx, dz) <= reach && position.y >= .075 &&
     position.y <= (assisted ? 3.15 : 2.95) + jump &&
@@ -40,7 +40,7 @@ export function swingWindow({position,velocity,player,playerVelocity={x:0,z:0},k
  for(let i=0;i<9;i++)advance(anticipated,v,lookAhead*pace/9);
  const futurePlayer={x:player.x+playerVelocity.x*lookAhead,z:player.z+playerVelocity.z*lookAhead};
  if(!canContact({...contact,position:anticipated,velocity:v,player:futurePlayer,jump,assisted}))return null;
- const desiredHeight=({clear:2.12,drive:1.9,drop:2,smash:2.98,lift:1.25,net:1.28,netcross:1.28,push:1.82,netkill:2.15})[kind]??2.1;
+ const desiredHeight=({clear:2.12,drive:1.9,drop:2.55,slicedrop:2.65,smash:2.98,slicesmash:2.98,lift:1.25,net:1.5,netcross:1.5,push:1.82,netkill:2.15})[kind]??2.1;
  if(age>.22){
   if(anticipated.y>desiredHeight+jump&&v.y<2)return null;
  const shortBall=anticipated.z<2.6||kind==='drop'||kind==='lift';

@@ -28,32 +28,41 @@ export function groundCrossing(previous, current) {
 export function createGroundMotion(position, velocity) {
   const speed = Math.hypot(velocity.x, velocity.z);
   const impact = Math.max(0, -velocity.y);
-  // Cork compresses, then the light feather skirt tumbles and dissipates energy.
-  const restitution = clamp(.25 - impact * .004, .15, .25);
+  // Separate cork compression from tangential skid. A hard, steep hit has a
+  // visible rebound; a grazing contact keeps more travel along the mat.
+  const restitution = .34 / (1 + impact * .023);
+  const grazing = speed / Math.max(.001, speed + impact);
+  const tangent = .16 + grazing * .48;
   return { pos: { ...position, y: CONTACT_HEIGHT },
-    vel: { x: velocity.x * .30, y: Math.min(1.75, impact * restitution), z: velocity.z * .30 },
-    age: 0, bounces: 0, settled: false, tilt: 0,
-    heading: Math.atan2(velocity.x, velocity.z), roll: 0, spin: Math.min(22, 5 + impact * .6 + speed * .3) };
+    vel: { x: velocity.x * tangent, y: Math.min(3.6, impact * restitution), z: velocity.z * tangent },
+    age: 0, bounces: 0, settled: false, tilt: Math.atan2(speed, Math.max(.01, impact)),
+    heading: Math.atan2(-velocity.x, -velocity.z), roll: 0,
+    spin: Math.min(16, 2 + impact * .35 + speed * .22), impactSpeed: impact, lastImpact: impact };
 }
 
 export function stepGroundMotion(body, dt) {
   let impacts = 0;
   for (let remaining = Math.min(Math.max(dt, 0), .1); remaining > 1e-8;) {
     const h = Math.min(remaining, 1 / 240); remaining -= h; body.age += h;
-    body.tilt = damp(body.tilt, Math.PI * .49, body.settled ? 12 : 5, h);
-    const support = Math.max(CONTACT_HEIGHT, .031 * Math.sin(body.tilt) - .04 * Math.cos(body.tilt) + .006);
+    // Turn over through the rebound, then land on the feather rim. Do not snap
+    // from the incoming flight orientation to a vertical, cork-down pose.
+    const turnover = body.age < .055 ? 1.5 : body.settled ? 13 : 4.8;
+    body.tilt = damp(body.tilt, Math.PI * .50, turnover, h);
+    const support = Math.max(CONTACT_HEIGHT, .032 * Math.sin(body.tilt) - .068 * Math.cos(body.tilt) + .003);
     if (!body.settled) {
-      const drag = Math.exp(-1.8 * h);
+      const drag = Math.exp(-(1.2 + 2.8 * Math.sin(body.tilt) ** 2) * h);
       body.vel.x *= drag; body.vel.z *= drag; body.vel.y -= COURT.gravity * h;
       body.pos.x += body.vel.x * h; body.pos.y += body.vel.y * h; body.pos.z += body.vel.z * h;
       if (body.pos.y <= support && body.vel.y < 0) {
-        body.pos.y = support; body.bounces++; impacts++;
-        body.vel.y *= -.18; body.vel.x *= .40; body.vel.z *= .40;
-        if (body.vel.y < .22 || body.bounces >= 3) { body.settled = true; body.vel.y = 0; }
+        body.pos.y = support; body.bounces++; impacts++; body.lastImpact = -body.vel.y;
+        const rim = Math.sin(body.tilt) ** 2;
+        body.vel.y *= -(.25 - .12 * rim);
+        body.vel.x *= .46 - .18 * rim; body.vel.z *= .46 - .18 * rim;
+        if (body.vel.y < .18 || body.bounces >= 3) { body.settled = true; body.vel.y = 0; }
       }
     } else {
       const speed = Math.hypot(body.vel.x, body.vel.z);
-      const next = Math.max(0, speed - 3.8 * h);
+      const next = Math.max(0, speed - 4.6 * h);
       const scale = speed > 1e-8 ? next / speed : 0;
       body.vel.x *= scale; body.vel.z *= scale;
       body.pos.x += body.vel.x * h; body.pos.z += body.vel.z * h;
@@ -90,7 +99,7 @@ function flight(origin, horizontal, up, dx, dz, record = false) {
       netY = previous.y + (p.y - previous.y) * t;
     }
     if (record && i % 6 === 0) points.push({ ...p, t: time, vy: v.y });
-    if (p.y <= CONTACT_HEIGHT) break;
+    if (p.y <= CONTACT_HEIGHT) { Object.assign(p, groundCrossing(previous, p)); break; }
   }
   return { distance: Math.hypot(p.x - origin.x, p.z - origin.z), position: p, netY, time, points };
 }
@@ -99,27 +108,29 @@ export function solveShot(origin, target, type = 'clear',options={}) {
   const distance = Math.hypot(target.x - origin.x, target.z - origin.z);
   const dx = (target.x - origin.x) / Math.max(distance, 0.01);
   const dz = (target.z - origin.z) / Math.max(distance, 0.01);
-  if(type==='net'||type==='netcross'){
+  if(['net','netcross','drop','slicedrop'].includes(type)){
     // Solve both range and net height so a net shot skims the tape instead of
     // inheriting the tall arc of a rear-court drop.
-    let lowUp=-5,highUp=16,up=0,horizontal=0;
+    const touch = clamp(options.touch ?? 1, .2, 1.6);
+    const clearance = type==='net' ? .065 + (1.4-touch)*.04 : type==='netcross' ? .09 + (1.4-touch)*.035 : type==='slicedrop' ? .12 + (1.4-touch)*.055 : .18 + (1.4-touch)*.065;
+    let lowUp=-16,highUp=24,up=0,horizontal=0;
     for(let pass=0;pass<22;pass++){
       up=(lowUp+highUp)/2;let low=.1,high=100;
       for(let i=0;i<22;i++){horizontal=(low+high)/2;const f=flight(origin,horizontal,up,dx,dz);if(f.distance<distance)low=horizontal;else high=horizontal;}
       const result=flight(origin,horizontal,up,dx,dz);
-      if(result.netY<COURT.netHeight+.085)lowUp=up;else highUp=up;
+      if(result.netY<COURT.netHeight+clearance)lowUp=up;else highUp=up;
     }
     return {x:dx*horizontal,y:up,z:dz*horizontal};
   }
-  if((type==='smash'||type==='netkill')&&Number.isFinite(options.speed)){
-    const horizontal=clamp(options.speed,18,85);let lo=-65,hi=35,up=0,result;
+  if((type==='smash'||type==='slicesmash'||type==='netkill')&&Number.isFinite(options.speed)){
+    const horizontal=clamp(options.speed,12,110);let lo=-85,hi=35,up=0,result;
     for(let i=0;i<28;i++){up=(lo+hi)/2;result=flight(origin,horizontal,up,dx,dz);if(result.distance<distance)lo=up;else hi=up;}
     result=flight(origin,horizontal,up,dx,dz);
     if(result.netY>=COURT.netHeight+.065)return {x:dx*horizontal,y:up,z:dz*horizontal};
   }
-  let up = ({ clear: 15.8, drive: 5.1, push:4.1,netkill:-3.8,drop: 6.1, smash: -6.5, serve: 3.6, lift: 18 })[type] ?? 12;
+  let up = ({ clear: 15.8, drive: 5.1, push:4.1,netkill:-3.8,drop: 6.1, smash: -6.5, slicesmash:-4.8, serve: 3.6, lift: 18 })[type] ?? 12;
   if(type==='serve'&&Number.isFinite(options.up))up=clamp(options.up,3.6,10);
-  if (type === 'smash' && origin.y < 2.65) up = 1.5;
+  if (['smash','slicesmash'].includes(type) && origin.y < 2.65) up = 1.5;
   let horizontal = 10, result;
   for (let attempt = 0; attempt < 13; attempt++) {
     let lo = 0.5, hi = 155;

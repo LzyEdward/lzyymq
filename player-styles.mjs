@@ -16,16 +16,31 @@ export const OPPONENT_STYLES=Object.freeze({
  taufik:Object.freeze({name:'陶菲克风格',speed:1,reaction:.98,reach:1,accuracy:1.12,attack:1.02,power:1.02,netSkill:1.22,anticipation:1.08,tactic:'touch'}),
 });
 
-export function effectiveOpponentLevel(base,styleKey='allround'){
+export const SKILL_KEYS=Object.freeze(['attack','defense','control','net','speed','stamina']);
+const bound=(n,a,b)=>Math.max(a,Math.min(b,n));
+export function normalizeSkills(raw={}){
+ raw=raw&&typeof raw==='object'?raw:{};
+ return Object.fromEntries(SKILL_KEYS.map(key=>[key,bound(Number.isFinite(Number(raw[key]))?Number(raw[key]):1,.4,1.6)]));
+}
+
+export function effectiveOpponentLevel(base,styleKey='allround',tuning={}){
  const style=OPPONENT_STYLES[styleKey]||OPPONENT_STYLES.allround;
+ const t=normalizeSkills(tuning);
  return {...base,name:styleKey==='allround'?base.name:style.name,
-  speed:base.speed*style.speed,reaction:base.reaction*style.reaction,reach:base.reach*style.reach,
-  accuracy:Math.min(.995,base.accuracy*style.accuracy),attack:Math.min(.995,base.attack*style.attack),
-  power:base.power*style.power,netSkill:Math.min(.995,base.netSkill*style.netSkill),anticipation:Math.min(.995,base.anticipation*style.anticipation)};
+  speed:bound(base.speed*style.speed*t.speed,1.3,11),
+  acceleration:base.acceleration*(.55+.45*t.speed),
+  reaction:bound(base.reaction*style.reaction/t.defense,.045,1.2),
+  reach:bound(base.reach*style.reach*(.65+.35*t.defense),.55,2.35),
+  accuracy:bound(base.accuracy*style.accuracy+(t.control-1)*.55,.08,.995),
+  attack:bound(base.attack*style.attack+(t.attack-1)*.60,.015,.995),
+  power:bound(base.power*style.power*(.35+.65*t.attack),16,110),
+  netSkill:bound(base.netSkill*style.netSkill+(t.net-1)*.65,.015,.995),
+  anticipation:bound(base.anticipation*style.anticipation+(t.defense-1)*.45,.015,.995),
+  stamina:t.stamina};
 }
 
 export function playerStatsFromInputs(root=document){
- const read=id=>Math.max(.7,Math.min(1.4,(Number(root.querySelector(`#player-${id}`)?.value)||100)/100));
+ const read=id=>Math.max(.4,Math.min(1.6,(Number(root.querySelector(`#player-${id}`)?.value)||100)/100));
  return {attack:read('attack'),speed:read('speed'),defense:read('defense'),net:read('net'),control:read('control'),stamina:read('stamina')};
 }
 export function playerStatsForStyle(key='custom'){

@@ -16,7 +16,7 @@ export function opponentServeTarget({level,random=Math.random}={}){
 export function opponentReceiveMissChance({level,shot='clear',position,distance,reach,energy=100}){
  const ratio=distance/Math.max(.1,reach);
  const stretch=clamp((ratio-.58)/.48,0,1);
- const netShot=['drop','net'].includes(shot)&&position.z>-3.8;
+ const netShot=['drop','slicedrop','net','netcross'].includes(shot)&&position.z>-3.8;
  const low=clamp((1.15-position.y)/.95,0,1);
  const fatigue=1-clamp(energy/100,0,1);
  // Beginners should visibly struggle with tight net play. Scale the base
@@ -32,7 +32,7 @@ export function opponentReceiveMissChance({level,shot='clear',position,distance,
 // Low grades can mishit under pressure and fall short on clears more often.
 export function opponentStrokeExecution({level,type,target,quality=1,energy=100,random=Math.random}){
  const fatigue=1-clamp(energy/100,0,1);
- const netShot=['drop','net','lift'].includes(type);
+ const netShot=['drop','slicedrop','net','netcross','lift'].includes(type);
  const faultChance=clamp((1-level.accuracy)*.17+(1-quality)*.08+fatigue*.07+(netShot?(1-level.netSkill)*.045:0),0,.24);
  if(random()<faultChance){
   const fault=random()<.55?'net':'out';
@@ -61,7 +61,7 @@ export function planOpponentStroke({level,position,player,playerVelocity={x:0,z:
   add('lift',openX,5.9,low?14:1.7,'挑后场');
   if(!low){
    add('net',straight,1.05+(1-skill)*.65,1.25+skill*2.1,'正手放网');
-   if(tier>=3){add('net',cross,1.05+(1-skill)*.5,1.1+skill*3.5,'勾对角');add('net',straight,.82+(1-skill)*.7,.85+skill*3.0,'搓网');}
+   if(tier>=3){add('netcross',cross,.85+(1-skill)*.5,1.1+skill*3.5,'勾对角');add('net',straight,.68+(1-skill)*.7,.85+skill*3.0,'搓网');}
    if(position.y>1.2){add('push',openX,5.05,1.0+skill*1.6,'推后场');add('push',bodyX,4.65,.35+skill*1.25,'推追身');}
    if(position.y>1.95&&tier>=3){add('netkill',openX,2.0,1.7+level.attack*5,'扑球');if(tier>=6)add('netkill',cross,1.2,.35+skill*2.2,'反手封网');}
   }
@@ -70,7 +70,8 @@ export function planOpponentStroke({level,position,player,playerVelocity={x:0,z:
   add('clear',straight,6.0,1.05,'直线高远');
   add('clear',cross,5.35,.3+skill*.55,'斜线高远');
   add('drop',straight,1.1+(1-skill)*.7,.9+skill*1.65,'直线吊球');
-  if(tier>=3){add('drop',cross,1.24,.65+skill*1.55,'劈吊对角');if(tier>=6)add('drop',openX,1.8,.3+skill,'滑板吊斜线');}
+  if(tier>=3){add('slicedrop',cross,1.10,.65+skill*1.55,'劈吊对角');if(tier>=6)add('slicedrop',openX,1.4,.3+skill,'滑板吊斜线');}
+  if(position.y>2.4&&tier>=4)add('slicesmash',cross,3.35,.45+level.attack*2.5,'劈杀斜线');
   if(position.y>2.25){add('smash',openX,anticipatedZ>4.8?3.0:4.8,.4+level.attack*4.5,'杀空当');add('smash',bodyX,anticipatedZ>4.8?3.35:4.8,.3+level.attack*2.2,'追身点杀');}
   if(position.y>1&&position.y<2.65){add('drive',openX,4.5,.6+level.attack*1.8,'平抽压制');if(tier>=4)add('drive',bodyX,3.35,.4+skill*1.4,'突击追身');}
  }
@@ -87,14 +88,14 @@ export function planOpponentStroke({level,position,player,playerVelocity={x:0,z:
   if(candidate.action===last?.action)candidate.weight*=.42;
   if(repeatedLane)candidate.weight*=.56;
   if(same.length===2&&same.every(p=>p.type===candidate.type)&&candidates.some(p=>p.type!==candidate.type))candidate.weight*=.12;
-  if(profile==='attack'&&['smash','netkill','push','drive'].includes(candidate.type))candidate.weight*=1.55;
-  if(profile==='defend'&&['clear','lift','net'].includes(candidate.type))candidate.weight*=1.5;
+  if(profile==='attack'&&['smash','slicesmash','netkill','push','drive'].includes(candidate.type))candidate.weight*=1.55;
+  if(profile==='defend'&&['clear','lift','net','netcross','drop','slicedrop'].includes(candidate.type))candidate.weight*=1.5;
   if(profile==='balanced'&&['drop','net','push','drive'].includes(candidate.type))candidate.weight*=1.08;
   if(tactic==='power'&&['smash','netkill','drive'].includes(candidate.type))candidate.weight*=1.62;
-  if(tactic==='angle'&&['drop','net'].includes(candidate.type)&&Math.abs(candidate.target.x-position.x)>1.1)candidate.weight*=1.48;
+  if(tactic==='angle'&&['slicesmash','slicedrop','netcross','drop','net'].includes(candidate.type)&&Math.abs(candidate.target.x-position.x)>1.1)candidate.weight*=1.8;
   if(tactic==='rally'&&['clear','drive'].includes(candidate.type))candidate.weight*=1.28;
   if(tactic==='touch'&&['net','drop','push'].includes(candidate.type))candidate.weight*=1.58;
-  if(energy<28&&candidate.type==='smash')candidate.weight*=.25;
+  if(energy<28&&['smash','slicesmash'].includes(candidate.type))candidate.weight*=.25;
  }
  const total=candidates.reduce((sum,c)=>sum+c.weight,0);let pick=clamp(random(),0,.999999)*total;
  let selected=candidates.at(-1);for(const c of candidates){pick-=c.weight;if(pick<=0){selected=c;break;}}
