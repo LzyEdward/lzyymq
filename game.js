@@ -1,22 +1,22 @@
-import * as THREE from './vendor/three/build/three.module.js?v=6.5.0';
-import { mergeGeometries } from './vendor/three/addons/utils/BufferGeometryUtils.js?v=6.5.0';
-import { COURT, advance, solveShot, predict, winnerOnLanding, clamp, damp, groundCrossing, createGroundMotion, stepGroundMotion } from './physics.mjs?v=6.5.0';
-import { FlightRecorder, EagleEyeReview } from './eagle-eye.mjs?v=6.5.0';
-import { HitIntent, canContact, receivingTarget, swingWindow } from './controls.mjs?v=6.5.0';
-import { JumpMotion, MovementOwnership, keyCommand, pointerCommand } from './interaction.mjs?v=6.5.0';
-import { freeLook, landingFromMap, moveLanding, normalizeLanding, landingName, LANDING_PRESETS } from './aiming.mjs?v=6.5.0';
-import { createAthlete } from './athlete.mjs?v=6.5.0';
-import { movementVector, gradeContact, strokeOutcome, shotTarget, SHOT_DEPTHS, Dash, targetDistance, DRILL_TARGETS, practiceFeed, smartStroke, racketPowerBoost, techniqueTarget } from './gameplay.mjs?v=6.5.0';
-import { OPPONENT_LEVELS, LEVEL_DESCRIPTIONS, LEVEL_REFERENCES, opponentLevel, placementSpread, matchFinished, rankName, freshCareer, parseCareer, settleMatch } from './competition.mjs?v=6.5.0';
-import {planOpponentStroke,recoveryBase,opponentFootwork,opponentReceiveMissChance,opponentStrokeExecution,opponentServeTarget} from './opponent-ai.mjs?v=6.5.0';
-import { trackAngles, stepTracking } from './tracking.mjs?v=6.5.0';
-import { loadSurfaceMaps, createEnvironment, CourtPresentation } from './presentation.mjs?v=6.5.0';
-import { createViewmodel } from './viewmodel.mjs?v=6.5.0';
-import { swingPose, moveVelocity, groundedCameraOffset } from './motion.mjs?v=6.5.0';
-import { dressHall } from './hall-details.mjs?v=6.5.0';
-import { createNetMaterial } from './net-material.mjs?v=6.5.0';
-import { createTechniquePanel } from './technique-panel.mjs?v=6.5.0';
-import { PLAYER_STYLES, OPPONENT_STYLES, effectiveOpponentLevel, playerStatsFromInputs, playerStatsForStyle, normalizeSkills } from './player-styles.mjs?v=6.5.0';
+import * as THREE from './vendor/three/build/three.module.js?v=6.6.0';
+import { mergeGeometries } from './vendor/three/addons/utils/BufferGeometryUtils.js?v=6.6.0';
+import { COURT, advance, solveShot, predict, winnerOnLanding, clamp, damp, groundCrossing, createGroundMotion, stepGroundMotion } from './physics.mjs?v=6.6.0';
+import { FlightRecorder, EagleEyeReview } from './eagle-eye.mjs?v=6.6.0';
+import { HitIntent, canContact, receivingTarget, swingWindow } from './controls.mjs?v=6.6.0';
+import { JumpMotion, MovementOwnership, keyCommand, pointerCommand } from './interaction.mjs?v=6.6.0';
+import { freeLook, landingFromMap, moveLanding, normalizeLanding, landingName, LANDING_PRESETS } from './aiming.mjs?v=6.6.0';
+import { createAthlete } from './athlete.mjs?v=6.6.0';
+import { movementVector, gradeContact, strokeOutcome, shotTarget, SHOT_DEPTHS, Dash, targetDistance, DRILL_TARGETS, practiceFeed, smartStroke, racketPowerBoost, techniqueTarget } from './gameplay.mjs?v=6.6.0';
+import { OPPONENT_LEVELS, LEVEL_DESCRIPTIONS, LEVEL_REFERENCES, opponentLevel, placementSpread, matchFinished, rankName, freshCareer, parseCareer, settleMatch } from './competition.mjs?v=6.6.0';
+import {planOpponentStroke,recoveryBase,opponentFootwork,opponentReceiveMissChance,opponentStrokeExecution,opponentServeTarget} from './opponent-ai.mjs?v=6.6.0';
+import { trackAngles, stepTracking } from './tracking.mjs?v=6.6.0';
+import { loadSurfaceMaps, createEnvironment, CourtPresentation } from './presentation.mjs?v=6.6.0';
+import { createViewmodel } from './viewmodel.mjs?v=6.6.0';
+import { swingPose, moveVelocity, groundedCameraOffset } from './motion.mjs?v=6.6.0';
+import { dressHall } from './hall-details.mjs?v=6.6.0';
+import { createNetMaterial } from './net-material.mjs?v=6.6.0';
+import { createTechniquePanel } from './technique-panel.mjs?v=6.6.0';
+import { PLAYER_STYLES, OPPONENT_STYLES, effectiveOpponentLevel, playerStatsFromInputs, playerStatsForStyle, normalizeSkills } from './player-styles.mjs?v=6.6.0';
 
 const $ = (s) => document.querySelector(s);
 const canvas = $('#court');
@@ -252,10 +252,10 @@ function createRacket(isPlayer = false) {
   const grip = material(colors.grip, .95);
   const accent=material(colors.accent,.32,.45),gold=material(colors.gold,.34,.55);
   root.userData.styleMaterials={carbon,rim,grip,accent,gold};
-  const handle = mesh(new THREE.CylinderGeometry(.014, .017, .18, 20), grip, 0, .08, 0, root); handle.castShadow = true;
-  const wrapPoints=[];for(let i=0;i<=96;i++){const t=i/96,a=t*Math.PI*2*9,r=.0152+(1-t)*.0012;wrapPoints.push(V(Math.cos(a)*r,.002+t*.153,Math.sin(a)*r));}
+  const handle = mesh(new THREE.CylinderGeometry(isPlayer?.0115:.014,isPlayer?.0135:.017,.18,24), grip, 0, .08, 0, root); handle.castShadow = true;
+  const wrapPoints=[];for(let i=0;i<=96;i++){const t=i/96,a=t*Math.PI*2*9,r=(isPlayer?.0123:.0152)+(1-t)*.0012;wrapPoints.push(V(Math.cos(a)*r,.002+t*.153,Math.sin(a)*r));}
   const wrap=mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(wrapPoints),192,.00072,5,false),carbon,0,0,0,root);wrap.castShadow=true;
-  mesh(new THREE.CylinderGeometry(.018,.018,.012,20),carbon,0,-.007,0,root);
+  mesh(new THREE.CylinderGeometry(isPlayer?.0145:.018,isPlayer?.0145:.018,.012,24),carbon,0,-.007,0,root);
   cylinder(V(0, .17, 0), V(0, .37, 0), .0036, carbon, root);
   const headShape=[.121,.158];
   const ellipse = new THREE.EllipseCurve(0, .51, headShape[0], headShape[1], 0, Math.PI * 2, false, 0);
@@ -1197,7 +1197,7 @@ function animate() {
   const frameNow=performance.now(),rawFrameMs=frameNow-lastFrameTime;lastFrameTime=frameNow;
   if(frameProbe){if(frameProbe.warmup-->0){}else frameProbe.samples.push(rawFrameMs);if(frameProbe.samples.length>=180){const times=frameProbe.samples.sort((a,b)=>a-b),mean=times.reduce((a,b)=>a+b,0)/times.length;$('#test-result').textContent=JSON.stringify({type:'real animation frames',frames:times.length,averageFps:Math.round(10000/mean)/10,medianMs:Math.round(times[90]*10)/10,p95Ms:Math.round(times[171]*10)/10,viewport:[innerWidth,innerHeight],pixelRatio:renderer.getPixelRatio(),quality:presentation.quality,drawCalls:presentation.sceneInfo.calls,triangles:presentation.sceneInfo.triangles},null,2);frameProbe=null;pauseGame();}}
   const dt = Math.min(clock.getDelta(), .06); state.elapsed += dt; fps = damp(fps, 1 / Math.max(dt, .001), 1, dt);
-  shuttle.visible=state.screen!=='inspect';
+  shuttle.visible=!['inspect','hand-inspect'].includes(state.screen);
   if (state.screen === 'menu') {
     menuTime += dt; camera.position.set(10.4 + Math.sin(menuTime * .1) * .5, 5.1 + Math.sin(menuTime * .13) * .1, 11.8); camera.lookAt(-.4, .85, -.8); camera.fov = 51; camera.updateProjectionMatrix();
     bot.root.position.set(-.6,0,-4.3);bot.root.rotation.y=0;bot.label.visible=true;bot.update({time:menuTime,dt});
@@ -1209,6 +1209,9 @@ function animate() {
     const yaw=state.inspectYaw??.30,distance=state.inspectDistance||3.1,pitch=state.inspectPitch||.12;
     camera.position.set(Math.sin(yaw)*distance,1.10+pitch*distance,2.8+Math.cos(yaw)*distance);camera.fov=42;camera.lookAt(-.28,1.02,2.8);camera.updateProjectionMatrix();
     racket.visible=false;if(racket.userData.support)racket.userData.support.visible=false;landingMarker.visible=targetMarker.visible=aimMarker.visible=false;shuttleShadow.visible=false;
+  } else if(state.screen==='hand-inspect'){
+    racket.visible=true;bot.label.visible=false;landingMarker.visible=targetMarker.visible=aimMarker.visible=shuttleShadow.visible=false;
+    racket.userData.support.visible=false;
   } else if (state.screen === 'play') {
     shuttleShadow.visible=true;
     accumulator += dt;
@@ -1343,7 +1346,7 @@ function bindEvents() {
     if (['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Tab'].includes(e.code) && state.screen === 'play') e.preventDefault();
     if (e.repeat) return;
     if (e.code === 'KeyB') { openLineReview(); return; }
-    if (e.code === 'Escape' || e.code === 'KeyP') { if(state.screen==='inspect')exitGame();else if (state.screen === 'play') pauseGame(); else if (state.screen === 'pause') resumeGame(); return; }
+    if (e.code === 'Escape' || e.code === 'KeyP') { if(['inspect','hand-inspect'].includes(state.screen)){exitGame();$('#test-panel')?.classList.remove('hidden');$('#masthead')?.classList.remove('hidden');}else if (state.screen === 'play') pauseGame(); else if (state.screen === 'pause') resumeGame(); return; }
     if (state.screen !== 'play') return;
     if(['AltLeft','AltRight'].includes(e.code)){e.preventDefault();state.aimAlt=true;hitIntent.clear();}
     keys.add(e.code);
@@ -1424,6 +1427,19 @@ async function init() {
       const panel=document.createElement('div');panel.id='test-panel';panel.style.cssText='position:fixed;left:20px;top:115px;z-index:50;background:#12382f;padding:12px;max-width:350px;font:12px sans-serif;border:1px solid #dcf49a';
       panel.innerHTML='<button id="run-play-test">运行长按 60 秒对打测试</button><button id="run-input-suite">验证左右球路与提前点击</button><button id="run-target-test">验证打点挑战</button><button id="run-v2-test">验证手动操作与比赛</button><button id="inspect-model">查看人物近景</button><button id="run-perf-test">测量 180 帧实际表现</button><button id="run-scene-test">检查当前场景坐标</button><pre id="test-result">等待测试</pre>';document.body.append(panel);
       panel.style.zIndex = '45';
+      const handViews=document.createElement('select');handViews.id='hand-inspect-view';handViews.setAttribute('aria-label','手部检查视角');
+      for(const [value,label] of [['grip','握拍近景'],['palm','掌侧近景'],['back','手背近景'],['idle','实战待机'],['prep','高远准备'],['contact','高远触球'],['follow','杀球收拍'],['net','网前搓球'],['serve','发球准备']])handViews.add(new Option(label,value));
+      const inspectHand=()=>{
+        state.screen='hand-inspect';state.handsOn=false;document.exitPointerLock?.();
+        for(const id of ['menu','hud','pause-overlay'])$('#'+id).classList.add('hidden');
+        camera.position.set(0,1.69,4.5);camera.rotation.set(0,0,0);camera.fov=50;camera.updateProjectionMatrix();
+        const view=handViews.value;
+        if(['grip','palm','back'].includes(view)){racket.position.set(-.02,-.05,-.48);racket.rotation.set(.08,view==='palm'?1.2:view==='back'?-1.2:0,-.22);}
+        else {const spec={idle:[0,'clear'],prep:[.048,'clear'],contact:[.095,'clear'],follow:[.255,'smash'],net:[.095,'net'],serve:[.048,'serve']}[view],pose=swingPose({elapsed:spec[0],kind:spec[1]});racket.position.fromArray(pose.position);racket.rotation.fromArray([...pose.rotation,'XYZ']);}
+        $('#test-result').textContent=JSON.stringify({view,hand:racket.userData.hand.geometry.attributes.position.count,grip:racket.userData.gripReport??null},null,2);
+      };
+      const handInspect=document.createElement('button');handInspect.id='inspect-grip';handInspect.textContent='检查第一人称握拍';handInspect.onclick=inspectHand;handViews.onchange=inspectHand;panel.prepend(handInspect,handViews);
+      const handProof=document.createElement('button');handProof.id='hand-proof';handProof.textContent='隐藏面板查看握拍 · Esc 返回';handProof.onclick=()=>{handViews.value='grip';inspectHand();panel.classList.add('hidden');$('#masthead').classList.add('hidden');};panel.prepend(handProof);
       const techniqueTest=document.createElement('button');techniqueTest.id='run-technique-test';techniqueTest.textContent='验证6.5球路与双方实力';panel.prepend(techniqueTest);
       techniqueTest.onclick=()=>{
         const checks=[],savedStats={...state.playerStats},savedOpponent={...state.opponentStats},savedStyle=$('#player-style').value;
