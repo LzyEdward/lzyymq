@@ -4,13 +4,14 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
   <meta name="theme-color" content="#152f2d">
-  <title>lzyymq · 羽境 FEATHER COURT 6.4</title>
+  <title>lzyymq · 羽境 FEATHER COURT 6.4.1</title>
   <link rel="icon" type="image/svg+xml" href="./favicon.svg">
-  <link rel="stylesheet" href="./style.css?v=6.4.0">
-  <link rel="stylesheet" href="./competition.css?v=6.4.0">
-  <link rel="stylesheet" href="./interaction.css?v=6.4.0">
-  <link rel="stylesheet" href="./aiming.css?v=6.4.0">
-  <link rel="stylesheet" href="./eagle-eye.css?v=6.4.0">
+  <link rel="stylesheet" href="./style.css?v=6.4.1">
+  <link rel="stylesheet" href="./competition.css?v=6.4.1">
+  <link rel="stylesheet" href="./interaction.css?v=6.4.1">
+  <link rel="stylesheet" href="./aiming.css?v=6.4.1">
+  <link rel="stylesheet" href="./eagle-eye.css?v=6.4.1">
+  <link rel="stylesheet" href="./home.css?v=6.4.1">
 </head>
 <body>
   <canvas id="court" aria-label="第一人称三维羽毛球场" tabindex="0"></canvas>
@@ -18,24 +19,53 @@
   <div id="loading"><div class="load-mark">羽<span>境</span></div><p>正在点亮球馆 <span id="load-dots">···</span></p><div class="load-bar"><i></i></div></div>
   <header class="masthead" id="masthead">
     <a class="brand" href="#" id="brand-home" aria-label="羽境首页"><svg viewBox="0 0 42 42" fill="none"><path d="M10 31 29 8M15 34 34 11M7 27 24 7M19 35 35 17M11 30l8 6-5 4-7-6z" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/><path d="m17 17 12 9M22 11l12 9" stroke="currentColor" stroke-width="1.5"/></svg><span>羽境<small>FEATHER COURT</small></span></a>
-    <nav><span class="live-dot"></span><span id="header-label">LZYYMQ · THE COURT IS YOURS</span><button class="icon-btn" id="sound-btn" title="切换声音" aria-label="切换声音">♪</button><button class="icon-btn" id="help-btn" title="操作说明" aria-label="操作说明">?</button></nav>
+    <nav><span class="live-dot"></span><span id="header-label">LZYYMQ · 羽境</span><button class="icon-btn" id="sound-btn" title="切换声音" aria-label="切换声音">♪</button><button class="icon-btn" id="help-btn" title="操作说明" aria-label="操作说明">?</button></nav>
   </header>
   <main id="menu" class="menu-screen">
-    <div class="hero">
-      <div class="eyebrow"><span>01 / ON COURT</span><i></i><span>第一人称 · 羽毛球</span></div>
-      <h1>每一拍，<br>都在<span class="outline">现场。</span></h1>
-      <p class="intro">鼠标左键智能回球，右键杀球。<br>数字 1–7 选择七种球路；鼠标也能打完整局。</p><div class="easy-badge">直觉操控 · 6.4 <span>看球、选点、调动对手。</span></div>
-      <button id="learn-btn" class="learn-launch"><span>第一次玩？先试 4 个动作</span><b>上手练习 →</b></button>
-      <div class="menu-actions"><button id="play-btn" class="btn-primary">正式比赛 <span>↗</span></button><button id="practice-btn" class="btn-secondary">自由对打 <span>→</span></button><button id="drill-btn" class="btn-secondary drill-launch">打点挑战 <span>◎</span></button></div>
-      <div class="menu-options"><label>对手等级 <select id="difficulty"><option value="easy" selected>中羽参考 1 级 · 入门</option><option value="normal">中羽参考 2 级 · 基础</option><option value="hard">中羽参考 3 级 · 球会</option><option value="expert">中羽参考 4 级 · 熟练</option><option value="master">中羽参考 5 级 · 进阶</option><option value="elite">中羽参考 6 级 · 系统训练</option><option value="advanced">中羽参考 7 级 · 高水平竞技</option><option value="pro">中羽参考 8 级 · 专业风格</option><option value="national">中羽参考 9 级 · 高水平专业</option><option value="legend">中羽参考 10 级 · 顶尖竞技</option></select></label><label>赛制 <select id="match-points"><option value="11">11 分 · 快速比赛</option><option value="21">21 分 · 完整单局</option></select></label></div>
-      <p id="difficulty-detail"></p><div class="grade-note">中羽在线社区技术分级 · 游戏难度近似，不是羽协等级认证 <a href="https://bbs.badmintoncn.com/forum.php?mod=viewthread&amp;tid=428421" target="_blank" rel="noopener">原始九级 ↗</a><a href="https://bbs.badmintoncn.com/forum.php?mod=viewthread&amp;tid=1459731" target="_blank" rel="noopener">十级补注 ↗</a><a href="https://cba.org.cn/xhgg/2025/0520/655796.html" target="_blank" rel="noopener">羽协正式标准 ↗</a></div><div class="menu-options play-options"><label>控制 <select id="control-scheme"><option value="assisted" selected>鼠标自由视角 · 辅助跑位</option><option value="manual">鼠标自由视角 · 手动跑位</option><option value="tracking">跟球辅助 · 可选</option></select></label><label>对手打法 <select id="opponent-profile"><option value="balanced">全场均衡</option><option value="attack">强攻压制</option><option value="defend">拉吊防守</option></select></label></div>
-      <div class="star-mode-picker" aria-label="选择你的球星打法"><span>一键选择我的打法</span><div class="star-mode-buttons"><button type="button" data-player-style="linDan08" class="active"><b>林丹</b><small>08 爆发进攻</small></button><button type="button" data-player-style="leeChongWei"><b>李宗伟</b><small>速度 · 劈杀斜线</small></button><button type="button" data-player-style="chenLong"><b>谌龙</b><small>防守 · 多拍相持</small></button><button type="button" data-player-style="taufik"><b>陶菲克</b><small>网前 · 细腻手感</small></button></div></div>
-      <div class="menu-options star-options"><label>自定义实力 <select id="player-style"><option value="custom">自定义参数</option><option value="linDan08" selected>2008 林丹风格</option><option value="leeChongWei">李宗伟风格</option><option value="chenLong">谌龙风格</option><option value="taufik">陶菲克风格</option></select></label><label>选择对手球星 <select id="opponent-style"><option value="allround" selected>综合型对手</option><option value="linDan08">林丹</option><option value="leeChongWei">李宗伟</option><option value="chenLong">谌龙</option><option value="taufik">陶菲克</option></select></label></div>
-      <details class="player-builder"><summary>自定义实力参数 <small>70%–140% · 风格可随时微调</small></summary><div class="player-stat-grid"><label>进攻 <input id="player-attack" type="range" min="70" max="140" value="132"><output>132%</output></label><label>速度 <input id="player-speed" type="range" min="70" max="140" value="112"><output>112%</output></label><label>防守 <input id="player-defense" type="range" min="70" max="140" value="103"><output>103%</output></label><label>网前 <input id="player-net" type="range" min="70" max="140" value="108"><output>108%</output></label><label>控制 <input id="player-control" type="range" min="70" max="140" value="104"><output>104%</output></label><label>体能 <input id="player-stamina" type="range" min="70" max="140" value="112"><output>112%</output></label></div></details>
-      <button id="showroom-btn" class="showroom-link">球员与球馆展示 <span>↗</span></button>
+    <div class="home-layout">
+      <section class="hero" aria-labelledby="home-title">
+        <div class="hero-copy">
+        <div class="eyebrow"><span>THE COURT IS YOURS</span><i></i><span>第一人称羽毛球</span></div>
+        <h1 id="home-title">好球，<br><em>现在开始。</em></h1>
+        <p class="intro">走进球场，享受每一拍。<span class="intro-extra"><br>选好你的打法，剩下的交给手感。</span></p>
+        <div class="control-preview" aria-label="基本操作">
+          <span><svg viewBox="0 0 20 27" fill="none" aria-hidden="true"><rect x="2" y="1" width="16" height="24" rx="8" stroke="currentColor"/><path d="M10 1v11H2" stroke="currentColor"/><path d="M9 3a6 6 0 0 0-5 6v1h5z" fill="currentColor"/></svg>左键智能</span>
+          <span><svg viewBox="0 0 20 27" fill="none" aria-hidden="true"><rect x="2" y="1" width="16" height="24" rx="8" stroke="currentColor"/><path d="M10 1v11h8" stroke="currentColor"/><path d="M11 3a6 6 0 0 1 5 6v1h-5z" fill="currentColor"/></svg>右键杀球</span>
+          <span><kbd>Esc</kbd>暂停</span>
+        </div>
+        <div class="hero-links">
+          <button id="learn-btn" class="learn-launch"><b>新手上手练习</b><span aria-hidden="true">→</span></button>
+          <button id="showroom-btn" class="showroom-link">逛逛球馆 <span aria-hidden="true">↗</span></button>
+        </div>
+        </div>
+        <aside class="career-card" aria-label="本机生涯">
+          <div class="career-summary">
+            <div><p class="career-eyebrow">我的生涯</p><h2><strong id="career-rating">1000</strong><span id="career-rank">白银</span></h2></div>
+            <div><p id="career-record">0 胜 / 0 负 · 连胜 0</p><div class="career-bar"><i id="career-progress"></i></div></div>
+          </div>
+          <details class="career-history-toggle"><summary>最近战绩</summary><ul id="career-history"></ul><p class="career-note">正式比赛结算积分 · 练习不计分<br>战绩保存在当前浏览器</p></details>
+        </aside>
+      </section>
+      <section class="match-card" aria-labelledby="match-card-title">
+        <div class="match-card-heading"><div><span class="card-kicker">LET’S PLAY</span><h2 id="match-card-title">准备开赛</h2></div><span class="match-type"><span class="live-dot"></span>单人 · 1v1</span></div>
+        <div class="star-mode-picker" aria-label="选择你的球星打法"><span>我的打法</span><div class="star-mode-buttons"><button type="button" data-player-style="linDan08" class="active" aria-pressed="true"><b>林丹</b><small>08 爆发进攻</small></button><button type="button" data-player-style="leeChongWei" aria-pressed="false"><b>李宗伟</b><small>速度 · 劈杀斜线</small></button><button type="button" data-player-style="chenLong" aria-pressed="false"><b>谌龙</b><small>防守 · 多拍相持</small></button><button type="button" data-player-style="taufik" aria-pressed="false"><b>陶菲克</b><small>网前 · 细腻手感</small></button></div></div>
+        <div class="menu-options"><label>对手难度<select id="difficulty"><option value="easy" selected>中羽参考 1 级 · 入门</option><option value="normal">中羽参考 2 级 · 基础</option><option value="hard">中羽参考 3 级 · 球会</option><option value="expert">中羽参考 4 级 · 熟练</option><option value="master">中羽参考 5 级 · 进阶</option><option value="elite">中羽参考 6 级 · 系统训练</option><option value="advanced">中羽参考 7 级 · 高水平竞技</option><option value="pro">中羽参考 8 级 · 专业风格</option><option value="national">中羽参考 9 级 · 高水平专业</option><option value="legend">中羽参考 10 级 · 顶尖竞技</option></select></label><label>比赛分制<select id="match-points"><option value="11">11 分 · 快速比赛</option><option value="21">21 分 · 完整单局</option></select></label></div>
+        <div class="menu-options opponent-options"><label>对手球星<select id="opponent-style"><option value="allround" selected>综合型对手</option><option value="linDan08">林丹</option><option value="leeChongWei">李宗伟</option><option value="chenLong">谌龙</option><option value="taufik">陶菲克</option></select></label></div>
+        <div class="menu-actions">
+          <button id="play-btn" class="btn-primary">开始比赛 <span aria-hidden="true">→</span></button>
+          <div class="secondary-modes"><button id="practice-btn" class="btn-secondary">自由对打 <span aria-hidden="true">↗</span></button><button id="drill-btn" class="btn-secondary drill-launch">打点挑战 <span aria-hidden="true">◎</span></button></div>
+        </div>
+        <p class="match-help">默认辅助跑位，鼠标就能打完整局。</p>
+        <details class="home-advanced">
+          <summary>更多设置与实力参数</summary>
+          <div class="menu-options play-options"><label>操作方式<select id="control-scheme"><option value="assisted" selected>鼠标自由视角 · 辅助跑位</option><option value="manual">鼠标自由视角 · 手动跑位</option><option value="tracking">跟球辅助 · 可选</option></select></label><label>对手战术<select id="opponent-profile"><option value="balanced">全场均衡</option><option value="attack">强攻压制</option><option value="defend">拉吊防守</option></select></label></div>
+          <div class="menu-options star-options"><label>我的球星 / 自定义<select id="player-style"><option value="custom">自定义参数</option><option value="linDan08" selected>2008 林丹风格</option><option value="leeChongWei">李宗伟风格</option><option value="chenLong">谌龙风格</option><option value="taufik">陶菲克风格</option></select></label></div>
+          <details class="player-builder"><summary>自定义实力参数 <small>70%–140% · 风格可随时微调</small></summary><div class="player-stat-grid"><label>进攻 <input id="player-attack" type="range" min="70" max="140" value="132"><output>132%</output></label><label>速度 <input id="player-speed" type="range" min="70" max="140" value="112"><output>112%</output></label><label>防守 <input id="player-defense" type="range" min="70" max="140" value="103"><output>103%</output></label><label>网前 <input id="player-net" type="range" min="70" max="140" value="108"><output>108%</output></label><label>控制 <input id="player-control" type="range" min="70" max="140" value="104"><output>104%</output></label><label>体能 <input id="player-stamina" type="range" min="70" max="140" value="112"><output>112%</output></label></div></details>
+          <div class="level-information"><span>关于当前难度</span><p id="difficulty-detail"></p><div class="grade-note">中羽在线社区技术分级 · 游戏难度近似，不是羽协等级认证 <a href="https://bbs.badmintoncn.com/forum.php?mod=viewthread&amp;tid=428421" target="_blank" rel="noopener">原始九级 ↗</a><a href="https://bbs.badmintoncn.com/forum.php?mod=viewthread&amp;tid=1459731" target="_blank" rel="noopener">十级补注 ↗</a><a href="https://cba.org.cn/xhgg/2025/0520/655796.html" target="_blank" rel="noopener">羽协正式标准 ↗</a></div></div>
+        </details>
+      </section>
     </div>
-    <aside class="court-note career-card"><div class="note-top"><span class="live-dot"></span> LOCAL CAREER <span>05</span></div><p class="career-eyebrow">比赛积分 · 本机生涯</p><h2><span id="career-rank">白银</span><br><strong id="career-rating">1000</strong><small> RATING</small></h2><div class="career-bar"><i id="career-progress"></i></div><p id="career-record">0 胜 / 0 负 · 连胜 0</p><ul id="career-history"></ul><div class="career-note">正式比赛结束后结算积分<br>越级取胜加分更多 · 练习不计积分<br>战绩保存在当前浏览器</div></aside>
-    <footer class="menu-footer"><div class="foot-feature"><span class="feature-num">01</span><span>真实球路<small>空气阻力 · 自然下坠</small></span></div><div class="foot-feature"><span class="feature-num">02</span><span>沉浸视角<small>第一人称 · 随动持拍</small></span></div><div class="foot-feature"><span class="feature-num">03</span><span>即刻开打<small>智能跑位 · 轻松上手</small></span></div><span class="edition">DESIGNED TO FEEL REAL.<br><b>FEATHER COURT / VOL. 06.4</b></span></footer>
+    <footer class="menu-footer"><span>真实球路 · 自由视角 · 鹰眼回放</span><span>LZYYMQ / FEATHER COURT 6.4.1</span></footer>
   </main>
   <div id="showroom" class="hidden"><div class="showroom-copy"><span class="eyebrow">PLAYER STUDY / 07</span><h2>林越。</h2><p>1.81 m · 右手持拍<br>准备、步法、挥拍，逐一感受。</p><small>拖动画面转动 · 滚轮缩放</small></div><div class="showroom-actions"><button id="pose-idle">准备姿势</button><button id="pose-run">步法</button><button id="pose-swing">挥拍</button><button id="photo-btn">保存照片</button><button id="showroom-close">返回首页 →</button></div></div>
   <div id="hud" class="hidden">
@@ -62,5 +92,5 @@
   <div id="pause-overlay" class="overlay hidden"><div class="modal pause-modal"><span class="eyebrow">TAKE A BREATH</span><h2 id="pause-title">休息一下。</h2><p id="pause-description">调整呼吸，下一拍依然精彩。</p><div id="match-result" class="hidden"><strong id="result-rating"></strong><small id="result-detail"></small></div><div class="pause-stats"><div><b id="stat-rally">0</b><span>最长回合</span></div><div><b id="stat-hits">0</b><span>成功击球</span></div><div><b id="stat-speed">0</b><span>最快球速 KM/H</span></div></div><div class="setting-row"><label for="high-ball-toggle">高球自动抬头 <small>只补仰角，保留鼠标水平视角</small></label><input type="checkbox" id="high-ball-toggle" checked></div><div class="setting-row"><label for="assist-toggle">自动跑位 <small>只辅助跑位，站位不佳仍会失误</small></label><input type="checkbox" id="assist-toggle" checked></div><div class="setting-row"><label for="comfortable-toggle">跟球辅助（可选） <small>默认关闭；转动视角不会改变落点</small></label><input type="checkbox" id="comfortable-toggle"></div><div class="setting-row"><label for="focus-toggle">专注画面 <small>收起战术板和辅助标记，保留基本操作</small></label><input type="checkbox" id="focus-toggle"></div><div class="setting-row"><label for="sensitivity">鼠标 / 视角同步 <small>1.35× 默认校准；按窗口视角与宽高比映射，滑块可细调</small></label><input type="range" id="sensitivity" min="0.25" max="2" step="0.05" value="1"></div><div class="setting-row"><label for="shot-select">击球方式 <small>左键智能回球，右键杀球；按 1–7 打七种球路（小键盘也支持）</small></label><select id="shot-select"><option value="auto">智能回球 · 1</option><option value="clear">高远球 · 2</option><option value="drop">吊球 · 3</option><option value="smash">杀球 · 4</option><option value="net">网前搓球 · 5</option><option value="push">推后场 · 6</option><option value="netcross">勾对角 · 7</option></select></div><div class="setting-row"><label for="racket-style">球拍外观 <small>控制 · 强攻（更快重杀、耗体力）· 轻量连贯；默认配强攻拍</small></label><select id="racket-style"><option value="control">精准控制 · 青柠</option><option value="attack" selected>强攻速度 · 琥珀</option><option value="aero">轻量连贯 · 冰蓝</option></select></div><div class="setting-row"><label for="racket-skin">球拍涂装 <small>ASTROX 100ZZ · 藏青配色</small></label><select id="racket-skin"><option value="astrox100zz">天斧 100ZZ · 藏青</option><option value="control-original">青柠控制款</option><option value="aero-blue">冰蓝轻量款</option></select></div><div class="setting-row"><label for="motion">镜头动作幅度 <small>0 为稳定镜头，1 为完整动作反馈</small></label><input type="range" id="motion" min="0" max="1" step="0.05" value="0.35"></div><div class="setting-row"><label for="quality">画面质量</label><select id="quality"><option value="ultra">精细 · 2× 分辨率上限</option><option value="high" selected>高画质 · 接触阴影</option><option value="balanced">流畅 · 关闭环境遮蔽</option></select></div><div class="setting-row"><label for="eagle-auto">自动鹰眼 <small>边线附近落点自动慢放；按 B 随时复核上一拍</small></label><input type="checkbox" id="eagle-auto" checked></div><button id="last-line-review" class="btn-secondary" disabled>查看上一拍鹰眼回放 · B</button><button id="resume-btn" class="btn-primary">继续比赛 <span>→</span></button><div class="modal-links"><button id="restart-btn">重新开始</button><button id="exit-btn">返回首页</button></div></div></div>
   <div id="help-overlay" class="overlay hidden"><div class="modal help-modal"><button id="close-help" class="close-btn" aria-label="关闭说明">×</button><span class="eyebrow">LOOK FREELY. PLACE YOUR SHOT.</span><h2>鼠标即可开打一整局。</h2><p>比赛画面默认简洁；鼠标移动看球，左键智能选择合适球路并接球，右键随时杀球。辅助跑位默认开启；移动与起跳可选。</p><div class="help-grid"><div><kbd>左键 / J / 1</kbd><b>智能回球</b><span>按住稍早准备；按 1 也会立即选择并击出智能球路。</span></div><div><kbd>2 · 3 · 4</kbd><b>高远、吊球、杀球</b><span>按下即出手；右键始终是杀球。</span></div><div><kbd>5 · 6 · 7</kbd><b>网前搓球、推后场、勾对角</b><span>三种独立网前球路，各有独立准备和收拍动作。</span></div><div><kbd>Alt + 鼠标</kbd><b>快速调落点</b><span>向上打深、向下打短；滚轮微调前后场，鼠标看向不会改变落点。</span></div><div><kbd>空格 / WASD</kbd><b>跑位与起跳</b><span>辅助跑位默认开启，纯鼠标也可完成整局；手动跑位和跳杀可选。</span></div><div><kbd>H / Esc</kbd><b>操作提示 / 暂停</b><span>H 显示击球按钮；Esc 暂停并释放鼠标。</span></div></div><div class="tip"><b>鹰眼回放：死球后按 B。</b>压线附近自动放大首次落点；暂停面板可回看、拖动进度或关闭自动鹰眼。<br><b>发球先轻送到前发球区。</b>左键开始低手发球，避免把球送到对手舒服的进攻位。</div><button id="got-it" class="btn-primary">回到球场 <span>↗</span></button></div></div>
   <div id="error-panel" class="overlay hidden"><div class="modal"><h2>球馆暂时无法打开</h2><p id="error-message"></p><button class="btn-primary" onclick="location.reload()">重新加载 ↻</button></div></div>
-  <script type="module" src="./game.js?v=6.4.0"></script>
+  <script type="module" src="./game.js?v=6.4.1"></script>
 </body></html>
