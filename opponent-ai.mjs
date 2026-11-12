@@ -1,5 +1,14 @@
 const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
 
+export function opponentReceiveBase({serverX=.45,high=false}={}){
+ return {x:-Math.sign(serverX||1)*.75,z:high?-4.4:-2.4};
+}
+export function opponentContactWindow({ball,position,level,training=false}){
+ const distance=Math.hypot(ball.x-position.x,ball.z-position.z),reach=training?1.25:level.reach;
+ const lowReach=ball.y<1.5?reach*(.61+level.netSkill*.17):reach;
+ return distance<lowReach&&ball.z-position.z>-.18&&ball.z<-.55&&ball.y>(.3)&&ball.y<(training?2.55:level.rating>=1350?3.05:2.6);
+}
+
 // Readable singles short serve: mostly central, with only modest lane
 // variation so a receiver can set their feet and choose a return.
 export function opponentServeTarget({level,random=Math.random}={}){

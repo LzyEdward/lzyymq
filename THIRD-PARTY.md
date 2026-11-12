@@ -26,3 +26,10 @@ geometry are supplied as local source. No third-party service is needed to play.
 - License: CC0, https://polyhaven.com/license
 - Local 1K JPEG color, normal and roughness maps live in `assets/textures/`.
   Rubber color is procedural; its normal and roughness maps come from Poly Haven.
+
+## ASTROX 100ZZ reference
+
+- Product specifications: https://www.yonex.com/ax100zz
+- Dark Navy photo reference: https://badmintonworldbalcatta.com/products/astrox-100zz-dark-navy-4ug5
+- The racket is a game-specific procedural approximation; product photographs are not bundled. Yonex names and marks belong to their respective owner. This is not an official Yonex game.
+- First-person grip geometry in version 6.8 is a dedicated procedural sculpt and no longer a cropped MakeHuman hand.

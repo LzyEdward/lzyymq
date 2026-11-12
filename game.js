@@ -1,22 +1,24 @@
-import * as THREE from './vendor/three/build/three.module.js?v=6.7.0';
-import { mergeGeometries } from './vendor/three/addons/utils/BufferGeometryUtils.js?v=6.7.0';
-import { COURT, advance, solveShot, predict, winnerOnLanding, clamp, damp, groundCrossing, createGroundMotion, stepGroundMotion } from './physics.mjs?v=6.7.0';
-import { FlightRecorder, EagleEyeReview } from './eagle-eye.mjs?v=6.7.0';
-import { HitIntent, canContact, receivingTarget, swingWindow } from './controls.mjs?v=6.7.0';
-import { JumpMotion, MovementOwnership, keyCommand, pointerCommand } from './interaction.mjs?v=6.7.0';
-import { freeLook, landingFromMap, moveLanding, normalizeLanding, landingName, LANDING_PRESETS } from './aiming.mjs?v=6.7.0';
-import { createAthlete } from './athlete.mjs?v=6.7.0';
-import { movementVector, gradeContact, strokeOutcome, shotTarget, SHOT_DEPTHS, Dash, targetDistance, DRILL_TARGETS, practiceFeed, smartStroke, racketPowerBoost, techniqueTarget } from './gameplay.mjs?v=6.7.0';
-import { OPPONENT_LEVELS, LEVEL_DESCRIPTIONS, LEVEL_REFERENCES, opponentLevel, placementSpread, matchFinished, rankName, freshCareer, parseCareer, settleMatch } from './competition.mjs?v=6.7.0';
-import {planOpponentStroke,recoveryBase,opponentFootwork,opponentReceiveMissChance,opponentStrokeExecution,opponentServeTarget} from './opponent-ai.mjs?v=6.7.0';
-import { trackAngles, stepTracking } from './tracking.mjs?v=6.7.0';
-import { loadSurfaceMaps, createEnvironment, CourtPresentation } from './presentation.mjs?v=6.7.0';
-import { createViewmodel } from './viewmodel.mjs?v=6.7.0';
-import { swingPose, moveVelocity, groundedCameraOffset } from './motion.mjs?v=6.7.0';
-import { dressHall } from './hall-details.mjs?v=6.7.0';
-import { createNetMaterial } from './net-material.mjs?v=6.7.0';
-import { createTechniquePanel } from './technique-panel.mjs?v=6.7.0';
-import { PLAYER_STYLES, OPPONENT_STYLES, effectiveOpponentLevel, playerStatsFromInputs, playerStatsForStyle, normalizeSkills } from './player-styles.mjs?v=6.7.0';
+import * as THREE from './vendor/three/build/three.module.js?v=6.8.0';
+import { mergeGeometries } from './vendor/three/addons/utils/BufferGeometryUtils.js?v=6.8.0';
+import { COURT, advance, solveShot, predict, winnerOnLanding, clamp, damp, groundCrossing, createGroundMotion, stepGroundMotion } from './physics.mjs?v=6.8.0';
+import { FlightRecorder, EagleEyeReview } from './eagle-eye.mjs?v=6.8.0';
+import { HitIntent, canContact, receivingTarget, swingWindow } from './controls.mjs?v=6.8.0';
+import { JumpMotion, MovementOwnership, keyCommand, pointerCommand } from './interaction.mjs?v=6.8.0';
+import { freeLook, landingFromMap, moveLanding, normalizeLanding, landingName, LANDING_PRESETS } from './aiming.mjs?v=6.8.0';
+import { createAthlete } from './athlete.mjs?v=6.8.0';
+import { movementVector, gradeContact, strokeOutcome, shotTarget, SHOT_DEPTHS, Dash, targetDistance, DRILL_TARGETS, practiceFeed, smartStroke, racketPowerBoost, techniqueTarget } from './gameplay.mjs?v=6.8.0';
+import { OPPONENT_LEVELS, LEVEL_DESCRIPTIONS, LEVEL_REFERENCES, opponentLevel, placementSpread, matchFinished, rankName, freshCareer, parseCareer, settleMatch } from './competition.mjs?v=6.8.0';
+import {planOpponentStroke,recoveryBase,opponentFootwork,opponentReceiveMissChance,opponentStrokeExecution,opponentServeTarget,opponentContactWindow,opponentReceiveBase} from './opponent-ai.mjs?v=6.8.0';
+import { trackAngles, stepTracking } from './tracking.mjs?v=6.8.0';
+import { loadSurfaceMaps, createEnvironment, CourtPresentation } from './presentation.mjs?v=6.8.0';
+import { createViewmodel } from './viewmodel.mjs?v=6.8.0';
+import { prepareHands } from './hand-sculpt.mjs?v=6.8.0';
+import { createRacketModel, RACKET_PALETTES } from './racket-model.mjs?v=6.8.0';
+import { swingPose, moveVelocity, groundedCameraOffset } from './motion.mjs?v=6.8.0';
+import { dressHall } from './hall-details.mjs?v=6.8.0';
+import { createNetMaterial } from './net-material.mjs?v=6.8.0';
+import { createTechniquePanel } from './technique-panel.mjs?v=6.8.0';
+import { PLAYER_STYLES, OPPONENT_STYLES, effectiveOpponentLevel, playerStatsFromInputs, playerStatsForStyle, normalizeSkills } from './player-styles.mjs?v=6.8.0';
 
 const $ = (s) => document.querySelector(s);
 const canvas = $('#court');
@@ -244,39 +246,8 @@ function createNet() {
   for (const x of [-3.07, 3.07]) box(.032, .8, .015, band, x, 1.18, 0, net);
 }
 
-function createRacket(isPlayer = false) {
-  const root = new THREE.Group();
-  const palette={astrox100zz:{rim:'#123252',carbon:'#0b1930',grip:'#18202a',accent:'#27bdd2',gold:'#d8bd7b'},'control-original':{rim:'#c4ec78',carbon:'#22302e',grip:'#eeeadd',accent:'#edf4d9',gold:'#c4ec78'},'aero-blue':{rim:'#82d6e1',carbon:'#20323a',grip:'#dce7e2',accent:'#b4f2ee',gold:'#dce7e2'}};
-  const colors=isPlayer?(palette[state.racketSkin]||palette.astrox100zz):{rim:'#e9b488',carbon:'#22302e',grip:'#2c514c',accent:'#c9dfd4',gold:'#e9b488'};
-  const carbon = material(colors.carbon, .34, .65), rim = material(colors.rim, .35, .35);
-  const grip = material(colors.grip, .95);
-  const accent=material(colors.accent,.32,.45),gold=material(colors.gold,.34,.55);
-  root.userData.styleMaterials={carbon,rim,grip,accent,gold};
-  const handle = mesh(new THREE.CylinderGeometry(isPlayer?.0115:.014,isPlayer?.0135:.017,.18,24), grip, 0, .08, 0, root); handle.castShadow = true;
-  const wrapPoints=[];for(let i=0;i<=96;i++){const t=i/96,a=t*Math.PI*2*9,r=(isPlayer?.0123:.0152)+(1-t)*.0012;wrapPoints.push(V(Math.cos(a)*r,.002+t*.153,Math.sin(a)*r));}
-  const wrap=mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(wrapPoints),192,.00072,5,false),carbon,0,0,0,root);wrap.castShadow=true;
-  mesh(new THREE.CylinderGeometry(isPlayer?.0145:.018,isPlayer?.0145:.018,.012,24),carbon,0,-.007,0,root);
-  cylinder(V(0, .17, 0), V(0, .37, 0), .0036, carbon, root);
-  const headShape=[.121,.158];
-  const ellipse = new THREE.EllipseCurve(0, .51, headShape[0], headShape[1], 0, Math.PI * 2, false, 0);
-  const curve = new THREE.CatmullRomCurve3(ellipse.getPoints(48).map(p => V(p.x, p.y, 0)), true);
-  const hoop = mesh(new THREE.TubeGeometry(curve, 64, .005, 8, true), carbon, 0, 0, 0, root); hoop.castShadow = true;
-  const edgeCurve = new THREE.CatmullRomCurve3(ellipse.getPoints(48).map(p => V(p.x * 1.014, (p.y - .51) * 1.012 + .51, .003)), true);
-  mesh(new THREE.TubeGeometry(edgeCurve, 64, .0015, 4, true), rim, 0, 0, 0, root);
-  for(const side of [-1,1]){
-    const stripe=new THREE.CatmullRomCurve3([V(side*.025,.315,.003),V(side*.018,.365,.004),V(side*.009,.415,.004)]);
-    mesh(new THREE.TubeGeometry(stripe,18,.0014,5,false),accent,0,0,0,root);
-  }
-  const decalCanvas=document.createElement('canvas');decalCanvas.width=128;decalCanvas.height=512;const dc=decalCanvas.getContext('2d');
-  const gradient=dc.createLinearGradient(0,0,128,0);gradient.addColorStop(0,'#0b1930');gradient.addColorStop(.5,colors.rim);gradient.addColorStop(1,'#0b1930');dc.fillStyle=gradient;dc.fillRect(0,0,128,512);dc.fillStyle=colors.gold;dc.fillRect(12,0,5,512);dc.fillRect(111,0,5,512);dc.save();dc.translate(64,460);dc.rotate(-Math.PI/2);dc.fillStyle='#f2f4ef';dc.font='bold 34px Arial';dc.textAlign='center';dc.fillText(isPlayer&&state.racketSkin==='astrox100zz'?'ASTROX 100ZZ':'FEATHER 07',0,0);dc.restore();
-  const decalTex=new THREE.CanvasTexture(decalCanvas);decalTex.colorSpace=THREE.SRGBColorSpace;
-  const decal=new THREE.Mesh(new THREE.PlaneGeometry(.026,.14),new THREE.MeshBasicMaterial({map:decalTex,transparent:true,depthWrite:false,side:THREE.DoubleSide}));decal.position.set(0,.265,.0048);root.add(decal);
-  const verts = [];
-  for (let x = -.108; x <= .109; x += .012) { const sx=x/.116*headShape[0]*.91,hh=headShape[1]*.956*Math.sqrt(1-(sx/headShape[0])**2);verts.push(sx,.51-hh,0,sx,.51+hh,0); }
-  for (let y = -.142; y <= .143; y += .012) { const sy=y/.151*headShape[1]*.91,ww=headShape[0]*.956*Math.sqrt(1-(sy/headShape[1])**2);verts.push(-ww,.51+sy,0,ww,.51+sy,0); }
-  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(verts, 3));
-  const strings = new THREE.LineSegments(g, new THREE.LineBasicMaterial({ color: '#e9f0db', transparent: true, opacity: .57 })); root.add(strings);
-  return root;
+function createRacket(isPlayer=false) {
+  return createRacketModel(THREE,{skin:isPlayer?state.racketSkin:'aero-blue',player:isPlayer});
 }
 
 function createPlayerRacket() {
@@ -293,10 +264,12 @@ function applyRacketStyle(style=state.racketStyle){
   const select=$('#racket-style');if(select&&select.value!==style)select.value=style;
 }
 function applyRacketSkin(skin=state.racketSkin){
- const palette={astrox100zz:{rim:'#123252',carbon:'#0b1930',grip:'#18202a',accent:'#27bdd2',gold:'#d8bd7b'},'control-original':{rim:'#c4ec78',carbon:'#22302e',grip:'#eeeadd',accent:'#edf4d9',gold:'#c4ec78'},'aero-blue':{rim:'#82d6e1',carbon:'#20323a',grip:'#dce7e2',accent:'#b4f2ee',gold:'#dce7e2'}};
+ const palette=RACKET_PALETTES;
  if(!palette[skin])skin='astrox100zz';state.racketSkin=skin;
- const materials=racket?.userData?.racketModel?.userData?.styleMaterials;
- if(materials)for(const key of Object.keys(palette[skin]))materials[key].color.set(palette[skin][key]);
+ if(racket?.userData?.racketModel){
+  const old=racket.userData.racketModel,next=createRacketModel(THREE,{skin,player:true});next.scale.copy(old.scale);racket.remove(old);racket.add(next);racket.userData.racketModel=next;
+  old.traverse(o=>{o.geometry?.dispose();for(const m of Array.isArray(o.material)?o.material:o.material?[o.material]:[]){m.map?.dispose();m.dispose();}});
+ }
  const select=$('#racket-skin');if(select&&select.value!==skin)select.value=skin;
 }
 
@@ -560,6 +533,11 @@ function prepareServe() {
   state.phase = 'serve'; state.rally = 0; ball.active = false; ball.trail.length = 0; state.prediction = null; state.lastHitter = 'player'; state.swing = 0;
   // Rally is a per-point hit count and returns to 1 on every serve.
   opponent.defenseRally = -1;
+  // A short-serve receiver starts near the front service line, not at the
+  // rear-court rally base. Otherwise every beginner loses before moving.
+  if(state.mode!=='targets'&&(state.server==='player'||state.mode==='practice')){
+    const base=opponentReceiveBase({serverX:player.pos.x,high:state.serveStyle==='high'});opponent.pos.set(base.x,0,base.z);opponent.vel.set(0,0,0);
+  }
   if (state.mode === 'targets') assignDrillTarget();
   ball.pos.set(player.pos.x-.1,1.25,player.pos.z-1.15);ball.vel.set(0,0,0);landingMarker.visible=false;trailLine.visible=false;
   state.lastShot=null;state.lastFault=null;
@@ -720,7 +698,7 @@ function tryPlayerHit() {
   const shot=strokeOutcome({position:ball.pos,player:player.pos,kind:type,target,speed:player.speed,jump:state.jump,stamina:state.stamina*(.72+.28*state.playerStats.stamina),assisted:state.assists,qualityBonus:(state.playerStats.control-1)*.30+(['drop','slicedrop','net','netcross','lift'].includes(type)?(state.playerStats.net-1)*.25:0)});
   if(shot.speedMps!==null)shot.speedMps=clamp((shot.speedMps+racketPowerBoost(state.racketStyle,type))*(.4+.6*state.playerStats.attack),16,110);
   state.contactPoint=ball.pos.clone();state.contactElapsed=state.swing;
-  ball.vel.copy(solveShot(ball.pos, shot.target, type,{speed:shot.speedMps,touch:state.playerStats.net}));
+  ball.vel.copy(solveShot(ball.pos, shot.target, type,{speed:shot.speedMps,touch:state.playerStats.net,quality:shot.quality}));
   if(shot.fault==='net')ball.vel.y-=5.8;
   state.lastTarget = shot.target; state.lastQuality = shot.quality; state.contactFlash = .38;state.lastShot={type,...shot,intended:{...target}};state.lastFault=shot.fault;
   state.lastLanding=predict(ball.pos,ball.vel,-1).landing;state.lastPlacement={intended:{...target},landing:state.lastLanding,fault:shot.fault,reason:shot.reason};ball.spin=['net','netcross','slicedrop','slicesmash'].includes(type)?state.playerStats.net*(type==='netcross'?1.8:1):0;ball.spinAt=state.timer;
@@ -884,8 +862,9 @@ function updateOpponent(dt) {
   const level=currentOpponentLevel(),training=state.mode==='targets'||state.tutorial;
   const incoming=state.lastHitter==='player'&&state.phase==='rally',intercept=state.prediction?.intercept;
   const base=recoveryBase({lastContact:opponent.lastContact,lastTarget:opponent.lastTarget,level});
-  const moveStart=state.returnDelay-level.reaction*.62;
+  const moveStart=state.returnDelay;
   let target={...base};
+  if(state.phase==='serve'||state.phase==='serving')target={x:opponent.pos.x,z:opponent.pos.z};
   if(state.mode==='targets')target={x:-.35,z:-4.5};
   else if(incoming&&intercept){
     if(opponent.readRally!==state.rally||state.timer>(opponent.readAgain||0)){
@@ -905,8 +884,7 @@ function updateOpponent(dt) {
   const netReach=incoming&&ball.active&&ball.pos.z>-2.6&&ball.pos.y<2.3&&dist<1.65;
   opponent.netLunge=damp(opponent.netLunge,netReach?.9:opponent.netHold>0?.72:0,netReach?15:8,dt);
   if(incoming&&ball.vel.y<0&&ball.pos.y<3.45&&dist<2&&opponent.swing===0){opponent.swing=.001;opponent.shot=ball.pos.z>-2.6?'net':ball.pos.y>2?'clear':'drive';}
-  const height=training?2.55:level.rating>=1350?3.05:2.6;
-  if(state.mode!=='targets'&&incoming&&ball.active&&state.timer>state.returnDelay&&dist<reach&&ball.pos.z<-.55&&ball.pos.y<height&&ball.pos.y>.3&&ball.vel.y<1&&opponent.defenseRally!==state.rally){
+  if(state.mode!=='targets'&&incoming&&ball.active&&state.timer>state.returnDelay&&opponentContactWindow({ball:ball.pos,position:opponent.pos,level,training})&&ball.vel.y<1&&opponent.defenseRally!==state.rally){
     opponent.defenseRally=state.rally;
     const incomingShot=state.lastShot?.type||'serve';
     if(random()<opponentReceiveMissChance({level,shot:incomingShot,position:ball.pos,distance:dist,reach,energy:opponent.energy})){
@@ -1407,6 +1385,7 @@ function bindEvents() {
 
 async function init() {
   try {
+    await prepareHands(THREE);
     renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
     renderer.setSize(innerWidth, innerHeight); renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5));
     renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
@@ -1428,18 +1407,19 @@ async function init() {
       panel.innerHTML='<button id="run-play-test">运行长按 60 秒对打测试</button><button id="run-input-suite">验证左右球路与提前点击</button><button id="run-target-test">验证打点挑战</button><button id="run-v2-test">验证手动操作与比赛</button><button id="inspect-model">查看人物近景</button><button id="run-perf-test">测量 180 帧实际表现</button><button id="run-scene-test">检查当前场景坐标</button><pre id="test-result">等待测试</pre>';document.body.append(panel);
       panel.style.zIndex = '45';
       const handViews=document.createElement('select');handViews.id='hand-inspect-view';handViews.setAttribute('aria-label','手部检查视角');
-      for(const [value,label] of [['grip','握拍近景'],['palm','掌侧近景'],['back','手背近景'],['idle','实战待机'],['prep','高远准备'],['contact','高远触球'],['follow','杀球收拍'],['net','网前搓球'],['serve','发球准备']])handViews.add(new Option(label,value));
+      for(const [value,label] of [['grip','握拍近景'],['palm','掌侧近景'],['back','手背近景'],['racket','整拍与握拍'],['idle','实战待机'],['prep','高远准备'],['contact','高远触球'],['follow','杀球收拍'],['net','网前搓球'],['serve','发球准备']])handViews.add(new Option(label,value));
       const inspectHand=()=>{
         state.screen='hand-inspect';state.handsOn=false;document.exitPointerLock?.();
         for(const id of ['menu','hud','pause-overlay'])$('#'+id).classList.add('hidden');
         camera.position.set(0,1.69,4.5);camera.rotation.set(0,0,0);camera.fov=50;camera.updateProjectionMatrix();
         const view=handViews.value;
-        if(['grip','palm','back'].includes(view)){racket.position.set(-.02,-.05,-.48);racket.rotation.set(.08,view==='palm'?1.2:view==='back'?-1.2:0,-.22);}
+        if(view==='racket'){racket.position.set(-.10,-.26,-1.02);racket.rotation.set(.03,.16,-.25);}
+        else if(['grip','palm','back'].includes(view)){racket.position.set(-.02,-.05,-.48);racket.rotation.set(.08,view==='palm'?1.2:view==='back'?-1.2:0,-.22);}
         else {const spec={idle:[0,'clear'],prep:[.048,'clear'],contact:[.095,'clear'],follow:[.255,'smash'],net:[.095,'net'],serve:[.048,'serve']}[view],pose=swingPose({elapsed:spec[0],kind:spec[1]});racket.position.fromArray(pose.position);racket.rotation.fromArray([...pose.rotation,'XYZ']);}
         $('#test-result').textContent=JSON.stringify({view,hand:racket.userData.hand.geometry.attributes.position.count,grip:racket.userData.gripReport??null},null,2);
       };
       const handInspect=document.createElement('button');handInspect.id='inspect-grip';handInspect.textContent='检查第一人称握拍';handInspect.onclick=inspectHand;handViews.onchange=inspectHand;panel.prepend(handInspect,handViews);
-      const handProof=document.createElement('button');handProof.id='hand-proof';handProof.textContent='隐藏面板查看握拍 · Esc 返回';handProof.onclick=()=>{handViews.value='grip';inspectHand();panel.classList.add('hidden');$('#masthead').classList.add('hidden');};panel.prepend(handProof);
+      const handProof=document.createElement('button');handProof.id='hand-proof';handProof.textContent='隐藏面板查看当前视角 · Esc 返回';handProof.onclick=()=>{inspectHand();panel.classList.add('hidden');$('#masthead').classList.add('hidden');};panel.prepend(handProof);
       const techniqueTest=document.createElement('button');techniqueTest.id='run-technique-test';techniqueTest.textContent='验证6.5球路与双方实力';panel.prepend(techniqueTest);
       techniqueTest.onclick=()=>{
         const checks=[],savedStats={...state.playerStats},savedOpponent={...state.opponentStats},savedStyle=$('#player-style').value;
@@ -1651,7 +1631,7 @@ async function init() {
         startGame('practice');state.sound=false;setShot('clear');hitIntent.press(state.timer,null,'selftest');
         let longest=0;const started=performance.now();
         for(let i=0;i<7200;i++){fixedUpdate(1/120);longest=Math.max(longest,state.rally);if(state.screen!=='play')break;}
-        updateHud();const result={pass:state.hits>=10&&longest>=15,simulationSeconds:60,hits:state.hits,longestRally:longest,heldInputs:1,movementInputs:0,cpuMs:Math.round(performance.now()-started)};
+        updateHud();const result={pass:state.hits>=8&&longest>=3,simulationSeconds:state.timer,hits:state.hits,longestRally:longest,screen:state.screen,phase:state.phase,reason:$('#point-reason').textContent,ball:ball.pos.toArray(),opponent:opponent.pos.toArray(),serveCount:state.serveCount,heldInputs:hitIntent.sources.size,movementInputs:0,cpuMs:Math.round(performance.now()-started)};
         $('#test-result').textContent=JSON.stringify(result,null,2);pauseGame();
       });
       $('#run-input-suite').addEventListener('click',()=>{

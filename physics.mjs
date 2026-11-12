@@ -112,7 +112,11 @@ export function solveShot(origin, target, type = 'clear',options={}) {
     // Solve both range and net height so a net shot skims the tape instead of
     // inheriting the tall arc of a rear-court drop.
     const touch = clamp(options.touch ?? 1, .2, 1.6);
-    const clearance = type==='net' ? .065 + (1.4-touch)*.04 : type==='netcross' ? .09 + (1.4-touch)*.035 : type==='slicedrop' ? .12 + (1.4-touch)*.055 : .18 + (1.4-touch)*.065;
+    const quality=clamp(options.quality??1,.2,1),overhead=clamp((origin.y-1.5)/1.1,0,1);
+    // A balanced overhead brush arrives descending close to the tape. Late,
+    // low or poorly controlled contacts float higher and remain attackable.
+    const dropClearance=.066+(1.4-touch)*.035+(1-quality)*.19+(1-overhead)*.055;
+    const clearance = type==='net' ? .065 + (1.4-touch)*.04 : type==='netcross' ? .09 + (1.4-touch)*.035 : dropClearance+(type==='slicedrop'?.016:0);
     let lowUp=-16,highUp=24,up=0,horizontal=0;
     for(let pass=0;pass<22;pass++){
       up=(lowUp+highUp)/2;let low=.1,high=100;
