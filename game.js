@@ -1,28 +1,29 @@
-import * as THREE from './vendor/three/build/three.module.js?v=7.8.0';
-import { mergeGeometries } from './vendor/three/addons/utils/BufferGeometryUtils.js?v=7.8.0';
-import { COURT, advance, solveShot, predict, winnerOnLanding, clamp, damp, groundCrossing, createGroundMotion, stepGroundMotion } from './physics.mjs?v=7.8.0';
-import { FlightRecorder, EagleEyeReview } from './eagle-eye.mjs?v=7.8.0';
-import { HitIntent, canContact, receivingTarget, swingWindow } from './controls.mjs?v=7.8.0';
-import { JumpMotion, MovementOwnership, keyCommand, pointerCommand } from './interaction.mjs?v=7.8.0';
-import { freeLook, landingFromMap, moveLanding, normalizeLanding, landingName, LANDING_PRESETS } from './aiming.mjs?v=7.8.0';
-import { createAthlete } from './athlete.mjs?v=7.8.0';
-import { movementVector, gradeContact, strokeOutcome, shotTarget, SHOT_DEPTHS, Dash, targetDistance, DRILL_TARGETS, practiceFeed, smartStroke, racketPowerBoost, techniqueTarget } from './gameplay.mjs?v=7.8.0';
-import { OPPONENT_LEVELS, LEVEL_DESCRIPTIONS, LEVEL_REFERENCES, opponentLevel, placementSpread, matchFinished, rankName, freshCareer, parseCareer, settleMatch } from './competition.mjs?v=7.8.0';
-import {planOpponentStroke,recoveryBase,opponentFootwork,opponentReceiveMissChance,opponentStrokeExecution,opponentServeTarget,opponentContactWindow,opponentReceiveBase} from './opponent-ai.mjs?v=7.8.0';
-import { trackAngles, stepTracking, highBallOffset, stepHighBallOffset } from './tracking.mjs?v=7.8.0';
-import { loadSurfaceMaps, createEnvironment, CourtPresentation } from './presentation.mjs?v=7.8.0';
-import { createViewmodel } from './viewmodel.mjs?v=7.8.0';
-import { prepareHands } from './hand-sculpt.mjs?v=7.8.0';
-import { RenderBudget, AdaptiveResolution, renderProfile } from './render-budget.mjs?v=7.8.0';
-import { createRacketModel, RACKET_PALETTES } from './racket-model.mjs?v=7.8.0';
-import { swingPose, moveVelocity, groundedCameraOffset, serveSupportPose } from './motion.mjs?v=7.8.0';
-import { dressHall } from './hall-details.mjs?v=7.8.0';
-import { hallSurfaces } from './hall-surfaces.mjs?v=7.8.0';
-import { roofGeometry } from './roof-structure.mjs?v=7.8.0';
-import { createShuttleModel } from './shuttle-model.mjs?v=7.8.0';
-import { createCourtNet, NET_HALF_WIDTH } from './court-net.mjs?v=7.8.0';
-import { createTechniquePanel } from './technique-panel.mjs?v=7.8.0';
-import { PLAYER_STYLES, OPPONENT_STYLES, effectiveOpponentLevel, playerStatsFromInputs, playerStatsForStyle, normalizeSkills } from './player-styles.mjs?v=7.8.0';
+import * as THREE from './vendor/three/build/three.module.js?v=7.9.0';
+import { mergeGeometries } from './vendor/three/addons/utils/BufferGeometryUtils.js?v=7.9.0';
+import { COURT, advance, solveShot, predict, winnerOnLanding, clamp, damp, groundCrossing, createGroundMotion, stepGroundMotion } from './physics.mjs?v=7.9.0';
+import { FlightRecorder, EagleEyeReview } from './eagle-eye.mjs?v=7.9.0';
+import { HitIntent, canContact, receivingTarget, swingWindow } from './controls.mjs?v=7.9.0';
+import { JumpMotion, MovementOwnership, keyCommand, pointerCommand } from './interaction.mjs?v=7.9.0';
+import { freeLook, landingFromMap, moveLanding, normalizeLanding, landingName, LANDING_PRESETS } from './aiming.mjs?v=7.9.0';
+import { createAthlete } from './athlete.mjs?v=7.9.0';
+import { movementVector, gradeContact, strokeOutcome, shotTarget, SHOT_DEPTHS, Dash, targetDistance, DRILL_TARGETS, practiceFeed, smartStroke, racketPowerBoost, techniqueTarget } from './gameplay.mjs?v=7.9.0';
+import { OPPONENT_LEVELS, LEVEL_DESCRIPTIONS, LEVEL_REFERENCES, opponentLevel, placementSpread, matchFinished, rankName, freshCareer, parseCareer, settleMatch } from './competition.mjs?v=7.9.0';
+import {planOpponentStroke,recoveryBase,opponentFootwork,opponentReceiveMissChance,opponentStrokeExecution,opponentServeTarget,opponentContactWindow,opponentReceiveBase} from './opponent-ai.mjs?v=7.9.0';
+import { trackAngles, stepTracking, highBallOffset, stepHighBallOffset } from './tracking.mjs?v=7.9.0';
+import { loadSurfaceMaps, createEnvironment, CourtPresentation } from './presentation.mjs?v=7.9.0';
+import { createViewmodel } from './viewmodel.mjs?v=7.9.0';
+import { prepareHands } from './hand-sculpt.mjs?v=7.9.0';
+import {preparePlayerArm} from './player-arm.mjs?v=7.9.0';
+import { RenderBudget, AdaptiveResolution, renderProfile } from './render-budget.mjs?v=7.9.0';
+import { createRacketModel, RACKET_PALETTES } from './racket-model.mjs?v=7.9.0';
+import { swingPose, moveVelocity, groundedCameraOffset, serveSupportPose } from './motion.mjs?v=7.9.0';
+import { dressHall } from './hall-details.mjs?v=7.9.0';
+import { hallSurfaces } from './hall-surfaces.mjs?v=7.9.0';
+import { roofGeometry } from './roof-structure.mjs?v=7.9.0';
+import { createShuttleModel } from './shuttle-model.mjs?v=7.9.0';
+import { createCourtNet, NET_HALF_WIDTH } from './court-net.mjs?v=7.9.0';
+import { createTechniquePanel } from './technique-panel.mjs?v=7.9.0';
+import { PLAYER_STYLES, OPPONENT_STYLES, effectiveOpponentLevel, playerStatsFromInputs, playerStatsForStyle, normalizeSkills } from './player-styles.mjs?v=7.9.0';
 
 const $ = (s) => document.querySelector(s);
 const canvas = $('#court');
@@ -245,7 +246,7 @@ function createRacket(isPlayer=false) {
 }
 
 function createPlayerRacket() {
-  racket = createViewmodel(THREE,createRacket,{skinMap:surfaceMaps?.athleteSkin});camera.add(racket);scene.add(camera);
+  racket = createViewmodel(THREE,createRacket,{skinMap:surfaceMaps?.athleteSkin,articulated:!safeBoot&&params.get('arm')!=='legacy'});camera.add(racket);scene.add(camera);
   camera.add(racket.userData.support);
   racket.position.set(.32,-.42,-.86);racket.rotation.set(.12,-.10,-.10);
 }
@@ -1205,6 +1206,7 @@ function animate() {
   if (state.screen === 'review') eagleEye.update(dt);
   if(state.screen==='menu'&&racket.userData.support)racket.userData.support.visible=false;
   updateShuttleSound();
+  if(racket.userData.updateArm&&racket.visible)racket.userData.updateArm();
   presentation.render(scene,camera);
 }
 
@@ -1409,7 +1411,7 @@ async function init() {
     scene = new THREE.Scene(); camera = new THREE.PerspectiveCamera(68, innerWidth / innerHeight, .045, 100);
     bootStage='assets';boot({stage:'准备人物与球馆材质',percent:40});
     const onWarning=warning=>{console.warn('Optional court asset:',warning);boot({warning:true});};
-    const [,maps]=await Promise.all([prepareHands(THREE,{safe:safeBoot,onWarning}),loadSurfaceMaps(THREE,renderer,{safe:safeBoot,onWarning})]);surfaceMaps=maps;
+    const [,maps]=await Promise.all([prepareHands(THREE,{safe:safeBoot,onWarning}),loadSurfaceMaps(THREE,renderer,{safe:safeBoot,onWarning}),params.get('arm')!=='legacy'?preparePlayerArm(THREE,{safe:safeBoot,onWarning}):null]);surfaceMaps=maps;
     if(!safeBoot){try{createEnvironment(THREE,renderer,scene);}catch(error){onWarning({label:'球馆反射',message:error.message});}}
     presentation=new CourtPresentation(THREE,renderer);presentation.setSize(innerWidth,innerHeight);
     eagleEye = new EagleEyeReview(closeLineReview);
@@ -1478,7 +1480,7 @@ async function init() {
         renderBudget.invalidate();
         state.screen='hand-inspect';state.handsOn=false;document.exitPointerLock?.();
         for(const id of ['menu','hud','pause-overlay'])$('#'+id).classList.add('hidden');
-        camera.position.set(0,1.69,4.5);camera.rotation.set(0,0,0);camera.fov=50;camera.updateProjectionMatrix();
+        camera.position.set(0,1.69,4.5);camera.rotation.set(0,0,0);camera.fov=['grip','palm','back','racket'].includes(handViews.value)?50:69;camera.updateProjectionMatrix();
         const view=handViews.value;racket.visible=true;positionServeHand(null,null);shuttle.visible=false;
         if(view.startsWith('serve-')){
           const elapsed={'serve-hold':0,'serve-release':.10,'serve-follow':.26}[view],phase=elapsed===0?'serve':elapsed<.2?'serving':'rally';

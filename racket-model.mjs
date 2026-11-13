@@ -1,6 +1,6 @@
 // ASTROX 100ZZ Dark Navy (554). Shape and asymmetric paint reference:
 // https://badmintonworldbalcatta.com/products/astrox-100zz-dark-navy-4ug5
-import {createWovenStrings} from './woven-strings.mjs?v=7.8.0';
+import {createWovenStrings} from './woven-strings.mjs?v=7.9.0';
 export const RACKET_PALETTES={astrox100zz:{rim:'#2866ac',carbon:'#111e30',grip:'#202328',accent:'#eef4fa',gold:'#fa6524'},'control-original':{rim:'#c4ec78',carbon:'#22302e',grip:'#eeeadd',accent:'#edf4d9',gold:'#c4ec78'},'aero-blue':{rim:'#82d6e1',carbon:'#20323a',grip:'#dce7e2',accent:'#b4f2ee',gold:'#dce7e2'}};
 export function createRacketModel(THREE,{skin='astrox100zz',player=false}={}){
  const root=new THREE.Group(),V=(...p)=>new THREE.Vector3(...p),colors=RACKET_PALETTES[skin]||RACKET_PALETTES.astrox100zz;
