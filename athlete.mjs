@@ -1,1 +1,1 @@
-export { createAthlete } from './athlete-real.mjs?v=7.6.0';
+export { createAthlete } from './athlete-real.mjs?v=7.7.0';
