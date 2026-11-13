@@ -26,7 +26,7 @@ export async function preparePlayerArm(T,{safe=false,onWarning=()=>{}}={}){
   geometry.setIndex(new T.BufferAttribute(ids,1));const grouped=new Uint32Array(bytes,groupOffset,groups*3);
   for(let i=0;i<groups;i++){const [start,count,material]=grouped.slice(i*3,i*3+3);if(start+count>indices||material>1||count%3)throw new Error('完整手臂材质范围无效');geometry.addGroup(start,count,material);}
   geometry.computeBoundingSphere();return geometry;
- },{timeout:10000,label:'完整手臂模型',onWarning});
+ },{timeout:20000,label:'完整手臂模型',onWarning});
 }
 
 export function createSkinnedPlayerArm(T,{skin,fabric,open=false}={}){
