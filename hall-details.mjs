@@ -32,7 +32,7 @@ export function dressHall(T,scene){
  // Soft sports luggage, piping, webbing handles, zippers and capped bottles.
  // Shared materials are merged with the static hall after construction.
  const canvasGrain=new Uint8Array(64*64);for(let j=0;j<64;j++)for(let i=0;i<64;i++)canvasGrain[j*64+i]=120+((i+j)%2?15:-15)+Math.round(Math.sin(i*17+j*41)*8);
- const weave=new T.DataTexture(canvasGrain,64,64,T.RedFormat);weave.wrapS=weave.wrapT=T.RepeatWrapping;weave.repeat.set(7,3);weave.needsUpdate=true;
+ const weave=new T.DataTexture(canvasGrain,64,64,T.RedFormat);weave.wrapS=weave.wrapT=T.RepeatWrapping;weave.repeat.set(7,3);weave.generateMipmaps=true;weave.minFilter=T.LinearMipmapLinearFilter;weave.magFilter=T.LinearFilter;weave.needsUpdate=true;
  const luggage=new T.MeshStandardMaterial({color:'#3c5360',roughness:.92,bumpMap:weave,bumpScale:.00055});
  const piping=new T.MeshStandardMaterial({color:'#b9b9a2',roughness:.86}),webbing=new T.MeshStandardMaterial({color:'#1d292d',roughness:.96,bumpMap:weave,bumpScale:.0003});
  const zipper=new T.MeshStandardMaterial({color:'#9ea9a5',roughness:.33,metalness:.68}),bottle=new T.MeshPhysicalMaterial({color:'#7faaa7',roughness:.27,clearcoat:.5,metalness:.08});
@@ -40,7 +40,7 @@ export function dressHall(T,scene){
   for(let i=0;i<p.count;i++){const a=v(p.getX(i),p.getY(i),p.getZ(i)),b=v(T.MathUtils.clamp(a.x,-w/2+r,w/2-r),T.MathUtils.clamp(a.y,-h/2+r,h/2-r),T.MathUtils.clamp(a.z,-d/2+r,d/2-r)),direction=a.clone().sub(b).normalize();a.copy(b).addScaledVector(direction,r);p.setXYZ(i,a.x,a.y,a.z);n.setXYZ(i,direction.x,direction.y,direction.z);}return g;}
  function curve(points,r,mat){const g=new T.TubeGeometry(new T.CatmullRomCurve3(points),Math.max(12,points.length*5),r,5,false);return mesh(g,mat,0,0,0);}
  for(const [xx,zz] of [[-8.8,-10.4],[8.7,-10.4],[10.4,9]]){
-  const center=v(xx,.72,zz),turn=new T.Quaternion().setFromAxisAngle(v(0,1,0),.18),place=p=>p.applyQuaternion(turn).add(center);
+  const center=v(xx,.685,zz),turn=new T.Quaternion().setFromAxisAngle(v(0,1,0),.18),place=p=>p.applyQuaternion(turn).add(center);
   const bag=mesh(rounded(.95,.35,.43,.065),luggage,...center.toArray());bag.quaternion.copy(turn);
   for(const side of [-1,1]){
    const shape=[[-.35,.11],[-.395,.06],[-.395,-.06],[-.35,-.11],[.35,-.11],[.395,-.06],[.395,.06],[.35,.11],[-.35,.11]].map(([x,y])=>place(v(x,y,side*.218)));
@@ -52,10 +52,10 @@ export function dressHall(T,scene){
   curve([place(v(-.37,.176,0)),place(v(0,.181,0)),place(v(.37,.176,0))],.002,zipper);
   const pull=mesh(new T.TorusGeometry(.012,.002,4,12),zipper,...place(v(.32,.185,.006)).toArray());pull.rotation.x=Math.PI/2;
   const bottleX=xx+.78;
-  mesh(new T.CylinderGeometry(.053,.058,.20,16),bottle,bottleX,.63,zz);
-  mesh(new T.CylinderGeometry(.026,.051,.05,16),bottle,bottleX,.755,zz);
-  mesh(new T.CylinderGeometry(.029,.029,.025,16),webbing,bottleX,.79,zz);
-  mesh(new T.CylinderGeometry(.0551,.0571,.08,16,1,true),piping,bottleX,.62,zz);
+  mesh(new T.CylinderGeometry(.053,.058,.20,16),bottle,bottleX,.61,zz);
+  mesh(new T.CylinderGeometry(.026,.051,.05,16),bottle,bottleX,.735,zz);
+  mesh(new T.CylinderGeometry(.029,.029,.025,16),webbing,bottleX,.77,zz);
+  mesh(new T.CylinderGeometry(.0551,.0571,.08,16,1,true),piping,bottleX,.60,zz);
  }
  // Wall skirting, acoustic-panel joints and grounded practical equipment.
  for(const side of [-1,1]){
@@ -69,9 +69,10 @@ export function dressHall(T,scene){
  }
  // Mat joins stay subtle and outside the playing lines.
  const seam=new T.MeshStandardMaterial({color:'#245b52',roughness:.95});
- for(const xx of [-3.88,3.88])box(.008,.003,16.1,seam,xx,-.005,0);
+ for(const xx of [-3.88,3.88])box(.008,.0002,16.1,seam,xx,.0001,0);
  // Baked soft contact shadows for furniture that doesn't need another shadow light.
  const shadowCanvas=document.createElement('canvas');shadowCanvas.width=shadowCanvas.height=128;const s=shadowCanvas.getContext('2d'),gradient=s.createRadialGradient(64,64,4,64,64,64);gradient.addColorStop(0,'#071b174f');gradient.addColorStop(.5,'#071b1724');gradient.addColorStop(1,'#071b1700');s.fillStyle=gradient;s.fillRect(0,0,128,128);
  const shadowMat=new T.MeshBasicMaterial({map:new T.CanvasTexture(shadowCanvas),transparent:true,depthWrite:false});
- for(const [x,z,w,d] of [[-8.5,-10.5,5,1.2],[8.5,-10.5,5,1.2],[9.8,9,5,1.2],[4.8,-.15,1.1,1.1],[-5,1.25,.9,.8]]){const p=mesh(new T.PlaneGeometry(w,d),shadowMat,x,-.047,z);p.rotation.x=-Math.PI/2;p.castShadow=p.receiveShadow=false;}
+ for(const [x,z,w,d] of [[-8.5,-10.5,5,1.2],[8.5,-10.5,5,1.2],[9.8,9,5,1.2],[4.8,-.15,1.1,1.1],[-5,1.25,.9,.8]]){const p=mesh(new T.PlaneGeometry(w,d),shadowMat,x,-.0034,z);p.rotation.x=-Math.PI/2;p.castShadow=p.receiveShadow=false;}
+ for(const [x,z]of [[-8.8,-10.4],[8.7,-10.4],[10.4,9]])for(const [xx,w,d]of [[x,1.08,.50],[x+.78,.17,.17]]){const p=mesh(new T.PlaneGeometry(w,d),shadowMat,xx,.5104,z);p.rotation.x=-Math.PI/2;p.castShadow=p.receiveShadow=false;}
 }

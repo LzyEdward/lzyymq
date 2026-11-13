@@ -1,7 +1,8 @@
-import * as source from './assets/athlete-data.mjs?v=7.10.0';
-import {boundedAsset} from './asset-loading.mjs?v=7.10.0';
-import {handPaths} from './hand-pose.mjs?v=7.10.0';
-import {ARM_WRIST,ARM_ELBOW} from './first-person-arm.mjs?v=7.10.0';
+import * as source from './assets/athlete-data.mjs?v=7.11.0';
+import {boundedAsset} from './asset-loading.mjs?v=7.11.0';
+import {handPaths} from './hand-pose.mjs?v=7.11.0';
+import {ARM_WRIST,ARM_ELBOW} from './first-person-arm.mjs?v=7.11.0';
+import {handUV} from './hand-surface.mjs?v=7.11.0';
 let armGeometry=null;
 export const ARM_BONES=source.bones.filter(b=>/^(?:upperarm01|lowerarm01|wrist|finger\d-\d)\.R$/.test(b.name)).map(b=>b.name);
 export function armBufferLayout(bytes){
@@ -41,7 +42,23 @@ export function createSkinnedPlayerArm(T,{skin,fabric,open=false}={}){
   const name=`finger${f}-${k}.R`,a=bind.get(name),b=k<3?bind.get(`finger${f}-${k+1}.R`):a.clone().add(a.clone().sub(bind.get(`finger${f}-${k-1}.R`)).multiplyScalar(.73)),path=paths[f===1?4:f-2];constant.set(name,map(a,b,V(...path[k-1]),V(...path[k]),.96,.96));
  }
  const joints=ARM_BONES.map(name=>{const bone=new T.Bone();bone.name='FPS '+name;bone.matrixAutoUpdate=false;return bone;}),skeleton=new T.Skeleton(joints,joints.map(()=>new T.Matrix4()));
- const material=skin.clone();material.bumpMap=skin.bumpMap.clone();material.bumpMap.channel=0;material.bumpMap.needsUpdate=true;
+ // Albedo uses the anatomical UV atlas. Palm creases need their own posed,
+ // metre-space coordinates; sampling them with the atlas UV made wrist rings.
+ // Share immutable streams between the arms and add only the two-float UV set.
+ const geometry=new T.BufferGeometry();for(const [name,attribute] of Object.entries(armGeometry.attributes))geometry.setAttribute(name,attribute);
+ geometry.setIndex(armGeometry.index);for(const g of armGeometry.groups)geometry.addGroup(g.start,g.count,g.materialIndex);
+ geometry.boundingSphere=armGeometry.boundingSphere;
+ const detailUV=[],point=V(),transformed=V();
+ for(let i=0;i<geometry.attributes.position.count;i++){
+  point.fromBufferAttribute(geometry.attributes.position,i);transformed.set(0,0,0);
+  for(let k=0;k<4;k++){
+   const id=geometry.attributes.skinIndex.array[i*4+k],weight=geometry.attributes.skinWeight.array[i*4+k];
+   if(weight)transformed.addScaledVector(point.clone().applyMatrix4(constant.get(ARM_BONES[id])||lower),weight);
+  }
+  detailUV.push(...handUV(transformed.x,transformed.y));
+ }
+ geometry.setAttribute('uv1',new T.Float32BufferAttribute(detailUV,2));
+ const material=skin.clone();material.bumpMap=skin.bumpMap.clone();material.bumpMap.channel=1;material.bumpMap.needsUpdate=true;
  material.onBeforeCompile=shader=>{
   shader.uniforms.uArmFabric={value:fabric.color};
   shader.vertexShader=shader.vertexShader.replace('#include <common>','#include <common>\nvarying vec3 vArmRest;\nvarying float vSleeve;')
@@ -63,7 +80,7 @@ export function createSkinnedPlayerArm(T,{skin,fabric,open=false}={}){
     diffuseColor.rgb=mix(diffuseColor.rgb,uArmFabric*(.985+grain*.009+fold*.026-hem),sleeveMask);
    `).replace('#include <roughnessmap_fragment>','#include <roughnessmap_fragment>\nroughnessFactor=mix(roughnessFactor,.91,sleeveMask);');
  };material.customProgramCacheKey=()=> 'closed-complete-arm-skin-v3-'+open;
- const mesh=new T.SkinnedMesh(armGeometry,material);mesh.name='Continuous shoulder elbow wrist and five-finger grip';mesh.frustumCulled=false;mesh.bind(skeleton,new T.Matrix4());mesh.normalizeSkinWeights();
+ const mesh=new T.SkinnedMesh(geometry,material);mesh.name='Continuous shoulder elbow wrist and five-finger grip';mesh.frustumCulled=false;mesh.bind(skeleton,new T.Matrix4());mesh.normalizeSkinWeights();
  const root=new T.Group();root.add(mesh,...joints);const original=targetElbow.clone().sub(targetWrist).normalize(),inverse=new T.Matrix4(),rotation=new T.Quaternion();
  function update(group,chain){
   group.updateMatrix();inverse.copy(group.matrix).invert();

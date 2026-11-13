@@ -1,4 +1,4 @@
-import { normalizeSkills, SKILL_KEYS } from './player-styles.mjs?v=7.10.0';
+import { normalizeSkills, SKILL_KEYS } from './player-styles.mjs?v=7.11.0';
 
 export const SKILL_LABELS=Object.freeze({
  attack:['进攻','杀球速度与连续进攻'],defense:['防守','反应、救球覆盖与接杀'],

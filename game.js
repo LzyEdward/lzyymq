@@ -1,29 +1,29 @@
-import * as THREE from './vendor/three/build/three.module.js?v=7.10.0';
-import { mergeGeometries } from './vendor/three/addons/utils/BufferGeometryUtils.js?v=7.10.0';
-import { COURT, advance, solveShot, predict, winnerOnLanding, clamp, damp, groundCrossing, createGroundMotion, stepGroundMotion } from './physics.mjs?v=7.10.0';
-import { FlightRecorder, EagleEyeReview } from './eagle-eye.mjs?v=7.10.0';
-import { HitIntent, canContact, receivingTarget, swingWindow } from './controls.mjs?v=7.10.0';
-import { JumpMotion, MovementOwnership, keyCommand, pointerCommand } from './interaction.mjs?v=7.10.0';
-import { freeLook, landingFromMap, moveLanding, normalizeLanding, landingName, LANDING_PRESETS } from './aiming.mjs?v=7.10.0';
-import { createAthlete } from './athlete.mjs?v=7.10.0';
-import { movementVector, gradeContact, strokeOutcome, shotTarget, SHOT_DEPTHS, Dash, targetDistance, DRILL_TARGETS, practiceFeed, smartStroke, racketPowerBoost, techniqueTarget } from './gameplay.mjs?v=7.10.0';
-import { OPPONENT_LEVELS, LEVEL_DESCRIPTIONS, LEVEL_REFERENCES, opponentLevel, placementSpread, matchFinished, rankName, freshCareer, parseCareer, settleMatch } from './competition.mjs?v=7.10.0';
-import {planOpponentStroke,recoveryBase,opponentFootwork,opponentReceiveMissChance,opponentStrokeExecution,opponentServeTarget,opponentContactWindow,opponentReceiveBase} from './opponent-ai.mjs?v=7.10.0';
-import { trackAngles, stepTracking, highBallOffset, stepHighBallOffset } from './tracking.mjs?v=7.10.0';
-import { loadSurfaceMaps, createEnvironment, CourtPresentation } from './presentation.mjs?v=7.10.0';
-import { createViewmodel } from './viewmodel.mjs?v=7.10.0';
-import { prepareHands } from './hand-sculpt.mjs?v=7.10.0';
-import {preparePlayerArm} from './player-arm.mjs?v=7.10.0';
-import { RenderBudget, AdaptiveResolution, renderProfile } from './render-budget.mjs?v=7.10.0';
-import { createRacketModel, disposeRacketModel, RACKET_PALETTES } from './racket-model.mjs?v=7.10.0';
-import { swingPose, moveVelocity, groundedCameraOffset, serveSupportPose } from './motion.mjs?v=7.10.0';
-import { dressHall } from './hall-details.mjs?v=7.10.0';
-import { hallSurfaces } from './hall-surfaces.mjs?v=7.10.0';
-import { roofGeometry } from './roof-structure.mjs?v=7.10.0';
-import { createShuttleModel } from './shuttle-model.mjs?v=7.10.0';
-import { createCourtNet, NET_HALF_WIDTH } from './court-net.mjs?v=7.10.0';
-import { createTechniquePanel } from './technique-panel.mjs?v=7.10.0';
-import { PLAYER_STYLES, OPPONENT_STYLES, effectiveOpponentLevel, playerStatsFromInputs, playerStatsForStyle, normalizeSkills } from './player-styles.mjs?v=7.10.0';
+import * as THREE from './vendor/three/build/three.module.js?v=7.11.0';
+import { mergeGeometries } from './vendor/three/addons/utils/BufferGeometryUtils.js?v=7.11.0';
+import { COURT, advance, solveShot, predict, winnerOnLanding, clamp, damp, groundCrossing, createGroundMotion, stepGroundMotion } from './physics.mjs?v=7.11.0';
+import { FlightRecorder, EagleEyeReview } from './eagle-eye.mjs?v=7.11.0';
+import { HitIntent, canContact, receivingTarget, swingWindow } from './controls.mjs?v=7.11.0';
+import { JumpMotion, MovementOwnership, keyCommand, pointerCommand } from './interaction.mjs?v=7.11.0';
+import { freeLook, landingFromMap, moveLanding, normalizeLanding, landingName, LANDING_PRESETS } from './aiming.mjs?v=7.11.0';
+import { createAthlete } from './athlete.mjs?v=7.11.0';
+import { movementVector, gradeContact, strokeOutcome, shotTarget, SHOT_DEPTHS, Dash, targetDistance, DRILL_TARGETS, practiceFeed, smartStroke, racketPowerBoost, techniqueTarget } from './gameplay.mjs?v=7.11.0';
+import { OPPONENT_LEVELS, LEVEL_DESCRIPTIONS, LEVEL_REFERENCES, opponentLevel, placementSpread, matchFinished, rankName, freshCareer, parseCareer, settleMatch } from './competition.mjs?v=7.11.0';
+import {planOpponentStroke,recoveryBase,opponentFootwork,opponentReceiveMissChance,opponentStrokeExecution,opponentServeTarget,opponentContactWindow,opponentReceiveBase} from './opponent-ai.mjs?v=7.11.0';
+import { trackAngles, stepTracking, highBallOffset, stepHighBallOffset } from './tracking.mjs?v=7.11.0';
+import { loadSurfaceMaps, createEnvironment, CourtPresentation } from './presentation.mjs?v=7.11.0';
+import { createViewmodel } from './viewmodel.mjs?v=7.11.0';
+import { prepareHands } from './hand-sculpt.mjs?v=7.11.0';
+import {preparePlayerArm} from './player-arm.mjs?v=7.11.0';
+import { RenderBudget, AdaptiveResolution, renderProfile } from './render-budget.mjs?v=7.11.0';
+import { createRacketModel, disposeRacketModel, RACKET_PALETTES } from './racket-model.mjs?v=7.11.0';
+import { swingPose, moveVelocity, groundedCameraOffset, serveSupportPose } from './motion.mjs?v=7.11.0';
+import { dressHall } from './hall-details.mjs?v=7.11.0';
+import { hallSurfaces } from './hall-surfaces.mjs?v=7.11.0';
+import { roofGeometry } from './roof-structure.mjs?v=7.11.0';
+import { createShuttleModel } from './shuttle-model.mjs?v=7.11.0';
+import { createCourtNet, NET_HALF_WIDTH } from './court-net.mjs?v=7.11.0';
+import { createTechniquePanel } from './technique-panel.mjs?v=7.11.0';
+import { PLAYER_STYLES, OPPONENT_STYLES, effectiveOpponentLevel, playerStatsFromInputs, playerStatsForStyle, normalizeSkills } from './player-styles.mjs?v=7.11.0';
 
 const $ = (s) => document.querySelector(s);
 const canvas = $('#court');
@@ -149,15 +149,16 @@ function createHall() {
     }
   });
   floorTex.wrapS = floorTex.wrapT = THREE.RepeatWrapping; floorTex.repeat.set(6, 8);
-  const floor = box(31, .2, 39, new THREE.MeshPhysicalMaterial({ map: surfaceMaps.wood||floorTex, normalMap:surfaceMaps.woodNormal||null,normalScale:new THREE.Vector2(.22,.22),roughnessMap:surfaceMaps.woodRough||null,roughness:.78,clearcoat:.12,clearcoatRoughness:.55 }), 0, -.15, 0); floor.receiveShadow = true;
+  // Physics ground y=0; 4 mm PVC lies directly on wood. Lines are paint, not raised bars.
+  const floor = box(31, .2, 39, new THREE.MeshPhysicalMaterial({ map: surfaceMaps.wood||floorTex, normalMap:surfaceMaps.woodNormal||null,normalScale:new THREE.Vector2(.22,.22),roughnessMap:surfaceMaps.woodRough||null,roughness:.78,clearcoat:.12,clearcoatRoughness:.55 }), 0, -.104, 0); floor.receiveShadow = true;
   if(surfaceMaps.wood)floorTex.dispose();
   const courtTex=architecture.court;
-  const mat = box(7.9, .035, 16.2, new THREE.MeshPhysicalMaterial({ map: courtTex, normalMap:architecture.courtNormal,normalScale:new THREE.Vector2(.16,.16),roughness:.88,clearcoat:.04,clearcoatRoughness:.88 }), 0, -.025, 0); mat.receiveShadow = true;
+  const mat = box(7.9, .004, 16.2, new THREE.MeshPhysicalMaterial({ map: courtTex, normalMap:architecture.courtNormal,normalScale:new THREE.Vector2(.16,.16),roughness:.88,clearcoat:.04,clearcoatRoughness:.88 }), 0, -.002, 0); mat.receiveShadow = true;
   const runoff = material('#224f48');
-  box(.12, .025, 16.2, runoff, -3.97, -.01, 0); box(.12, .025, 16.2, runoff, 3.97, -.01, 0);
+  box(.12, .004, 16.2, runoff, -3.97, -.002, 0); box(.12, .004, 16.2, runoff, 3.97, -.002, 0);
   const line = new THREE.MeshStandardMaterial({ color: '#e5e9dc',roughness:.78 });
   const lineAt = (x1, z1, x2, z2, width = .04) => {
-    const p = box(Math.abs(x2 - x1) || width, .008, Math.abs(z2 - z1) || width, line, (x1 + x2) / 2, .002, (z1 + z2) / 2);
+    const p = box(Math.abs(x2 - x1) || width, .0002, Math.abs(z2 - z1) || width, line, (x1 + x2) / 2, .0001, (z1 + z2) / 2);
     p.receiveShadow = true;
   };
   [-3.05, -2.59, 2.59, 3.05].forEach(x => lineAt(x, -6.7, x, 6.7));
@@ -200,7 +201,7 @@ function createHall() {
   for (const x of [-10, 10]) box(.12, .12, 35, steel, x, 9.3, 0);
   // Long, soft window-shaped patches make the court read as an actual indoor space.
   const lightPatch = new THREE.MeshBasicMaterial({ color: '#fff5c6', transparent: true, opacity: .035, depthWrite: false });
-  for (let z = -12; z < 15; z += 5) { const p = mesh(new THREE.PlaneGeometry(6, 2.5), lightPatch, -8, -.038, z); p.rotation.x = -Math.PI / 2; p.rotation.z = .36; }
+  for (let z = -12; z < 15; z += 5) { const p = mesh(new THREE.PlaneGeometry(6, 2.5), lightPatch, -8, -.0035, z); p.rotation.x = -Math.PI / 2; p.rotation.z = .36; }
   const banner = textPanel('FEATHER  /  COURT', 7.4, 1.5, { bg: '#203e3c', color: '#d9e7b8', size: 75 }); banner.position.set(-3.5, 5.3, -17.58); scene.add(banner);
   const no = textPanel('01', 3, 3, { bg: '#203e3c', color: '#a6b5a2', size: 180, weight: 300 }); no.position.set(10.3, 4.2, -17.57); scene.add(no);
   const backBrand = textPanel('MOVE  WITH  THE  MOMENT.', 8, 1, { bg: '#24443e', color: '#93a796', size: 51 }); backBrand.position.set(0, 1.9, -17.6); scene.add(backBrand);
@@ -212,6 +213,7 @@ function createHall() {
     const exit = textPanel('EXIT →', 1.1, .28, { bg: '#2b6e47', color: '#e5f9cf', size: 90 }); exit.position.set(x, 2.95, -17.5); scene.add(exit);
   }
   const benchWood = material('#b6996a', .65), benchMetal = material('#223b35', .4, .5);
+  if(surfaceMaps.wood){const benchGrain=surfaceMaps.wood.clone();benchGrain.repeat.set(1.1,.035);benchGrain.needsUpdate=true;benchWood.map=benchGrain;benchWood.color.set('#e2d1af');}
   function bench(x, z) {
     for (const xx of [-1.8, 1.8]) { box(.15, .43, .55, benchMetal, x + xx, .22, z); box(.1, .9, .09, benchMetal, x + xx, .58, z - .25); }
     for (let i = 0; i < 4; i++) box(4.4, .06, .14, benchWood, x, .48, z - .24 + i * .15);
@@ -219,10 +221,10 @@ function createHall() {
   }
   bench(-8.5, -10.5); bench(8.5, -10.5); bench(9.8, 9);
   // A distant second court gives the hall a believable scale.
-  const second = box(5.7, .01, 13.6, material('#305b50'), -10, -.033, 0); second.receiveShadow = true;
+  const second = box(5.7, .003, 13.6, material('#305b50'), -10, -.0025, 0); second.receiveShadow = true;
   const faint = new THREE.MeshBasicMaterial({ color: '#bbc5a0' });
-  for (const x of [-12.5, -7.5]) box(.025, .01, 12, faint, x, -.022, 0);
-  for (const z of [-6, 0, 6]) box(5, .01, .025, faint, -10, -.022, z);
+  for (const x of [-12.5, -7.5]) box(.025, .0002, 12, faint, x, -.0009, 0);
+  for (const z of [-6, 0, 6]) box(5, .0002, .025, faint, -10, -.0009, z);
   createNet();dressHall(THREE,scene);
   courtScore = textPanel('YOU   00  :  00   LIN', 4.2, .9, { bg: '#102823', color: '#def6a3', size: 70 });
   courtScore.position.set(2.5, 4, -17.5); scene.add(courtScore);
