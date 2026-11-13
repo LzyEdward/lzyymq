@@ -3,7 +3,7 @@ export class RenderBudget {
  constructor(){this.next=0;this.last=null;this.mode='';this.dirty=true;}
  invalidate(){this.dirty=true;}
  take(now,{screen='menu',hidden=false}={}){
-  const active=['play','review'].includes(screen),animated=['menu','inspect'].includes(screen);
+  const active=['play','review'].includes(screen),animated=['menu','inspect','net-inspect','swing-inspect'].includes(screen);
   const hz=active?60:screen==='menu'?15:30,mode=hidden?'hidden':active?'active':screen;
   if(mode!==this.mode){this.mode=mode;this.next=now;this.last=null;this.dirty=true;}
   if(hidden)return null;

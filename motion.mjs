@@ -1,7 +1,22 @@
 // Seconds and camera-local metres. Motion never slows the simulation.
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 const smooth=t=>t*t*(3-2*t);
-const mix=(a,b,t)=>a.map((x,i)=>x+(b[i]-x)*t);
+// C1 keyframe curves carry momentum through contact. Smoothstep on every
+// segment made the racket stop at the very instant it should strike fastest.
+function keyCurve(keys,index,elapsed,property,gain){
+ const a=keys[index-1],b=keys[index],duration=b[0]-a[0],u=clamp((elapsed-a[0])/duration,0,1),u2=u*u,u3=u2*u;
+ const tangent=i=>{
+  if(i===0||i===keys.length-1)return [0,0,0];
+  const before=keys[i-1],after=keys[i+1],here=keys[i],slope=after[1][property].map((x,k)=>(x-before[1][property][k])/(after[0]-before[0]));
+  // Bound tangents by adjacent segment speeds; a rescue contact must not
+  // fling a Hermite overshoot toward the near plane or away from the arm.
+  const speed=p=>Math.hypot(...p[1][property].map((x,k)=>x-here[1][property][k]))/Math.abs(p[0]-here[0]);
+  const cap=Math.min(speed(before),speed(after))*1.5,length=Math.hypot(...slope),scale=Math.min(gain,cap/Math.max(length,1e-9));
+  return slope.map(x=>x*scale);
+ };
+ const ma=tangent(index-1),mb=tangent(index);
+ return a[1][property].map((x,k)=>(2*u3-3*u2+1)*x+(u3-2*u2+u)*duration*ma[k]+(-2*u3+3*u2)*b[1][property][k]+(u3-u2)*duration*mb[k]);
+}
 // Left hand pinches the feather skirt before the toss, then withdraws without
 // following the airborne shuttle. Returns camera-local offset from the cork.
 export function serveSupportPose({phase='serve',elapsed=0,swing=0}={}){
@@ -37,8 +52,10 @@ export function swingPose({elapsed=0,kind='clear',contact=null,contactTime=.095,
  if(power>.8){follow.position[1]-=.055;follow.rotation[0]+=.14;}
  const prepTime=contactTime<.07?Math.max(.012,contactTime*.48):.048;
  const hitTime=Math.max(prepTime+.01,contactTime);
- const keys=[[0,idle],[prepTime,prep],[hitTime,hit],[.255-power*.015,follow],[.46,idle]];
- for(let i=1;i<keys.length;i++)if(elapsed<=keys[i][0]){const a=keys[i-1],b=keys[i],u=smooth(clamp((elapsed-a[0])/(b[0]-a[0]),0,1));return {position:mix(a[1].position,b[1].position,u),rotation:mix(a[1].rotation,b[1].rotation,u)};}
+ const followTime=Math.max(hitTime+.065,.255-power*.015),recoverTime=Math.max(followTime+.15,.46);
+ const keys=[[0,idle],[prepTime,prep],[hitTime,hit],[followTime,follow],[recoverTime,idle]];
+ const momentum=kind==='smash'||kind==='slicesmash'||kind==='netkill'?.9:kind==='drop'||kind==='slicedrop'?.48:netPlay?.56:.72;
+ for(let i=1;i<keys.length;i++)if(elapsed<=keys[i][0])return {position:keyCurve(keys,i,elapsed,'position',momentum),rotation:keyCurve(keys,i,elapsed,'rotation',momentum)};
  return idle;
 }
 
