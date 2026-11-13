@@ -1,8 +1,8 @@
-import * as source from './assets/athlete-data.mjs?v=7.14.0';
-import {boundedAsset} from './asset-loading.mjs?v=7.14.0';
-import {handPaths} from './hand-pose.mjs?v=7.14.0';
-import {ARM_WRIST,ARM_ELBOW} from './first-person-arm.mjs?v=7.14.0';
-import {handUV} from './hand-surface.mjs?v=7.14.0';
+import * as source from './assets/athlete-data.mjs?v=7f28ea9b22f91323';
+import {boundedAsset} from './asset-loading.mjs?v=4d9c46f80c2cf48c';
+import {handPaths} from './hand-pose.mjs?v=7bd8ab438604e4f3';
+import {ARM_WRIST,ARM_ELBOW} from './first-person-arm.mjs?v=266661bd87fc52e1';
+import {handUV} from './hand-surface.mjs?v=e4f19a20f78b897f';
 let armGeometry=null;
 export const ARM_BONES=source.bones.filter(b=>/^(?:upperarm01|lowerarm01|wrist|finger\d-\d)\.R$/.test(b.name)).map(b=>b.name);
 export function armBufferLayout(bytes){

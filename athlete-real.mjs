@@ -1,8 +1,8 @@
-import * as data from './assets/athlete-data.mjs?v=7.14.0';
-import {FootPlant} from './footwork.mjs?v=7.14.0';
-import {createCourtShoe} from './court-shoe.mjs?v=7.14.0';
-import {necklineDistances} from './garment-surfaces.mjs?v=7.14.0';
-import {shortHairProfile,HAIRLINE_GLSL} from './hair-surface.mjs?v=7.14.0';
+import * as data from './assets/athlete-data.mjs?v=7f28ea9b22f91323';
+import {FootPlant} from './footwork.mjs?v=2e2e1d6ca98fe3c0';
+import {createCourtShoe} from './court-shoe.mjs?v=3244c397f530b854';
+import {necklineDistances} from './garment-surfaces.mjs?v=00d2db0c47ed753f';
+import {shortHairProfile,HAIRLINE_GLSL} from './hair-surface.mjs?v=98ae9c3a997fe0af';
 
 // A continuous CC0 anatomical mesh, 48-bone skin, and two-bone limb IK.
 export function createAthlete(THREE, createRacket,{skinMap=null,mergeGeometries=null}={}) {

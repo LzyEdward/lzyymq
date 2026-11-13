@@ -1,6 +1,6 @@
-import { sculptGrip } from './hand-sculpt.mjs?v=7.14.0';
-import {createArmKinematics} from './first-person-arm.mjs?v=7.14.0';
-import {createSkinnedPlayerArm} from './player-arm.mjs?v=7.14.0';
+import { sculptGrip } from './hand-sculpt.mjs?v=26581a33b80c9ba8';
+import {createArmKinematics} from './first-person-arm.mjs?v=266661bd87fc52e1';
+import {createSkinnedPlayerArm} from './player-arm.mjs?v=367dc41c1ae072fd';
 
 // Dedicated first-person anatomy: one closed wrist, palm, thumb web and hand.
 export function createViewmodel(THREE,createRacket,{skinMap=null,articulated=false}={}){

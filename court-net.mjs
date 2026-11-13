@@ -1,4 +1,4 @@
-import {createNetMaterial} from './net-material.mjs?v=7.14.0';
+import {createNetMaterial} from './net-material.mjs?v=036d7c9ea2c1b26e';
 export const NET_HALF_WIDTH=3.05;
 export function netHeightAt(x){return 1.524+.026*(x/NET_HALF_WIDTH)**2;}
 
