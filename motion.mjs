@@ -26,6 +26,30 @@ export function serveSupportPose({phase='serve',elapsed=0,swing=0}={}){
  const withdraw=smooth(release),rotation=[-.10-withdraw*.12,-.26,-.20-withdraw*.20];
  return {offset:[-.018-withdraw*.15,.042-withdraw*.18,.012+withdraw*.045],rotation,release};
 }
+// The non-racket hand balances the body instead of vanishing after the serve.
+// Kept below/left of the shuttle lane; this never rotates the player's camera.
+export function readySupportPose({elapsed=0,kind='clear',speed=0,time=0,lateral=0}={}){
+ const stroke=elapsed>0?Math.sin(Math.PI*clamp(elapsed/.46,0,1))**2:0;
+ const overhead=['clear','smash','drop','slicesmash','slicedrop'].includes(kind),net=['net','netcross','push','netkill'].includes(kind);
+ const move=clamp(speed/5.25,0,1),beat=Math.sin(time*6)*move;
+ return {position:[-.24-stroke*(overhead?.09:.04)-clamp(lateral,-5,5)*.002,-.67+stroke*(overhead?.24:net?.10:.08)+beat*.006,-.58-stroke*(overhead?.08:.04)],rotation:[-.12-stroke*.12,.12+stroke*.14,.24+stroke*(overhead?.31:.14)]};
+}
+// Resolve the feather pinch to an absolute camera-local hand origin and blend
+// continuously into the balancing hand before the serve animation expires.
+export function supportHandPose({phase='rally',elapsed=0,swing=0,kind='clear',cork=null,speed=0,time=0,lateral=0}={}){
+ const ready=readySupportPose({elapsed:swing,kind,speed,time,lateral});
+ const hold=serveSupportPose({phase,elapsed,swing:kind==='serve'?swing:0});
+ if(!hold||!cork)return ready;
+ const [rx,ry,rz]=hold.rotation;
+ // XYZ Euler rotation applies Z, Y, X to the mirrored left-hand pinch point.
+ let x=.023*Math.cos(rz)-.137*Math.sin(rz),y=.023*Math.sin(rz)+.137*Math.cos(rz),z=.018;
+ const xx=x*Math.cos(ry)+z*Math.sin(ry),zz=-x*Math.sin(ry)+z*Math.cos(ry);x=xx;z=zz;
+ const yy=y*Math.cos(rx)-z*Math.sin(rx);z=y*Math.sin(rx)+z*Math.cos(rx);y=yy;
+ const position=cork.map((n,i)=>n+hold.offset[i]-[x,y,z][i]);
+ const age=phase==='rally'?swing:phase==='serving'?elapsed:0;
+ const blend=smooth(clamp((age-.175)/.185,0,1));
+ return {position:position.map((n,i)=>n+(ready.position[i]-n)*blend),rotation:hold.rotation.map((n,i)=>n+(ready.rotation[i]-n)*blend)};
+}
 export function swingPose({elapsed=0,kind='clear',contact=null,contactTime=.095,armed=false,time=0,speed=0,power=0}={}){
  const idle={position:[.32,-.42,-.86],rotation:[.12,-.10,-.10]};
  if(elapsed<=0){idle.position[1]+=armed?.035:0;idle.position[0]+=Math.sin(time*6)*Math.min(speed,5)*.0012;idle.position[1]+=Math.cos(time*12)*Math.min(speed,5)*.001;return idle;}

@@ -1,29 +1,29 @@
-import * as THREE from './vendor/three/build/three.module.js?v=7.11.0';
-import { mergeGeometries } from './vendor/three/addons/utils/BufferGeometryUtils.js?v=7.11.0';
-import { COURT, advance, solveShot, predict, winnerOnLanding, clamp, damp, groundCrossing, createGroundMotion, stepGroundMotion } from './physics.mjs?v=7.11.0';
-import { FlightRecorder, EagleEyeReview } from './eagle-eye.mjs?v=7.11.0';
-import { HitIntent, canContact, receivingTarget, swingWindow } from './controls.mjs?v=7.11.0';
-import { JumpMotion, MovementOwnership, keyCommand, pointerCommand } from './interaction.mjs?v=7.11.0';
-import { freeLook, landingFromMap, moveLanding, normalizeLanding, landingName, LANDING_PRESETS } from './aiming.mjs?v=7.11.0';
-import { createAthlete } from './athlete.mjs?v=7.11.0';
-import { movementVector, gradeContact, strokeOutcome, shotTarget, SHOT_DEPTHS, Dash, targetDistance, DRILL_TARGETS, practiceFeed, smartStroke, racketPowerBoost, techniqueTarget } from './gameplay.mjs?v=7.11.0';
-import { OPPONENT_LEVELS, LEVEL_DESCRIPTIONS, LEVEL_REFERENCES, opponentLevel, placementSpread, matchFinished, rankName, freshCareer, parseCareer, settleMatch } from './competition.mjs?v=7.11.0';
-import {planOpponentStroke,recoveryBase,opponentFootwork,opponentReceiveMissChance,opponentStrokeExecution,opponentServeTarget,opponentContactWindow,opponentReceiveBase} from './opponent-ai.mjs?v=7.11.0';
-import { trackAngles, stepTracking, highBallOffset, stepHighBallOffset } from './tracking.mjs?v=7.11.0';
-import { loadSurfaceMaps, createEnvironment, CourtPresentation } from './presentation.mjs?v=7.11.0';
-import { createViewmodel } from './viewmodel.mjs?v=7.11.0';
-import { prepareHands } from './hand-sculpt.mjs?v=7.11.0';
-import {preparePlayerArm} from './player-arm.mjs?v=7.11.0';
-import { RenderBudget, AdaptiveResolution, renderProfile } from './render-budget.mjs?v=7.11.0';
-import { createRacketModel, disposeRacketModel, RACKET_PALETTES } from './racket-model.mjs?v=7.11.0';
-import { swingPose, moveVelocity, groundedCameraOffset, serveSupportPose } from './motion.mjs?v=7.11.0';
-import { dressHall } from './hall-details.mjs?v=7.11.0';
-import { hallSurfaces } from './hall-surfaces.mjs?v=7.11.0';
-import { roofGeometry } from './roof-structure.mjs?v=7.11.0';
-import { createShuttleModel } from './shuttle-model.mjs?v=7.11.0';
-import { createCourtNet, NET_HALF_WIDTH } from './court-net.mjs?v=7.11.0';
-import { createTechniquePanel } from './technique-panel.mjs?v=7.11.0';
-import { PLAYER_STYLES, OPPONENT_STYLES, effectiveOpponentLevel, playerStatsFromInputs, playerStatsForStyle, normalizeSkills } from './player-styles.mjs?v=7.11.0';
+import * as THREE from './vendor/three/build/three.module.js?v=7.12.0';
+import { mergeGeometries } from './vendor/three/addons/utils/BufferGeometryUtils.js?v=7.12.0';
+import { COURT, advance, solveShot, predict, winnerOnLanding, clamp, damp, groundCrossing, createGroundMotion, stepGroundMotion } from './physics.mjs?v=7.12.0';
+import { FlightRecorder, EagleEyeReview } from './eagle-eye.mjs?v=7.12.0';
+import { HitIntent, canContact, receivingTarget, swingWindow } from './controls.mjs?v=7.12.0';
+import { JumpMotion, MovementOwnership, keyCommand, pointerCommand } from './interaction.mjs?v=7.12.0';
+import { freeLook, landingFromMap, moveLanding, normalizeLanding, landingName, LANDING_PRESETS } from './aiming.mjs?v=7.12.0';
+import { createAthlete } from './athlete.mjs?v=7.12.0';
+import { movementVector, gradeContact, strokeOutcome, shotTarget, SHOT_DEPTHS, Dash, targetDistance, DRILL_TARGETS, practiceFeed, smartStroke, racketPowerBoost, techniqueTarget } from './gameplay.mjs?v=7.12.0';
+import { OPPONENT_LEVELS, LEVEL_DESCRIPTIONS, LEVEL_REFERENCES, opponentLevel, placementSpread, matchFinished, rankName, freshCareer, parseCareer, settleMatch } from './competition.mjs?v=7.12.0';
+import {planOpponentStroke,recoveryBase,opponentFootwork,opponentReceiveMissChance,opponentStrokeExecution,opponentServeTarget,opponentContactWindow,opponentReceiveBase} from './opponent-ai.mjs?v=7.12.0';
+import { trackAngles, stepTracking, highBallOffset, stepHighBallOffset } from './tracking.mjs?v=7.12.0';
+import { loadSurfaceMaps, createEnvironment, CourtPresentation } from './presentation.mjs?v=7.12.0';
+import { createViewmodel } from './viewmodel.mjs?v=7.12.0';
+import { prepareHands } from './hand-sculpt.mjs?v=7.12.0';
+import {preparePlayerArm} from './player-arm.mjs?v=7.12.0';
+import { RenderBudget, AdaptiveResolution, renderProfile } from './render-budget.mjs?v=7.12.0';
+import { createRacketModel, disposeRacketModel, RACKET_PALETTES } from './racket-model.mjs?v=7.12.0';
+import { swingPose, moveVelocity, groundedCameraOffset, serveSupportPose, supportHandPose } from './motion.mjs?v=7.12.0';
+import { dressHall } from './hall-details.mjs?v=7.12.0';
+import { hallSurfaces } from './hall-surfaces.mjs?v=7.12.0';
+import { roofGeometry } from './roof-structure.mjs?v=7.12.0';
+import { createShuttleModel } from './shuttle-model.mjs?v=7.12.0';
+import { createCourtNet, NET_HALF_WIDTH } from './court-net.mjs?v=7.12.0';
+import { createTechniquePanel } from './technique-panel.mjs?v=7.12.0';
+import { PLAYER_STYLES, OPPONENT_STYLES, effectiveOpponentLevel, playerStatsFromInputs, playerStatsForStyle, normalizeSkills } from './player-styles.mjs?v=7.12.0';
 
 const $ = (s) => document.querySelector(s);
 const canvas = $('#court');
@@ -956,6 +956,7 @@ function positionServeHand(cork,pose){
   const hand=racket.userData.support;if(!hand)return;
   hand.visible=Boolean(pose);if(!pose)return;
   hand.rotation.fromArray([...pose.rotation,'XYZ']);
+  if(pose.position){hand.position.fromArray(pose.position);return;}
   const pinch=V(-.023,.137,.018).multiply(hand.scale).applyQuaternion(hand.quaternion);
   hand.position.copy(cork).add(V(...pose.offset)).sub(pinch);
 }
@@ -977,8 +978,8 @@ function updateCamera(dt) {
   if(state.swing===0&&camera.aspect<1)pose.position[0]*=Math.max(.38,camera.aspect);
   racket.position.fromArray(pose.position);racket.rotation.fromArray([...pose.rotation,'XYZ']);
   if(racket.userData.support){
-    const supportPose=serveSupportPose({phase:state.phase,elapsed:state.serveElapsed,swing:state.swingKind==='serve'?state.swing:0});
-    positionServeHand(supportPose?camera.worldToLocal((state.phase==='rally'?state.contactPoint:ball.renderPos).clone()):null,supportPose);
+    const cork=camera.worldToLocal((state.phase==='rally'&&state.contactPoint?state.contactPoint:ball.renderPos).clone()).toArray();
+    positionServeHand(null,supportHandPose({phase:state.phase,elapsed:state.serveElapsed,swing:state.swing,kind:state.swingKind,cork,speed:player.speed,time:state.timer,lateral:player.vel.x}));
   }
 }
 function updateOpponentModel(dt) {
@@ -1173,7 +1174,16 @@ function animate() {
   if(rawFrameMs===null)return;
   lastFrameTime=frameNow;
   if(state.screen==='play'&&qualityMode==='auto'&&adaptiveResolution.sample(rawFrameMs,frameNow))applyRenderProfile();
-  if(frameProbe){if(frameProbe.warmup-->0){}else frameProbe.samples.push(rawFrameMs);if(frameProbe.samples.length>=180){const times=frameProbe.samples.sort((a,b)=>a-b),mean=times.reduce((a,b)=>a+b,0)/times.length;$('#test-result').textContent=JSON.stringify({type:'real animation frames',frames:times.length,averageFps:Math.round(10000/mean)/10,medianMs:Math.round(times[90]*10)/10,p95Ms:Math.round(times[171]*10)/10,viewport:[innerWidth,innerHeight],pixelRatio:renderer.getPixelRatio(),quality:presentation.quality,drawCalls:presentation.sceneInfo.calls,triangles:presentation.sceneInfo.triangles},null,2);frameProbe=null;pauseGame();}}
+  if(frameProbe){
+    if(frameProbe.warmup-->0){}else {frameProbe.started??=frameNow;frameProbe.samples.push(rawFrameMs);}
+    const duration=frameNow-(frameProbe.started??frameNow),done=frameProbe.durationMs?duration>=frameProbe.durationMs:frameProbe.samples.length>=180;
+    if(done){
+      const raw=frameProbe.samples,times=[...raw].sort((a,b)=>a-b),mean=raw.reduce((a,b)=>a+b,0)/raw.length;
+      const segmentFps=a=>Math.round(10000/(a.reduce((x,y)=>x+y,0)/a.length))/10;
+      $('#test-result').textContent=JSON.stringify({type:'real animation frames',frames:times.length,durationSeconds:Math.round(duration/100)/10,averageFps:Math.round(10000/mean)/10,medianMs:Math.round(times[Math.floor(times.length*.5)]*10)/10,p95Ms:Math.round(times[Math.floor(times.length*.95)]*10)/10,first300Fps:segmentFps(raw.slice(0,300)),last300Fps:segmentFps(raw.slice(-300)),viewport:[innerWidth,innerHeight],pixelRatio:renderer.getPixelRatio(),quality:presentation.quality,drawCalls:presentation.sceneInfo.calls,triangles:presentation.sceneInfo.triangles,hits:state.hits,points:state.score},null,2);
+      frameProbe=null;pauseGame();
+    }
+  }
   const dt = Math.min(rawFrameMs/1000, .06); state.elapsed += dt; fps = damp(fps, 1 / Math.max(dt, .001), 1, dt);
   if(state.screen!=='hand-inspect')shuttle.visible=!['inspect','equipment-inspect'].includes(state.screen);
   if (state.screen === 'menu') {
@@ -1197,6 +1207,7 @@ function animate() {
     state.inspectTime=(state.inspectTime||0)+dt;
     const elapsed=state.inspectTime%1.4,pose=swingPose({elapsed:elapsed<.6?elapsed:0,kind:state.inspectStroke,contact:[.28,.05,-1.12]});
     racket.position.fromArray(pose.position);racket.rotation.fromArray([...pose.rotation,'XYZ']);
+    positionServeHand(null,supportHandPose({swing:elapsed<.6?elapsed:0,kind:state.inspectStroke,time:state.inspectTime}));
   } else if (state.screen === 'play') {
     shuttleShadow.visible=true;
     accumulator += dt;
@@ -1789,6 +1800,8 @@ async function init() {
         $('#test-result').textContent=JSON.stringify({pass:checks.every(check=>check.pass),checks},null,2);pauseGame();
       });
       $('#run-perf-test').addEventListener('click',()=>{startGame('practice');state.sound=false;hitIntent.press(0,null,'selftest');frameProbe={warmup:30,samples:[]};$('#test-result').textContent='正在采样真实动画帧，完成后自动暂停…';});
+      const endurance=document.createElement('button');endurance.id='run-endurance-test';endurance.textContent='实际连续对打 120 秒 · 完成自动暂停';panel.prepend(endurance);
+      endurance.onclick=()=>{startGame('practice');state.sound=false;hitIntent.press(0,null,'selftest');frameProbe={warmup:120,samples:[],durationMs:120000};$('#test-result').textContent='正在连续对打采样 120 秒，完成自动暂停…';};
       $('#inspect-model').addEventListener('click',()=>{
         state.screen='inspect';$('#menu').classList.add('hidden');$('#hud').classList.add('hidden');$('#pause-overlay').classList.add('hidden');
         bot.root.position.set(0,0,0);bot.root.rotation.set(0,0,0);bot.update({time:0});bot.label.visible=false;racket.visible=false;shuttle.visible=false;

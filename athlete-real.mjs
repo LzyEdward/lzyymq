@@ -1,7 +1,7 @@
-import * as data from './assets/athlete-data.mjs?v=7.11.0';
-import {FootPlant} from './footwork.mjs?v=7.11.0';
-import {createCourtShoe} from './court-shoe.mjs?v=7.11.0';
-import {necklineDistances} from './garment-surfaces.mjs?v=7.11.0';
+import * as data from './assets/athlete-data.mjs?v=7.12.0';
+import {FootPlant} from './footwork.mjs?v=7.12.0';
+import {createCourtShoe} from './court-shoe.mjs?v=7.12.0';
+import {necklineDistances} from './garment-surfaces.mjs?v=7.12.0';
 
 // A continuous CC0 anatomical mesh, 48-bone skin, and two-bone limb IK.
 export function createAthlete(THREE, createRacket,{skinMap=null,mergeGeometries=null}={}) {

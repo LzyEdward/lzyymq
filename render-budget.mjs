@@ -18,7 +18,7 @@ export class RenderBudget {
 export function renderProfile(mode='auto',scale=1,width=1280,height=720,dpr=1){
  const detail=mode==='high'||mode==='ultra';
  const cap=mode==='ultra'?1.5:mode==='high'?1.2:mode==='balanced'?.85:1;
- const pixels=detail?2073600:921600;
+ const pixels=detail?2073600:mode==='balanced'?640000:921600;
  const ratio=Math.min(Math.max(.5,dpr),cap,Math.sqrt(pixels/Math.max(1,width*height)))*Math.max(.5,Math.min(1,scale));
  return {ratio,quality:detail?mode:'balanced',shadows:detail,samples:mode==='ultra'?2:0};
 }
