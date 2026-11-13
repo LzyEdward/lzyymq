@@ -2,6 +2,7 @@
 // https://badmintonworldbalcatta.com/products/astrox-100zz-dark-navy-4ug5
 import {createWovenStrings} from './woven-strings.mjs?v=0a67d8f314b8c856';
 import {createFrameFinish} from './racket-finish.mjs?v=3b4b8f4602232099';
+import {racketHeadPoint,createRacketFrame} from './racket-frame.mjs?v=ea843caa7bf9dc17';
 export const RACKET_PALETTES={astrox100zz:{rim:'#2866ac',carbon:'#111e30',grip:'#202328',accent:'#eef4fa',gold:'#fa6524'},'control-original':{rim:'#c4ec78',carbon:'#22302e',grip:'#eeeadd',accent:'#edf4d9',gold:'#c4ec78'},'aero-blue':{rim:'#82d6e1',carbon:'#20323a',grip:'#dce7e2',accent:'#b4f2ee',gold:'#dce7e2'}};
 export function disposeRacketModel(root){
  const resources=new Set();root.traverse(o=>{
@@ -27,9 +28,8 @@ export function createRacketModel(THREE,{skin='astrox100zz',player=false}={}){
  const cone=add(new THREE.CylinderGeometry(.0032,.0117,.029,24),mats.carbon,'Control cap cone');cone.position.y=.174;
  // A 6.3 mm shaft, never a wide rectangular branding plane.
  bar(V(0,.184,0),V(0,.369,0),.00315,mats.carbon,'Hyper Slim solid shaft');
- const head=(a,inset=0)=>{const c=Math.cos(a),s=Math.sin(a),n=2.3;return V((.104-inset)*Math.sign(c)*Math.abs(c)**(2/n)*(.97+.03*s),.51+(.145-inset)*Math.sign(s)*Math.abs(s)**(2/n),0);};
- const path=new THREE.CatmullRomCurve3(Array.from({length:128},(_,i)=>head(i/128*Math.PI*2)),true);
- const frameGeo=new THREE.TubeGeometry(path,192,.0044,12,true),paint=[];
+ const head=(a,inset=0)=>V(...racketHeadPoint(a,inset));
+ const frameGeo=createRacketFrame(THREE),paint=[];
  for(let i=0;i<=192;i++){
   const a=i/192*Math.PI*2,p=head(a);let color=colors.carbon;
   // Photograph: blue/white slash band across the left and lower hoop;
@@ -38,15 +38,15 @@ export function createRacketModel(THREE,{skin='astrox100zz',player=false}={}){
    if(p.x<-.045||p.y<.405&&Math.abs(p.x)>.03){const stripe=((a*15)%1+1)%1;color=stripe<.24?'#edf5fa':stripe<.42?'#8bb9dd':stripe<.79?'#2468ac':'#101f3d';}
    if(a>.13&&a<.64)color='#f2642b';
   }
-  const col=new THREE.Color(skin==='astrox100zz'?'#ffffff':color);for(let j=0;j<=12;j++)paint.push(col.r,col.g,col.b);
+  const col=new THREE.Color(skin==='astrox100zz'?'#ffffff':color);for(let j=0;j<=16;j++)paint.push(col.r,col.g,col.b);
  }
  frameGeo.setAttribute('color',new THREE.Float32BufferAttribute(paint,3));
  const finish=skin==='astrox100zz'?createFrameFinish(THREE):{};
- const hoop=add(frameGeo,new THREE.MeshPhysicalMaterial({vertexColors:true,...finish,roughness:finish.roughnessMap?1:.32,metalness:.13,clearcoat:.65,clearcoatRoughness:.23}),'Compact isometric painted frame');hoop.scale.z=1.12;
+ add(frameGeo,new THREE.MeshPhysicalMaterial({vertexColors:true,...finish,roughness:finish.roughnessMap?1:.32,metalness:.13,clearcoat:.65,clearcoatRoughness:.23}),'Compact isometric painted frame');
  const socket=add(new THREE.CylinderGeometry(.0033,.0058,.018,18),mats.carbon,'Built-in T-joint');socket.position.y=.368;
  // Every grommet is a small physical eyelet, not a painted dot.
- const grommetGeo=new THREE.SphereGeometry(1,6,4),grommets=new THREE.InstancedMesh(grommetGeo,mats.grip,76),matrix=new THREE.Matrix4(),q=new THREE.Quaternion();
- for(let i=0;i<76;i++){const p=head((i+.5)/76*Math.PI*2,.0038);matrix.compose(p,q,V(.0016,.0016,.0055));grommets.setMatrixAt(i,matrix);}grommets.name='76 black grommets';root.add(grommets);
+ const grommetGeo=new THREE.TorusGeometry(.0011,.0004,4,8),grommets=new THREE.InstancedMesh(grommetGeo,mats.grip,76),matrix=new THREE.Matrix4(),q=new THREE.Quaternion();
+ for(let i=0;i<76;i++){const a=(i+.5)/76*Math.PI*2,p=head(a,.0047),tangent=head(a+.0001).sub(head(a-.0001)).normalize(),normal=V(tangent.y,-tangent.x,0);q.setFromUnitVectors(V(0,0,1),normal);matrix.compose(p,q,V(1,1,1));grommets.setMatrixAt(i,matrix);}grommets.name='76 black grommets';root.add(grommets);
  // White woven strings with a red Yonex stencil, coloured only on strings.
  const white=[],red=[],inside=(x,y)=>Math.abs(x/.098)**2.3+Math.abs((y-.51)/.139)**2.3<=1;
  const stencil=(x,y)=>{const xx=x/.063,yy=(y-.518)/.051;for(const c of [-.51,.51]){if((xx-c)**2+(yy-.36)**2<.19**2)return true;if(yy<.02&&yy>-.58&&Math.abs(xx-c)<(.58+yy)*.56)return true;}return false;};

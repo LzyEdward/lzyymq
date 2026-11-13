@@ -18,7 +18,7 @@ window.addEventListener('court-boot',event=>{
  const info=event.detail;
  if(info.error){fail(info.error);return;}
  if(info.ready){ready=true;clearTimeout(watchdog);document.body.dataset.boot='ready';errorPanel.classList.add('hidden');loading.classList.add('fade');setTimeout(()=>loading.classList.add('hidden'),350);return;}
- if(info.warning){detail.textContent='部分细节资源未完成，已使用轻量模型继续启动。';return;}
+ if(info.warning){detail.textContent=`${info.label||'部分细节资源'}未完成，已使用轻量资源继续启动。`;document.body.dataset.assetWarning=info.label||'资源';return;}
  progress(info.stage,info.percent);
 });
 document.querySelector('#boot-retry').onclick=()=>location.reload();
@@ -27,4 +27,4 @@ window.addEventListener('error',event=>{if(!ready&&event.message)fail(`启动出
 window.addEventListener('unhandledrejection',event=>{if(!ready)fail(`启动未完成：${event.reason?.message||'资源加载失败'}。请重试或选择低负载启动。`);});
 progress('连接游戏文件',6);
 detail.textContent=query.has('safe')?'低负载启动：先进入球场，减少初次加载。':'第一次进入需要加载球馆与人物，请稍候。';
-import('./game.js?v=fde7b0b2b5abad37').catch(error=>fail(`游戏文件未加载完成：${error.message}。请检查网络后重试，或选择低负载启动。`));
+import('./game.js?v=da1b38683bf7bdb8').catch(error=>fail(`游戏文件未加载完成：${error.message}。请检查网络后重试，或选择低负载启动。`));

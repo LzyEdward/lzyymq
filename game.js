@@ -16,7 +16,7 @@ import { prepareHands } from './hand-sculpt.mjs?v=e0a20246a13fd7b0';
 import {preparePlayerArm} from './player-arm.mjs?v=1da804b30bbeb67c';
 import { RenderBudget, AdaptiveResolution, renderProfile } from './render-budget.mjs?v=661910472f512423';
 import {RenderLoop} from './render-loop.mjs?v=28e2db7090a5188b';
-import { createRacketModel, disposeRacketModel, RACKET_PALETTES } from './racket-model.mjs?v=d4d6fb2842faedad';
+import { createRacketModel, disposeRacketModel, RACKET_PALETTES } from './racket-model.mjs?v=6e1c32ff15aa289f';
 import { swingPose, moveVelocity, groundedCameraOffset, serveSupportPose, supportHandPose } from './motion.mjs?v=1d9ac67dad6783c3';
 import { dressHall } from './hall-details.mjs?v=c6f9ed4d4d8b5a00';
 import { hallSurfaces } from './hall-surfaces.mjs?v=69b556d780a6feef';
@@ -1426,7 +1426,7 @@ async function init() {
     renderer.outputColorSpace = THREE.SRGBColorSpace; renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.02;
     scene = new THREE.Scene(); camera = new THREE.PerspectiveCamera(68, innerWidth / innerHeight, .045, 100);
     bootStage='assets';boot({stage:'准备人物与球馆材质',percent:40});
-    const onWarning=warning=>{console.warn('Optional court asset:',warning);boot({warning:true});};
+    const onWarning=warning=>{console.warn('Optional court asset:',JSON.stringify(warning));boot({warning:true,label:warning.label,message:warning.message});};
     const [,maps]=await Promise.all([prepareHands(THREE,{safe:safeBoot,onWarning}),loadSurfaceMaps(THREE,renderer,{safe:safeBoot,onWarning}),params.get('arm')!=='legacy'?preparePlayerArm(THREE,{safe:safeBoot,onWarning}):null]);surfaceMaps=maps;
     if(!safeBoot){try{environmentTarget=createEnvironment(THREE,renderer,scene);}catch(error){onWarning({label:'球馆反射',message:error.message});}}
     presentation=new CourtPresentation(THREE,renderer);presentation.setSize(innerWidth,innerHeight);

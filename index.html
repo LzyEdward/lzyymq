@@ -4,14 +4,14 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
   <meta name="theme-color" content="#152f2d">
-  <title>lzyymq · 羽境 FEATHER COURT 7.16</title>
+  <title>lzyymq · 羽境 FEATHER COURT 7.17</title>
   <link rel="icon" type="image/svg+xml" href="./favicon.svg">
   <link rel="modulepreload" href="./vendor/three/build/three.core.js?v=f50b12965a53a185">
   <link rel="modulepreload" href="./vendor/three/build/three.module.js?v=429a98fc9b5c1650">
   <link rel="modulepreload" href="./assets/athlete-data.mjs?v=7f28ea9b22f91323">
   <link rel="modulepreload" href="./athlete-real.mjs?v=ded463c948885175">
   <link rel="modulepreload" href="./viewmodel.mjs?v=26c2e1b92d5e0935">
-  <link rel="modulepreload" href="./game.js?v=fde7b0b2b5abad37">
+  <link rel="modulepreload" href="./game.js?v=da1b38683bf7bdb8">
   <link rel="stylesheet" href="./style.css?v=6fd1d68489f1dace">
   <link rel="stylesheet" href="./competition.css?v=4a3bbfa01f23006a">
   <link rel="stylesheet" href="./interaction.css?v=28efae8fc30f7516">
@@ -73,7 +73,7 @@
         </details>
       </section>
     </div>
-    <footer class="menu-footer"><span>真实球路 · 自由视角 · 鹰眼回放</span><span>LZYYMQ / FEATHER COURT 7.16</span></footer>
+    <footer class="menu-footer"><span>真实球路 · 自由视角 · 鹰眼回放</span><span>LZYYMQ / FEATHER COURT 7.17</span></footer>
   </main>
   <div id="showroom" class="hidden"><div class="showroom-copy"><span class="eyebrow">PLAYER STUDY / 07</span><h2>林越。</h2><p>1.81 m · 右手持拍<br>准备、步法、挥拍，逐一感受。</p><small>拖动画面转动 · 滚轮缩放</small></div><div class="showroom-actions"><button id="pose-idle">准备姿势</button><button id="pose-run">步法</button><button id="pose-swing">挥拍</button><button id="photo-btn">保存照片</button><button id="showroom-close">返回首页 →</button></div></div>
   <div id="hud" class="hidden">
@@ -120,7 +120,7 @@ window.addEventListener('court-boot',event=>{
  const info=event.detail;
  if(info.error){fail(info.error);return;}
  if(info.ready){ready=true;clearTimeout(watchdog);document.body.dataset.boot='ready';errorPanel.classList.add('hidden');loading.classList.add('fade');setTimeout(()=>loading.classList.add('hidden'),350);return;}
- if(info.warning){detail.textContent='部分细节资源未完成，已使用轻量模型继续启动。';return;}
+ if(info.warning){detail.textContent=`${info.label||'部分细节资源'}未完成，已使用轻量资源继续启动。`;document.body.dataset.assetWarning=info.label||'资源';return;}
  progress(info.stage,info.percent);
 });
 document.querySelector('#boot-retry').onclick=()=>location.reload();
@@ -129,7 +129,7 @@ window.addEventListener('error',event=>{if(!ready&&event.message)fail(`启动出
 window.addEventListener('unhandledrejection',event=>{if(!ready)fail(`启动未完成：${event.reason?.message||'资源加载失败'}。请重试或选择低负载启动。`);});
 progress('连接游戏文件',6);
 detail.textContent=query.has('safe')?'低负载启动：先进入球场，减少初次加载。':'第一次进入需要加载球馆与人物，请稍候。';
-import('./game.js?v=fde7b0b2b5abad37').catch(error=>fail(`游戏文件未加载完成：${error.message}。请检查网络后重试，或选择低负载启动。`));
+import('./game.js?v=da1b38683bf7bdb8').catch(error=>fail(`游戏文件未加载完成：${error.message}。请检查网络后重试，或选择低负载启动。`));
 </script>
 </body></html>
 
