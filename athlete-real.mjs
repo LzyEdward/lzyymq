@@ -1,7 +1,8 @@
-import * as data from './assets/athlete-data.mjs?v=7.12.0';
-import {FootPlant} from './footwork.mjs?v=7.12.0';
-import {createCourtShoe} from './court-shoe.mjs?v=7.12.0';
-import {necklineDistances} from './garment-surfaces.mjs?v=7.12.0';
+import * as data from './assets/athlete-data.mjs?v=7.13.0';
+import {FootPlant} from './footwork.mjs?v=7.13.0';
+import {createCourtShoe} from './court-shoe.mjs?v=7.13.0';
+import {necklineDistances} from './garment-surfaces.mjs?v=7.13.0';
+import {shortHairProfile,HAIRLINE_GLSL} from './hair-surface.mjs?v=7.13.0';
 
 // A continuous CC0 anatomical mesh, 48-bone skin, and two-bone limb IK.
 export function createAthlete(THREE, createRacket,{skinMap=null,mergeGeometries=null}={}) {
@@ -40,21 +41,23 @@ export function createAthlete(THREE, createRacket,{skinMap=null,mergeGeometries=
  jersey.customProgramCacheKey=()=> 'court-performance-jersey-mesh-collar-v5';
  const shorts=new THREE.MeshPhysicalMaterial({color:'#1c343c',roughness:.9,bumpMap:weave,bumpScale:.001,sheen:.4});
  const hairGrain=grain(64);hairGrain.repeat.set(70,70);
- const sock=new THREE.MeshStandardMaterial({color:'#dedfd4',roughness:.95,bumpMap:weave,bumpScale:.0006}),hair=new THREE.MeshPhysicalMaterial({color:'#1b1d1a',roughness:.74,bumpMap:hairGrain,bumpScale:.00018,sheen:.22});
+ const sock=new THREE.MeshStandardMaterial({color:'#dedfd4',roughness:.95,bumpMap:weave,bumpScale:.0006}),hair=new THREE.MeshPhysicalMaterial({color:'#111713',roughness:.83,bumpMap:hairGrain,bumpScale:.00012,sheen:.18});
  hair.onBeforeCompile=shader=>{
   shader.vertexShader=shader.vertexShader.replace('#include <common>','#include <common>\nvarying vec3 vHairRest;').replace('#include <begin_vertex>','#include <begin_vertex>\nvHairRest=position;');
-  shader.fragmentShader=shader.fragmentShader.replace('#include <common>','#include <common>\nvarying vec3 vHairRest;').replace('#include <color_fragment>',`#include <color_fragment>
-   float front=smoothstep(.025,.11,vHairRest.z);
-   float line=1.68+front*(.067+.004*cos(vHairRest.x*43.));
-   float edge=vHairRest.y-line;
+  shader.fragmentShader=shader.fragmentShader.replace('#include <common>','#include <common>\nvarying vec3 vHairRest;\n'+HAIRLINE_GLSL).replace('#include <color_fragment>',`#include <color_fragment>
+   float edge=vHairRest.y-hairlineHeight(vHairRest);
    if(edge<0.)discard;
    if(abs(vHairRest.x)>.075&&vHairRest.y<1.7&&vHairRest.z>.02)discard;
-   float strand=sin(vHairRest.x*6900.+sin(vHairRest.z*340.)*1.7+vHairRest.y*1800.);
-   float follicle=fract(sin(dot(floor(vHairRest.xz*2200.),vec2(12.9898,78.233)))*43758.5453);
-   diffuseColor.rgb*=.69+strand*.14+follicle*.62;
-   diffuseColor.a*=smoothstep(0.,max(.0012,fwidth(edge)),edge);
+   float phase=vHairRest.x*2700.+sin(vHairRest.z*210.)*1.7+vHairRest.y*880.;
+   float strand=sin(phase)*(1.-smoothstep(.9,3.1,fwidth(phase)));
+   float grainPhase=vHairRest.z*4300.+vHairRest.x*1900.;
+   float follicle=sin(grainPhase)*(1.-smoothstep(.9,3.1,fwidth(grainPhase)));
+   float fade=smoothstep(0.,.0025,edge);
+   float stipple=fract(sin(dot(floor(vHairRest.xy*2900.),vec2(12.9898,78.233)))*43758.5453);
+   if(fade<stipple*.88)discard;
+   diffuseColor.rgb*=.76+strand*.16+follicle*.10;
   `);
- };hair.customProgramCacheKey=()=> 'short-hair-smooth-hairline-v1';hair.alphaToCoverage=true;
+ };hair.customProgramCacheKey=()=> 'tapered-crop-hair-antialiased-v2';hair.alphaToCoverage=true;
  const trim=new THREE.MeshStandardMaterial({color:'#378683',roughness:.74}),black=new THREE.MeshStandardMaterial({color:'#24363d',roughness:.77}),meshes=[];
  function geometry(indices){const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(data.positions,3));g.setAttribute('uv',new THREE.Float32BufferAttribute(data.uvs,2));g.setAttribute('color',new THREE.Float32BufferAttribute(data.colors,3));g.setAttribute('skinIndex',new THREE.Uint16BufferAttribute(data.skinIndex,4));g.setAttribute('skinWeight',new THREE.Float32BufferAttribute(data.skinWeight,4));g.setIndex(new THREE.Uint16BufferAttribute(indices,1));g.computeVertexNormals();return g;}
  const allNormals=new THREE.Float32BufferAttribute(data.normals,3);
@@ -86,19 +89,20 @@ export function createAthlete(THREE, createRacket,{skinMap=null,mergeGeometries=
  const scalp=[];
  for(let i=0;i<data.indices0.length;i+=3){const vs=data.indices0.slice(i,i+3),y=vs.reduce((s,v)=>s+data.positions[v*3+1]/3,0);if(y>1.66)scalp.push(...vs);}
  const scalpMesh=skinMesh(scalp,hair),sp=scalpMesh.geometry.attributes.position,ns=scalpMesh.geometry.attributes.normal;
- for(let i=0;i<sp.count;i++)sp.setXYZ(i,sp.getX(i)+ns.getX(i)*.003,sp.getY(i)+ns.getY(i)*.003,sp.getZ(i)+ns.getZ(i)*.003);
+ for(let i=0;i<sp.count;i++){const amount=shortHairProfile(sp.getX(i),sp.getY(i),sp.getZ(i)).shell;sp.setXYZ(i,sp.getX(i)+ns.getX(i)*amount,sp.getY(i)+ns.getY(i)*amount,sp.getZ(i)+ns.getZ(i)*amount);}
  // Short, curved clumps break the helmet silhouette. One opaque mesh, no
  // alpha cards, depth sorting, particles or per-frame hair simulation.
  const hairFaces=[];let hairArea=0,hairSeed=56191;
  const hairRandom=()=>{hairSeed=(Math.imul(hairSeed,1664525)+1013904223)>>>0;return hairSeed/4294967296;};
  for(let i=0;i<scalp.length;i+=3){const ids=scalp.slice(i,i+3),points=ids.map(id=>vec(...data.positions.slice(id*3,id*3+3))),area=points[1].clone().sub(points[0]).cross(points[2].clone().sub(points[0])).length()*.5;if(area>1e-9){hairArea+=area;hairFaces.push({ids,points,area:hairArea});}}
  const tuftPosition=[],tuftColor=[],tuftIndex=[];
- for(let i=0;i<500&&hairFaces.length;i++){
+ for(let i=0;i<4800&&hairFaces.length;i++){
   const choice=hairRandom()*hairArea,face=hairFaces.find(f=>f.area>=choice),u=Math.sqrt(hairRandom()),w=[1-u,u*(1-hairRandom()),0];w[2]=1-w[0]-w[1];
   const p=vec(),normal=vec();for(let k=0;k<3;k++){p.addScaledVector(face.points[k],w[k]);normal.addScaledVector(vec(...data.normals.slice(face.ids[k]*3,face.ids[k]*3+3)),w[k]);}
-  const hairFront=THREE.MathUtils.smoothstep(p.z,.025,.11),line=1.68+hairFront*(.067+.004*Math.cos(p.x*43));if(p.y<line||Math.abs(p.x)>.075&&p.y<1.7&&p.z>.02)continue;
-  normal.normalize();p.addScaledVector(normal,.0027).sub(bind.head);
-  const length=.001+hairRandom()*.002,direction=normal.clone().multiplyScalar(.3).add(vec(0,.35,-.3)).normalize(),width=.0002+hairRandom()*.0002;
+  const profile=shortHairProfile(p.x,p.y,p.z);if(!profile.covered||profile.length<.0003)continue;
+  normal.normalize();p.addScaledVector(normal,profile.shell*.90).sub(bind.head);
+  const comb=vec(-.35,.12,-1);comb.addScaledVector(normal,-comb.dot(normal)).normalize();
+  const length=profile.length*(.40+hairRandom()*.35),direction=comb.addScaledVector(normal,.24).normalize(),width=.00018+hairRandom()*.00014;
   const side=vec(1,0,0).addScaledVector(direction,-direction.x).normalize(),other=direction.clone().cross(side).normalize();
   for(const across of [side,other]){
    const middle=p.clone().addScaledVector(direction,length*.55),tip=p.clone().addScaledVector(direction,length).add(vec(0,0,-length*.12)),base=tuftPosition.length/3;
