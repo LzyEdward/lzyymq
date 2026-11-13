@@ -1,5 +1,6 @@
 // Static architecture detail: textures are built once and shared by the hall.
 // No additional full-screen pass, dynamic reflection or particle simulation.
+import {createCourtRelief} from './court-surface.mjs?v=7.10.0';
 export function hallSurfaces(T){
  let seed=48391;const rand=()=>{seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed/4294967296;};
  function draw(w,h,fn){const canvas=document.createElement('canvas');canvas.width=w;canvas.height=h;fn(canvas.getContext('2d'),w,h);const map=new T.CanvasTexture(canvas);map.colorSpace=T.SRGBColorSpace;return map;}
@@ -35,5 +36,5 @@ export function hallSurfaces(T){
   const glow=c.createLinearGradient(0,0,w,0);glow.addColorStop(0,'#899b8b');glow.addColorStop(.16,'#eaf0df');glow.addColorStop(.5,'#f5f4e8');glow.addColorStop(.84,'#eaf0df');glow.addColorStop(1,'#899b8b');c.fillStyle=glow;c.fillRect(0,0,w,h);
   c.fillStyle='#6e847518';for(let y=3;y<h;y+=6)c.fillRect(0,y,w,1);
  });
- return {wall,glass,court,roof,diffuser};
+ return {wall,glass,court,roof,diffuser,courtNormal:createCourtRelief(T)};
 }

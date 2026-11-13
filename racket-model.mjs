@@ -1,12 +1,22 @@
 // ASTROX 100ZZ Dark Navy (554). Shape and asymmetric paint reference:
 // https://badmintonworldbalcatta.com/products/astrox-100zz-dark-navy-4ug5
-import {createWovenStrings} from './woven-strings.mjs?v=7.9.0';
+import {createWovenStrings} from './woven-strings.mjs?v=7.10.0';
+import {createFrameFinish} from './racket-finish.mjs?v=7.10.0';
 export const RACKET_PALETTES={astrox100zz:{rim:'#2866ac',carbon:'#111e30',grip:'#202328',accent:'#eef4fa',gold:'#fa6524'},'control-original':{rim:'#c4ec78',carbon:'#22302e',grip:'#eeeadd',accent:'#edf4d9',gold:'#c4ec78'},'aero-blue':{rim:'#82d6e1',carbon:'#20323a',grip:'#dce7e2',accent:'#b4f2ee',gold:'#dce7e2'}};
+export function disposeRacketModel(root){
+ const resources=new Set();root.traverse(o=>{
+  if(o.geometry)resources.add(o.geometry);
+  for(const m of Array.isArray(o.material)?o.material:o.material?[o.material]:[]){
+   resources.add(m);for(const value of Object.values(m))if(value?.isTexture)resources.add(value);
+  }
+ });
+ for(const resource of resources)resource.dispose();
+}
 export function createRacketModel(THREE,{skin='astrox100zz',player=false}={}){
  const root=new THREE.Group(),V=(...p)=>new THREE.Vector3(...p),colors=RACKET_PALETTES[skin]||RACKET_PALETTES.astrox100zz;
  const mats=Object.fromEntries(Object.entries(colors).map(([name,color])=>[name,new THREE.MeshPhysicalMaterial({color,roughness:name==='grip'?.91:.32,metalness:name==='grip'?0:.25,clearcoat:name==='grip'?0:.4})]));root.userData.styleMaterials=mats;
  const grainBytes=new Uint8Array(64*256);for(let y=0;y<256;y++)for(let x=0;x<64;x++){const weave=Math.sin((x+y*.55)*Math.PI)*Math.sin((y-x*.35)*Math.PI*.7),pore=Math.sin(x*123.7+y*47.3);grainBytes[y*64+x]=Math.round(127+weave*32+pore*12);}
- const gripGrain=new THREE.DataTexture(grainBytes,64,256,THREE.RedFormat);gripGrain.wrapS=gripGrain.wrapT=THREE.RepeatWrapping;gripGrain.repeat.set(1,1);gripGrain.needsUpdate=true;mats.grip.bumpMap=gripGrain;mats.grip.bumpScale=.00012;mats.grip.roughness=.86;
+ const gripGrain=new THREE.DataTexture(grainBytes,64,256,THREE.RedFormat);gripGrain.wrapS=gripGrain.wrapT=THREE.RepeatWrapping;gripGrain.repeat.set(1,1);gripGrain.generateMipmaps=true;gripGrain.minFilter=THREE.LinearMipmapLinearFilter;gripGrain.magFilter=THREE.LinearFilter;gripGrain.needsUpdate=true;mats.grip.bumpMap=gripGrain;mats.grip.bumpScale=.00012;mats.grip.roughness=.86;
  const add=(geo,mat,name)=>{const m=new THREE.Mesh(geo,mat);m.name=name;m.castShadow=true;root.add(m);return m;};
  function bar(a,b,r,mat,name){const m=add(new THREE.CylinderGeometry(r,r,a.distanceTo(b),10),mat,name);m.position.copy(a).add(b).multiplyScalar(.5);m.quaternion.setFromUnitVectors(V(0,1,0),b.clone().sub(a).normalize());return m;}
  const handle=add(new THREE.CylinderGeometry(.0117,.0135,.17,8,12),mats.grip,'Octagonal tapered G5 grip');handle.position.y=.075;handle.rotation.y=Math.PI/8;
@@ -28,10 +38,11 @@ export function createRacketModel(THREE,{skin='astrox100zz',player=false}={}){
    if(p.x<-.045||p.y<.405&&Math.abs(p.x)>.03){const stripe=((a*15)%1+1)%1;color=stripe<.24?'#edf5fa':stripe<.42?'#8bb9dd':stripe<.79?'#2468ac':'#101f3d';}
    if(a>.13&&a<.64)color='#f2642b';
   }
-  const col=new THREE.Color(color);for(let j=0;j<=12;j++)paint.push(col.r,col.g,col.b);
+  const col=new THREE.Color(skin==='astrox100zz'?'#ffffff':color);for(let j=0;j<=12;j++)paint.push(col.r,col.g,col.b);
  }
  frameGeo.setAttribute('color',new THREE.Float32BufferAttribute(paint,3));
- const hoop=add(frameGeo,new THREE.MeshPhysicalMaterial({vertexColors:true,roughness:.27,metalness:.25,clearcoat:.6,clearcoatRoughness:.2}),'Compact isometric painted frame');hoop.scale.z=1.12;
+ const finish=skin==='astrox100zz'?createFrameFinish(THREE):{};
+ const hoop=add(frameGeo,new THREE.MeshPhysicalMaterial({vertexColors:true,...finish,roughness:finish.roughnessMap?1:.32,metalness:.13,clearcoat:.65,clearcoatRoughness:.23}),'Compact isometric painted frame');hoop.scale.z=1.12;
  const socket=add(new THREE.CylinderGeometry(.0033,.0058,.018,18),mats.carbon,'Built-in T-joint');socket.position.y=.368;
  // Every grommet is a small physical eyelet, not a painted dot.
  const grommetGeo=new THREE.SphereGeometry(1,6,4),grommets=new THREE.InstancedMesh(grommetGeo,mats.grip,76),matrix=new THREE.Matrix4(),q=new THREE.Quaternion();

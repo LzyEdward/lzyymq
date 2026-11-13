@@ -1,14 +1,13 @@
-import {boundedAsset} from './asset-loading.mjs?v=7.9.0';
+import {boundedAsset} from './asset-loading.mjs?v=7.10.0';
 // Local PBR surfaces and a restrained depth-based contact-occlusion pass.
 export async function loadSurfaceMaps(THREE,renderer,{safe=false,onWarning=()=>{}}={}){
  if(safe)return {};
  const loader=new THREE.TextureLoader(),anisotropy=Math.min(8,renderer.capabilities.getMaxAnisotropy());
  async function map(file,repeat,color=false){let expired=false;const result=await boundedAsset(async()=>{const t=await loader.loadAsync('./assets/textures/'+file);if(expired){t.dispose();return null;}t.wrapS=t.wrapT=THREE.RepeatWrapping;t.repeat.set(...repeat);t.anisotropy=anisotropy;if(color)t.colorSpace=THREE.SRGBColorSpace;return t;},{timeout:8000,label:file,onWarning:warning=>{expired=true;onWarning(warning);}});return result;}
- const [wood,woodNormal,woodRough,rubberNormal,rubberRough,athleteSkin]=await Promise.all([
+ const [wood,woodNormal,woodRough,athleteSkin]=await Promise.all([
   map('wooden_floor_02_Diffuse.jpg',[7.5,9.5],true),map('wooden_floor_02_nor_gl.jpg',[7.5,9.5]),map('wooden_floor_02_Rough.jpg',[7.5,9.5]),
-  map('rubber_tiles_nor_gl.jpg',[8,16]),map('rubber_tiles_Rough.jpg',[8,16]),
   map('athlete-skin.jpg',[1,1],true),
- ]);return {wood,woodNormal,woodRough,rubberNormal,rubberRough,athleteSkin};
+ ]);return {wood,woodNormal,woodRough,athleteSkin};
 }
 
 export function createEnvironment(THREE,renderer,scene){

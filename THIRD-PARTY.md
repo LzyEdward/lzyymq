@@ -33,7 +33,8 @@ geometry are supplied as local source. No third-party service is needed to play.
 - Rubber: https://polyhaven.com/a/rubber_tiles
 - License: CC0, https://polyhaven.com/license
 - Local 1K JPEG color, normal and roughness maps live in `assets/textures/`.
-  Rubber color is procedural; its normal and roughness maps come from Poly Haven.
+  From 7.10 the court uses procedural PVC micro-relief instead of rubber tile
+  normal/roughness maps. Older rubber maps remain bundled for compatibility.
 
 ## ASTROX 100ZZ reference
 
