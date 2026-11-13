@@ -1,7 +1,7 @@
 // Metre-scale closed hand sculpt. Smooth unions keep the wrist and thumb web
 // continuous; separate tapered finger paths preserve the interdigital gaps.
-import {boundedAsset,handBufferLayout} from './asset-loading.mjs?v=7.0.0';
-import {handTint,handUV,createHandSkin} from './hand-surface.mjs?v=7.0.0';
+import {boundedAsset,handBufferLayout} from './asset-loading.mjs?v=7.0.1';
+import {handTint,handUV,createHandSkin} from './hand-surface.mjs?v=7.0.1';
 let cachedGrip=null,cachedOpen=null,runtimeFallback=false;
 const bakedGeometries=new Map();
 export async function prepareHands(THREE,{safe=false,onWarning=()=>{}}={}){

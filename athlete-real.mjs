@@ -1,5 +1,5 @@
-import * as data from './assets/athlete-data.mjs?v=7.0.0';
-import {FootPlant} from './footwork.mjs?v=7.0.0';
+import * as data from './assets/athlete-data.mjs?v=7.0.1';
+import {FootPlant} from './footwork.mjs?v=7.0.1';
 
 // A continuous CC0 anatomical mesh, 48-bone skin, and two-bone limb IK.
 export function createAthlete(THREE, createRacket) {
