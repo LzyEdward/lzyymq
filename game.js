@@ -1,27 +1,27 @@
-import * as THREE from './vendor/three/build/three.module.js?v=7.0.1';
-import { mergeGeometries } from './vendor/three/addons/utils/BufferGeometryUtils.js?v=7.0.1';
-import { COURT, advance, solveShot, predict, winnerOnLanding, clamp, damp, groundCrossing, createGroundMotion, stepGroundMotion } from './physics.mjs?v=7.0.1';
-import { FlightRecorder, EagleEyeReview } from './eagle-eye.mjs?v=7.0.1';
-import { HitIntent, canContact, receivingTarget, swingWindow } from './controls.mjs?v=7.0.1';
-import { JumpMotion, MovementOwnership, keyCommand, pointerCommand } from './interaction.mjs?v=7.0.1';
-import { freeLook, landingFromMap, moveLanding, normalizeLanding, landingName, LANDING_PRESETS } from './aiming.mjs?v=7.0.1';
-import { createAthlete } from './athlete.mjs?v=7.0.1';
-import { movementVector, gradeContact, strokeOutcome, shotTarget, SHOT_DEPTHS, Dash, targetDistance, DRILL_TARGETS, practiceFeed, smartStroke, racketPowerBoost, techniqueTarget } from './gameplay.mjs?v=7.0.1';
-import { OPPONENT_LEVELS, LEVEL_DESCRIPTIONS, LEVEL_REFERENCES, opponentLevel, placementSpread, matchFinished, rankName, freshCareer, parseCareer, settleMatch } from './competition.mjs?v=7.0.1';
-import {planOpponentStroke,recoveryBase,opponentFootwork,opponentReceiveMissChance,opponentStrokeExecution,opponentServeTarget,opponentContactWindow,opponentReceiveBase} from './opponent-ai.mjs?v=7.0.1';
-import { trackAngles, stepTracking } from './tracking.mjs?v=7.0.1';
-import { loadSurfaceMaps, createEnvironment, CourtPresentation } from './presentation.mjs?v=7.0.1';
-import { createViewmodel } from './viewmodel.mjs?v=7.0.1';
-import { prepareHands } from './hand-sculpt.mjs?v=7.0.1';
-import { RenderBudget, AdaptiveResolution, renderProfile } from './render-budget.mjs?v=7.0.1';
-import { createRacketModel, RACKET_PALETTES } from './racket-model.mjs?v=7.0.1';
-import { swingPose, moveVelocity, groundedCameraOffset } from './motion.mjs?v=7.0.1';
-import { dressHall } from './hall-details.mjs?v=7.0.1';
-import { hallSurfaces } from './hall-surfaces.mjs?v=7.0.1';
-import { createShuttleModel } from './shuttle-model.mjs?v=7.0.1';
-import { createNetMaterial } from './net-material.mjs?v=7.0.1';
-import { createTechniquePanel } from './technique-panel.mjs?v=7.0.1';
-import { PLAYER_STYLES, OPPONENT_STYLES, effectiveOpponentLevel, playerStatsFromInputs, playerStatsForStyle, normalizeSkills } from './player-styles.mjs?v=7.0.1';
+import * as THREE from './vendor/three/build/three.module.js?v=7.1.0';
+import { mergeGeometries } from './vendor/three/addons/utils/BufferGeometryUtils.js?v=7.1.0';
+import { COURT, advance, solveShot, predict, winnerOnLanding, clamp, damp, groundCrossing, createGroundMotion, stepGroundMotion } from './physics.mjs?v=7.1.0';
+import { FlightRecorder, EagleEyeReview } from './eagle-eye.mjs?v=7.1.0';
+import { HitIntent, canContact, receivingTarget, swingWindow } from './controls.mjs?v=7.1.0';
+import { JumpMotion, MovementOwnership, keyCommand, pointerCommand } from './interaction.mjs?v=7.1.0';
+import { freeLook, landingFromMap, moveLanding, normalizeLanding, landingName, LANDING_PRESETS } from './aiming.mjs?v=7.1.0';
+import { createAthlete } from './athlete.mjs?v=7.1.0';
+import { movementVector, gradeContact, strokeOutcome, shotTarget, SHOT_DEPTHS, Dash, targetDistance, DRILL_TARGETS, practiceFeed, smartStroke, racketPowerBoost, techniqueTarget } from './gameplay.mjs?v=7.1.0';
+import { OPPONENT_LEVELS, LEVEL_DESCRIPTIONS, LEVEL_REFERENCES, opponentLevel, placementSpread, matchFinished, rankName, freshCareer, parseCareer, settleMatch } from './competition.mjs?v=7.1.0';
+import {planOpponentStroke,recoveryBase,opponentFootwork,opponentReceiveMissChance,opponentStrokeExecution,opponentServeTarget,opponentContactWindow,opponentReceiveBase} from './opponent-ai.mjs?v=7.1.0';
+import { trackAngles, stepTracking } from './tracking.mjs?v=7.1.0';
+import { loadSurfaceMaps, createEnvironment, CourtPresentation } from './presentation.mjs?v=7.1.0';
+import { createViewmodel } from './viewmodel.mjs?v=7.1.0';
+import { prepareHands } from './hand-sculpt.mjs?v=7.1.0';
+import { RenderBudget, AdaptiveResolution, renderProfile } from './render-budget.mjs?v=7.1.0';
+import { createRacketModel, RACKET_PALETTES } from './racket-model.mjs?v=7.1.0';
+import { swingPose, moveVelocity, groundedCameraOffset } from './motion.mjs?v=7.1.0';
+import { dressHall } from './hall-details.mjs?v=7.1.0';
+import { hallSurfaces } from './hall-surfaces.mjs?v=7.1.0';
+import { createShuttleModel } from './shuttle-model.mjs?v=7.1.0';
+import { createNetMaterial } from './net-material.mjs?v=7.1.0';
+import { createTechniquePanel } from './technique-panel.mjs?v=7.1.0';
+import { PLAYER_STYLES, OPPONENT_STYLES, effectiveOpponentLevel, playerStatsFromInputs, playerStatsForStyle, normalizeSkills } from './player-styles.mjs?v=7.1.0';
 
 const $ = (s) => document.querySelector(s);
 const canvas = $('#court');
@@ -1434,7 +1434,7 @@ async function init() {
         landingMarker.visible=targetMarker.visible=aimMarker.visible=shuttleShadow.visible=false;
       };
       const handViews=document.createElement('select');handViews.id='hand-inspect-view';handViews.setAttribute('aria-label','手部检查视角');
-      for(const [value,label] of [['grip','握拍近景'],['palm','掌侧近景'],['back','手背近景'],['racket','整拍与握拍'],['idle','实战待机'],['prep','高远准备'],['contact','高远触球'],['follow','杀球收拍'],['net','网前搓球'],['serve','发球准备']])handViews.add(new Option(label,value));
+      for(const [value,label] of [['grip','握拍近景'],['palm','掌侧近景'],['back','手背近景'],['racket','整拍与握拍'],['idle','实战待机'],['prep','高远准备'],['contact','高远触球'],['high','高位伸展触球'],['backhand','反手伸展触球'],['follow','杀球收拍'],['net','网前搓球'],['serve','发球准备']])handViews.add(new Option(label,value));
       const inspectHand=()=>{
         renderBudget.invalidate();
         state.screen='hand-inspect';state.handsOn=false;document.exitPointerLock?.();
@@ -1443,7 +1443,7 @@ async function init() {
         const view=handViews.value;
         if(view==='racket'){racket.position.set(-.10,-.26,-1.02);racket.rotation.set(.03,.16,-.25);}
         else if(['grip','palm','back'].includes(view)){racket.position.set(-.02,-.05,-.48);racket.rotation.set(.08,view==='palm'?1.2:view==='back'?-1.2:0,-.22);}
-        else {const spec={idle:[0,'clear'],prep:[.048,'clear'],contact:[.095,'clear'],follow:[.255,'smash'],net:[.095,'net'],serve:[.048,'serve']}[view],pose=swingPose({elapsed:spec[0],kind:spec[1]});racket.position.fromArray(pose.position);racket.rotation.fromArray([...pose.rotation,'XYZ']);}
+        else {const spec={idle:[0,'clear'],prep:[.048,'clear'],contact:[.095,'clear'],high:[.095,'smash',[.45,.7,-.95]],backhand:[.095,'clear',[-.65,.4,-1.05]],follow:[.255,'smash'],net:[.095,'net'],serve:[.048,'serve']}[view],pose=swingPose({elapsed:spec[0],kind:spec[1],contact:spec[2]});racket.position.fromArray(pose.position);racket.rotation.fromArray([...pose.rotation,'XYZ']);}
         $('#test-result').textContent=JSON.stringify({view,hand:racket.userData.hand.geometry.attributes.position.count,grip:racket.userData.gripReport??null},null,2);
       };
       const handInspect=document.createElement('button');handInspect.id='inspect-grip';handInspect.textContent='检查第一人称握拍';handInspect.onclick=inspectHand;handViews.onchange=inspectHand;panel.prepend(handInspect,handViews);

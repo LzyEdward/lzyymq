@@ -11,9 +11,11 @@ export function handTint(x,y,z){
  // Broad, restrained colour variations. No painted-on contact shadows.
  const mottling=Math.sin(x*171+y*97+z*113)*Math.sin(y*249-z*71)*.005;
  const vein=forearm*gauss(x-(.12-y*.74+Math.sin(y*32)*.004),.0018)*.012;
- return [.49+palm*.035+tip*.032+thenar*.008+mottling-vein,
-         .295+palm*.033+tip*.003+mottling-vein*.25,
-         .195+palm*.024+tip*.001+mottling+vein*.17];
+ const joint=gauss(x-.002,.012)*gauss(y-.078,.06)+gauss(x-.038,.017)*gauss(y-.11,.009);
+ const wrist=gauss(x-.119,.019)*gauss(y-.027,.023);
+ return [.49+palm*.035+tip*.032+thenar*.008+mottling-vein+joint*.009-wrist*.008,
+         .295+palm*.033+tip*.003+mottling-vein*.25-joint*.009-wrist*.011,
+         .195+palm*.024+tip*.001+mottling+vein*.17-joint*.006-wrist*.007];
 }
 
 function creaseAt(x,y){
@@ -39,5 +41,5 @@ export function createHandSkin(THREE){
   pixels[j*size+i]=Math.round(145+pore+grain-creaseAt(x,y)*66);
  }
  const bump=new THREE.DataTexture(pixels,size,size,THREE.RedFormat);bump.wrapS=bump.wrapT=THREE.ClampToEdgeWrapping;bump.magFilter=THREE.LinearFilter;bump.minFilter=THREE.LinearMipmapLinearFilter;bump.generateMipmaps=true;bump.needsUpdate=true;
- return new THREE.MeshPhysicalMaterial({vertexColors:true,roughness:.64,bumpMap:bump,bumpScale:.00025,clearcoat:.012,clearcoatRoughness:.85,sheen:.08,sheenColor:'#ba8971'});
+ return new THREE.MeshPhysicalMaterial({vertexColors:true,roughness:.68,bumpMap:bump,bumpScale:.00048,clearcoat:.008,clearcoatRoughness:.85,sheen:.055,sheenColor:'#ba8971'});
 }

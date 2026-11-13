@@ -32,4 +32,4 @@ geometry are supplied as local source. No third-party service is needed to play.
 - Product specifications: https://www.yonex.com/ax100zz
 - Dark Navy photo reference: https://badmintonworldbalcatta.com/products/astrox-100zz-dark-navy-4ug5
 - The racket is a game-specific procedural approximation; product photographs are not bundled. Yonex names and marks belong to their respective owner. This is not an official Yonex game.
-- First-person grip geometry in version 6.8 is a dedicated procedural sculpt and no longer a cropped MakeHuman hand.
+- From version 7.1, the default first-person hands use a separately posed, refined and elbow-capped portion of the same CC0 anatomical topology. Reproducible conversion: `tools/compile-hand-anatomy.mjs`. The wrist and palm remain continuous. The low-load startup fallback is an independent procedural closed sculpt.
