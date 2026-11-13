@@ -1,7 +1,7 @@
-import { sculptGrip } from './hand-sculpt.mjs?v=7.1.0';
+import { sculptGrip } from './hand-sculpt.mjs?v=7.2.0';
 
 // Dedicated first-person anatomy: one closed wrist, palm, thumb web and hand.
-export function createViewmodel(THREE,createRacket){
+export function createViewmodel(THREE,createRacket,{skinMap=null}={}){
  const root=new THREE.Group(),V=(...p)=>new THREE.Vector3(...p);
  const hand=sculptGrip(THREE);root.add(hand.mesh,...hand.details);root.userData.hand=hand.mesh;
  const racket=createRacket(true);racket.scale.setScalar(.96);root.add(racket);
@@ -17,6 +17,7 @@ export function createViewmodel(THREE,createRacket){
  }
  sleeve(root);
  const support=new THREE.Group(),open=sculptGrip(THREE,{open:true});support.add(open.mesh,...open.details);sleeve(support);support.scale.x=-1;root.userData.support=support;
+ if(skinMap)for(const mesh of [hand.mesh,open.mesh])if(mesh.geometry.userData.skinUV){mesh.material.map=skinMap;mesh.material.vertexColors=false;mesh.material.bumpMap.channel=1;mesh.material.needsUpdate=true;}
  for(const group of [root,support])group.traverse(o=>{if(o.isMesh){o.castShadow=false;o.receiveShadow=true;}});
  return root;
 }

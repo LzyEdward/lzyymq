@@ -1,8 +1,8 @@
-import * as data from './assets/athlete-data.mjs?v=7.1.0';
-import {FootPlant} from './footwork.mjs?v=7.1.0';
+import * as data from './assets/athlete-data.mjs?v=7.2.0';
+import {FootPlant} from './footwork.mjs?v=7.2.0';
 
 // A continuous CC0 anatomical mesh, 48-bone skin, and two-bone limb IK.
-export function createAthlete(THREE, createRacket) {
+export function createAthlete(THREE, createRacket,{skinMap=null}={}) {
  const root=new THREE.Group(),body=new THREE.Group();root.name='Athlete · anatomical skin · 1.81m';root.add(body);
  const vec=(...v)=>new THREE.Vector3(...v),clamp=THREE.MathUtils.clamp,bones={},bind={};
  for(const spec of data.bones){const bone=new THREE.Bone();bone.name=spec.name;bones[spec.name]=bone;bind[spec.name]=vec(...spec.position);}
@@ -11,10 +11,10 @@ export function createAthlete(THREE, createRacket) {
  function grain(size,cloth=false){
   const canvas=document.createElement('canvas');canvas.width=canvas.height=size;const ctx=canvas.getContext('2d');ctx.fillStyle='#808080';ctx.fillRect(0,0,size,size);
   for(let y=0;y<size;y++)for(let x=0;x<size;x++){const n=(Math.sin(x*71.3+y*113.1)*43758.5453)%1,c=Math.floor(128+n*(cloth?23:13));ctx.fillStyle='rgb('+c+','+c+','+c+')';ctx.fillRect(x,y,1,1);}
-  const texture=new THREE.CanvasTexture(canvas);texture.wrapS=texture.wrapT=THREE.RepeatWrapping;texture.repeat.set(cloth?100:9,cloth?100:9);return texture;
+  const texture=new THREE.CanvasTexture(canvas);texture.wrapS=texture.wrapT=THREE.RepeatWrapping;texture.repeat.set(cloth?24:9,cloth?24:9);return texture;
  }
- const weave=grain(32,true),skin=new THREE.MeshPhysicalMaterial({vertexColors:true,roughness:.61,bumpMap:grain(64),bumpScale:.00022,clearcoat:.015,clearcoatRoughness:.8,sheen:.08,sheenColor:'#c39882'});
- const jersey=new THREE.MeshPhysicalMaterial({color:'#e3e9df',roughness:.84,bumpMap:weave,bumpScale:.00065,sheen:.7,sheenRoughness:.9,sheenColor:'#ffffff'});
+ const weave=grain(32,true),skin=new THREE.MeshPhysicalMaterial({vertexColors:!skinMap,map:skinMap,roughness:.66,bumpMap:grain(64),bumpScale:.00022,clearcoat:.008,clearcoatRoughness:.8,sheen:.055,sheenColor:'#c39882'});
+ const jersey=new THREE.MeshPhysicalMaterial({color:'#e3e9df',roughness:.9,bumpMap:weave,bumpScale:.00034,sheen:.42,sheenRoughness:.9,sheenColor:'#ffffff'});
  jersey.onBeforeCompile=shader=>{
   shader.vertexShader=shader.vertexShader.replace('#include <common>','#include <common>\nvarying vec3 vCloth;').replace('#include <begin_vertex>','#include <begin_vertex>\nvCloth=position;');
   shader.fragmentShader=shader.fragmentShader.replace('#include <common>','#include <common>\nvarying vec3 vCloth;').replace('#include <color_fragment>',`#include <color_fragment>
@@ -24,9 +24,14 @@ export function createAthlete(THREE, createRacket) {
    diffuseColor.rgb=mix(diffuseColor.rgb,vec3(.035,.15,.155),panel*.83+hem*.45+cuff*.8);
    float seam=1.-smoothstep(.001,.0025,abs(vCloth.y-1.388+abs(vCloth.x)*.13));
    diffuseColor.rgb=mix(diffuseColor.rgb,vec3(.12,.38,.37),seam*.28);
+   float sideFold=sin(vCloth.y*112.+abs(vCloth.x)*27.)*sin(vCloth.y*61.-vCloth.x*18.);
+   float foldMask=smoothstep(.99,1.03,vCloth.y)*(1.-smoothstep(1.24,1.39,vCloth.y))*smoothstep(.025,.15,abs(vCloth.x));
+   diffuseColor.rgb*=1.+sideFold*.023*foldMask;
+   float stitch=1.-smoothstep(.0006,.0016,abs(abs(vCloth.x)-.176));
+   diffuseColor.rgb*=1.-stitch*.07*smoothstep(1.03,1.12,vCloth.y)*(1.-smoothstep(1.32,1.39,vCloth.y));
   `);
  };
- jersey.customProgramCacheKey=()=> 'court-performance-jersey-v3';
+ jersey.customProgramCacheKey=()=> 'court-performance-jersey-v4';
  const shorts=new THREE.MeshPhysicalMaterial({color:'#1c343c',roughness:.9,bumpMap:weave,bumpScale:.001,sheen:.4});
  const hairGrain=grain(64);hairGrain.repeat.set(70,70);
  const sock=new THREE.MeshStandardMaterial({color:'#dedfd4',roughness:.95,bumpMap:weave,bumpScale:.0006}),hair=new THREE.MeshPhysicalMaterial({color:'#201e1b',roughness:.91,bumpMap:hairGrain,bumpScale:.0007,sheen:.2});

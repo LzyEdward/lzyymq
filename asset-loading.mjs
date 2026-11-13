@@ -12,9 +12,12 @@ export async function boundedAsset(load,{timeout=10000,label='资源',fallback=n
 
 export function handBufferLayout(buffer){
  if(!(buffer instanceof ArrayBuffer)||buffer.byteLength<8)throw new Error('手部模型数据不完整');
- const [vertices,indices]=new Uint32Array(buffer,0,2);
+ const first=new Uint32Array(buffer,0,2),modern=first[0]===0x32444846;
+ if(modern&&buffer.byteLength<16)throw new Error('手部UV模型数据不完整');
+ const [vertices,indices]=modern?new Uint32Array(buffer,4,2):first;
  if(vertices<100||vertices>1000000||indices<300||indices>6000000||indices%3)throw new Error('手部模型格式无效');
- const indexOffset=Math.ceil((8+vertices*21)/4)*4;
+ const positionOffset=modern?16:8,uvOffset=Math.ceil((positionOffset+vertices*21)/4)*4;
+ const indexOffset=uvOffset+(modern?vertices*8:0);
  if(buffer.byteLength!==indexOffset+indices*4)throw new Error('手部模型下载不完整');
- return {vertices,indices,indexOffset};
+ return modern?{vertices,indices,indexOffset,positionOffset,uvOffset}:{vertices,indices,indexOffset};
 }

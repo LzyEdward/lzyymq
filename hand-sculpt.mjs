@@ -1,8 +1,8 @@
 // Metre-scale closed hand sculpt. Smooth unions keep the wrist and thumb web
 // continuous; separate tapered finger paths preserve the interdigital gaps.
-import {boundedAsset,handBufferLayout} from './asset-loading.mjs?v=7.1.0';
-import {handTint,handUV,createHandSkin} from './hand-surface.mjs?v=7.1.0';
-import {handPaths} from './hand-pose.mjs?v=7.1.0';
+import {boundedAsset,handBufferLayout} from './asset-loading.mjs?v=7.2.0';
+import {handTint,handUV,createHandSkin} from './hand-surface.mjs?v=7.2.0';
+import {handPaths} from './hand-pose.mjs?v=7.2.0';
 let cachedGrip=null,cachedOpen=null,runtimeFallback=false;
 const bakedGeometries=new Map();
 export async function prepareHands(THREE,{safe=false,onWarning=()=>{}}={}){
@@ -10,17 +10,17 @@ export async function prepareHands(THREE,{safe=false,onWarning=()=>{}}={}){
  if(safe)return;
  await Promise.all(['grip','open'].map(async name=>{
   const data=await boundedAsset(async signal=>{
-   const response=await fetch(new URL(`./assets/hand-${name}.bin?v=7.1.0`,import.meta.url),{signal});if(!response.ok)throw new Error(`手部模型 HTTP ${response.status}`);
+   const response=await fetch(new URL(`./assets/hand-${name}.bin?v=7.2.0`,import.meta.url),{signal});if(!response.ok)throw new Error(`手部模型 HTTP ${response.status}`);
    const bytes=await response.arrayBuffer();handBufferLayout(bytes);return bytes;
   },{timeout:10000,label:`${name}手部模型`,onWarning});
   if(!data)return;
-  const {vertices:n,indices:count}=handBufferLayout(data);let offset=8;
+  const {vertices:n,indices:count,positionOffset=8,uvOffset}=handBufferLayout(data);let offset=positionOffset;
   const positions=new Float32Array(data,offset,n*3);offset+=n*12;
   const packedNormals=new Int16Array(data,offset,n*3);offset+=n*6;
   const packedColors=new Uint8Array(data,offset,n*3);offset+=n*3;offset=Math.ceil(offset/4)*4;
-  const indices=new Uint32Array(data,offset,count),normals=Float32Array.from(packedNormals,v=>v/32767),colors=Float32Array.from(packedColors,v=>v/255),uv=new Float32Array(n*2);
+  const indices=new Uint32Array(data,uvOffset===undefined?offset:uvOffset+n*8,count),normals=Float32Array.from(packedNormals,v=>v/32767),colors=Float32Array.from(packedColors,v=>v/255),uv=new Float32Array(n*2);
   for(let i=0;i<n;i++){const pair=handUV(positions[i*3],positions[i*3+1]);uv[i*2]=pair[0];uv[i*2+1]=pair[1];}
-  const geo=new THREE.BufferGeometry();for(const [key,values,size] of [['position',positions,3],['normal',normals,3],['color',colors,3],['uv',uv,2]])geo.setAttribute(key,new THREE.BufferAttribute(values,size));geo.setIndex(new THREE.BufferAttribute(indices,1));geo.computeBoundingSphere();geo.userData.anatomical=true;bakedGeometries.set(name,geo);
+  const geo=new THREE.BufferGeometry();for(const [key,values,size] of [['position',positions,3],['normal',normals,3],['color',colors,3],['uv',uvOffset===undefined?uv:new Float32Array(data,uvOffset,n*2),2],['uv1',uv,2]])geo.setAttribute(key,new THREE.BufferAttribute(values,size));geo.setIndex(new THREE.BufferAttribute(indices,1));geo.computeBoundingSphere();geo.userData.anatomical=true;geo.userData.skinUV=uvOffset!==undefined;bakedGeometries.set(name,geo);
  }));
 }
 export function sculptGrip(THREE,{open=false}={}){
