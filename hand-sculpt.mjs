@@ -1,6 +1,6 @@
 // Metre-scale closed hand sculpt. Smooth unions keep the wrist and thumb web
 // continuous; separate tapered finger paths preserve the interdigital gaps.
-import {boundedAsset,handBufferLayout} from './asset-loading.mjs?v=4d9c46f80c2cf48c';
+import {boundedAsset,handBufferLayout} from './asset-loading.mjs?v=cbec86138c004352';
 import {handTint,handUV,createHandSkin} from './hand-surface.mjs?v=e4f19a20f78b897f';
 import {handPaths} from './hand-pose.mjs?v=5a35072752929282';
 let cachedGrip=null,cachedOpen=null,runtimeFallback=false;

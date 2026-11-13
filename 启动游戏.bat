@@ -8,6 +8,6 @@ if errorlevel 1 (
   pause
   exit /b 1
 )
-echo 正在启动羽境 5.2……关闭此窗口即可停止本地服务。
+echo 正在启动羽境……关闭此窗口即可停止本地服务。
 node server.mjs --open
 if errorlevel 1 pause

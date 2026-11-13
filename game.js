@@ -10,10 +10,10 @@ import { movementVector, gradeContact, strokeOutcome, shotTarget, SHOT_DEPTHS, D
 import { OPPONENT_LEVELS, LEVEL_DESCRIPTIONS, LEVEL_REFERENCES, opponentLevel, placementSpread, matchFinished, rankName, freshCareer, parseCareer, settleMatch } from './competition.mjs?v=0bfdf807188e5da2';
 import {planOpponentStroke,recoveryBase,opponentFootwork,opponentReceiveMissChance,opponentStrokeExecution,opponentServeTarget,opponentContactWindow,opponentReceiveBase} from './opponent-ai.mjs?v=92ef48cb8985b6c3';
 import { trackAngles, stepTracking, highBallOffset, stepHighBallOffset } from './tracking.mjs?v=06dbfbbf1f80a4e0';
-import { loadSurfaceMaps, createEnvironment, CourtPresentation } from './presentation.mjs?v=0cc85ddf223c65a1';
-import { createViewmodel } from './viewmodel.mjs?v=26c2e1b92d5e0935';
-import { prepareHands } from './hand-sculpt.mjs?v=e0a20246a13fd7b0';
-import {preparePlayerArm} from './player-arm.mjs?v=1da804b30bbeb67c';
+import { loadSurfaceMaps, createEnvironment, CourtPresentation } from './presentation.mjs?v=2a052ae182c79af2';
+import { createViewmodel } from './viewmodel.mjs?v=f98ce6be5762df10';
+import { prepareHands } from './hand-sculpt.mjs?v=2ff2bafddd7dc52f';
+import {preparePlayerArm} from './player-arm.mjs?v=2977903ee683d6c7';
 import { RenderBudget, AdaptiveResolution, renderProfile } from './render-budget.mjs?v=661910472f512423';
 import {RenderLoop} from './render-loop.mjs?v=28e2db7090a5188b';
 import { createRacketModel, disposeRacketModel, RACKET_PALETTES } from './racket-model.mjs?v=6e1c32ff15aa289f';
@@ -1427,7 +1427,8 @@ async function init() {
     scene = new THREE.Scene(); camera = new THREE.PerspectiveCamera(68, innerWidth / innerHeight, .045, 100);
     bootStage='assets';boot({stage:'准备人物与球馆材质',percent:40});
     const onWarning=warning=>{console.warn('Optional court asset:',JSON.stringify(warning));boot({warning:true,label:warning.label,message:warning.message});};
-    const [,maps]=await Promise.all([prepareHands(THREE,{safe:safeBoot,onWarning}),loadSurfaceMaps(THREE,renderer,{safe:safeBoot,onWarning}),params.get('arm')!=='legacy'?preparePlayerArm(THREE,{safe:safeBoot,onWarning}):null]);surfaceMaps=maps;
+    const legacyArm=params.get('arm')==='legacy';
+    const [,maps]=await Promise.all([prepareHands(THREE,{safe:safeBoot||!legacyArm,onWarning}),loadSurfaceMaps(THREE,renderer,{safe:safeBoot,onWarning}),!legacyArm?preparePlayerArm(THREE,{safe:safeBoot,onWarning}):null]);surfaceMaps=maps;
     if(!safeBoot){try{environmentTarget=createEnvironment(THREE,renderer,scene);}catch(error){onWarning({label:'球馆反射',message:error.message});}}
     presentation=new CourtPresentation(THREE,renderer);presentation.setSize(innerWidth,innerHeight);
     eagleEye = new EagleEyeReview(closeLineReview);

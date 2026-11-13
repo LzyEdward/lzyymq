@@ -1,4 +1,4 @@
-import {boundedAsset} from './asset-loading.mjs?v=4d9c46f80c2cf48c';
+import {boundedAsset} from './asset-loading.mjs?v=cbec86138c004352';
 // Local PBR surfaces and a restrained depth-based contact-occlusion pass.
 export async function loadSurfaceMaps(THREE,renderer,{safe=false,onWarning=()=>{}}={}){
  if(safe)return {};

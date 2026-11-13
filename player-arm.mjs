@@ -1,9 +1,10 @@
 import * as source from './assets/athlete-data.mjs?v=7f28ea9b22f91323';
-import {boundedAsset} from './asset-loading.mjs?v=4d9c46f80c2cf48c';
+import {boundedAsset,decodeAssetBuffer} from './asset-loading.mjs?v=cbec86138c004352';
 import {handPaths,supportFingerPaths} from './hand-pose.mjs?v=5a35072752929282';
 import {ARM_WRIST,ARM_ELBOW} from './first-person-arm.mjs?v=266661bd87fc52e1';
 import {handUV} from './hand-surface.mjs?v=e4f19a20f78b897f';
 let armGeometry=null;
+export const playerArmAvailable=()=>armGeometry!==null;
 export const ARM_BONES=source.bones.filter(b=>/^(?:upperarm01|lowerarm01|wrist|finger\d-\d)\.R$/.test(b.name)).map(b=>b.name);
 export function armBufferLayout(bytes){
  if(!(bytes instanceof ArrayBuffer)||bytes.byteLength<24)throw new Error('完整手臂数据不完整');
@@ -17,8 +18,9 @@ export function armBufferLayout(bytes){
 export async function preparePlayerArm(T,{safe=false,onWarning=()=>{}}={}){
  armGeometry=null;if(safe)return;
  armGeometry=await boundedAsset(async signal=>{
-  const response=await fetch(new URL('./assets/player-arm.bin?v=7.16.0',import.meta.url),{signal});if(!response.ok)throw new Error(`完整手臂 HTTP ${response.status}`);
-  const bytes=await response.arrayBuffer(),{vertices,indices,groups,bones,layout,indexOffset,groupOffset}=armBufferLayout(bytes),geometry=new T.BufferGeometry();
+  const file=typeof DecompressionStream!=='undefined'?'player-arm.bin.gz':'player-arm.bin';
+  const response=await fetch(new URL(`./assets/${file}?v=7.16.0`,import.meta.url),{signal});if(!response.ok)throw new Error(`完整手臂 HTTP ${response.status}`);
+  const bytes=await decodeAssetBuffer(await response.arrayBuffer()),{vertices,indices,groups,bones,layout,indexOffset,groupOffset}=armBufferLayout(bytes),geometry=new T.BufferGeometry();
   for(const {name,Type,size,at} of layout){let values=new Type(bytes,at,vertices*size);if(name==='normal')values=Float32Array.from(values,v=>v/32767);if(name==='color')values=Float32Array.from(values,v=>v/255);if(name==='skinWeight')values=Float32Array.from(values,v=>v/65535);geometry.setAttribute(name,new T.BufferAttribute(values,size));}
   const ids=new Uint32Array(bytes,indexOffset,indices);if(ids.some(v=>v>=vertices)||geometry.attributes.skinIndex.array.some(v=>v>=bones))throw new Error('完整手臂索引无效');
   geometry.setIndex(new T.BufferAttribute(ids,1));const grouped=new Uint32Array(bytes,groupOffset,groups*3);

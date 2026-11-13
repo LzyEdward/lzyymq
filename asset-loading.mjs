@@ -1,4 +1,12 @@
 // Optional visual assets must never hold the entire court behind a spinner.
+export async function decodeAssetBuffer(buffer){
+ const bytes=new Uint8Array(buffer);
+ // Some servers transparently decode content. Check the bytes rather than
+ // blindly decompressing based on the file suffix or response MIME type.
+ if(bytes[0]!==0x1f||bytes[1]!==0x8b)return buffer;
+ if(typeof DecompressionStream==='undefined')throw new Error('浏览器不支持压缩模型');
+ return new Response(new Blob([buffer]).stream().pipeThrough(new DecompressionStream('gzip'))).arrayBuffer();
+}
 export async function boundedAsset(load,{timeout=10000,label='资源',fallback=null,onWarning=()=>{}}={}){
  const controller=new AbortController();let timer,expired=false;
  try{
