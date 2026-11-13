@@ -1,8 +1,8 @@
 // Metre-scale closed hand sculpt. Smooth unions keep the wrist and thumb web
 // continuous; separate tapered finger paths preserve the interdigital gaps.
-import {boundedAsset,handBufferLayout} from './asset-loading.mjs?v=7.2.0';
-import {handTint,handUV,createHandSkin} from './hand-surface.mjs?v=7.2.0';
-import {handPaths} from './hand-pose.mjs?v=7.2.0';
+import {boundedAsset,handBufferLayout} from './asset-loading.mjs?v=7.3.0';
+import {handTint,handUV,createHandSkin} from './hand-surface.mjs?v=7.3.0';
+import {handPaths} from './hand-pose.mjs?v=7.3.0';
 let cachedGrip=null,cachedOpen=null,runtimeFallback=false;
 const bakedGeometries=new Map();
 export async function prepareHands(THREE,{safe=false,onWarning=()=>{}}={}){
@@ -10,7 +10,7 @@ export async function prepareHands(THREE,{safe=false,onWarning=()=>{}}={}){
  if(safe)return;
  await Promise.all(['grip','open'].map(async name=>{
   const data=await boundedAsset(async signal=>{
-   const response=await fetch(new URL(`./assets/hand-${name}.bin?v=7.2.0`,import.meta.url),{signal});if(!response.ok)throw new Error(`手部模型 HTTP ${response.status}`);
+   const response=await fetch(new URL(`./assets/hand-${name}.bin?v=7.3.0`,import.meta.url),{signal});if(!response.ok)throw new Error(`手部模型 HTTP ${response.status}`);
    const bytes=await response.arrayBuffer();handBufferLayout(bytes);return bytes;
   },{timeout:10000,label:`${name}手部模型`,onWarning});
   if(!data)return;

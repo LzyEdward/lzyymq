@@ -2,6 +2,15 @@
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 const smooth=t=>t*t*(3-2*t);
 const mix=(a,b,t)=>a.map((x,i)=>x+(b[i]-x)*t);
+// Left hand pinches the feather skirt before the toss, then withdraws without
+// following the airborne shuttle. Returns camera-local offset from the cork.
+export function serveSupportPose({phase='serve',elapsed=0,swing=0}={}){
+ const serving=phase==='serve'||phase==='serving',after=phase==='rally'&&swing>=.2&&swing<.37;
+ if(!serving&&!after)return null;
+ const release=phase==='serving'?clamp((elapsed-.025)/.15,0,1):after?1:0;
+ const withdraw=smooth(release),rotation=[-.10-withdraw*.12,-.26,-.20-withdraw*.20];
+ return {offset:[-.018-withdraw*.15,.042-withdraw*.18,.012+withdraw*.045],rotation,release};
+}
 export function swingPose({elapsed=0,kind='clear',contact=null,contactTime=.095,armed=false,time=0,speed=0,power=0}={}){
  const idle={position:[.32,-.42,-.86],rotation:[.12,-.10,-.10]};
  if(elapsed<=0){idle.position[1]+=armed?.035:0;idle.position[0]+=Math.sin(time*6)*Math.min(speed,5)*.0012;idle.position[1]+=Math.cos(time*12)*Math.min(speed,5)*.001;return idle;}
