@@ -4,7 +4,7 @@ let cachedGrip=null,cachedOpen=null;
 const bakedGeometries=new Map();
 export async function prepareHands(THREE){
  await Promise.all(['grip','open'].map(async name=>{
-  const response=await fetch(new URL(`./assets/hand-${name}.bin?v=6.8.0`,import.meta.url));if(!response.ok)throw new Error('手部模型加载失败');
+  const response=await fetch(new URL(`./assets/hand-${name}.bin?v=6.9.0`,import.meta.url));if(!response.ok)throw new Error('手部模型加载失败');
   const data=await response.arrayBuffer(),header=new Uint32Array(data,0,2),n=header[0],count=header[1];let offset=8;
   const positions=new Float32Array(data,offset,n*3);offset+=n*12;
   const packedNormals=new Int16Array(data,offset,n*3);offset+=n*6;

@@ -21,7 +21,7 @@ export function createEnvironment(THREE,renderer,scene){
 
 export class CourtPresentation {
  constructor(THREE,renderer){
-  this.THREE=THREE;this.renderer=renderer;this.quality='high';this.sceneInfo={};
+ this.THREE=THREE;this.renderer=renderer;this.quality='balanced';this.sceneInfo={};
   this.target=new THREE.WebGLRenderTarget(1,1,{type:THREE.HalfFloatType,minFilter:THREE.LinearFilter,magFilter:THREE.LinearFilter,depthBuffer:true,samples:4});
   this.target.depthTexture=new THREE.DepthTexture(1,1,THREE.UnsignedIntType);
   this.uniforms={tColor:{value:this.target.texture},tDepth:{value:this.target.depthTexture},inverseProjection:{value:new THREE.Matrix4()},resolution:{value:new THREE.Vector2(1,1)},occlusion:{value:.7},exposure:{value:1}};
@@ -43,9 +43,11 @@ export class CourtPresentation {
   this.scene=new THREE.Scene();this.camera=new THREE.Camera();this.scene.add(new THREE.Mesh(new THREE.PlaneGeometry(2,2),this.material));
  }
  setSize(width,height){const ratio=this.renderer.getPixelRatio();this.target.setSize(Math.round(width*ratio),Math.round(height*ratio));this.uniforms.resolution.value.set(this.target.width,this.target.height);}
- setQuality(quality){this.quality=quality;this.uniforms.occlusion.value=quality==='balanced'?0:.7;this.target.dispose();this.target.samples=quality==='ultra'?4:quality==='high'?2:0;this.setSize(innerWidth,innerHeight);}
+ setQuality(quality){this.quality=quality;this.uniforms.occlusion.value=quality==='balanced'?0:.7;const samples=quality==='ultra'?2:0;if(this.target.samples!==samples){this.target.dispose();this.target.samples=samples;}this.setSize(innerWidth,innerHeight);}
  render(scene,camera){
-  const r=this.renderer;this.uniforms.inverseProjection.value.copy(camera.projectionMatrixInverse);
+  const r=this.renderer;
+  if(this.quality==='balanced'){r.setRenderTarget(null);r.render(scene,camera);this.sceneInfo={...r.info.render};return;}
+  this.uniforms.inverseProjection.value.copy(camera.projectionMatrixInverse);
   r.setRenderTarget(this.target);r.render(scene,camera);this.sceneInfo={...r.info.render};r.setRenderTarget(null);r.render(this.scene,this.camera);
  }
  dispose(){this.target.dispose();this.material.dispose();}
