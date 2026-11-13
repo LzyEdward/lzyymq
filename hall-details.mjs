@@ -1,4 +1,4 @@
-import {createSportsTowel} from './sports-towel.mjs?v=7.13.0';
+import {createSportsTowel} from './sports-towel.mjs?v=7.14.0';
 export function dressHall(T,scene){
  const v=(x,y,z)=>new T.Vector3(x,y,z),dark=new T.MeshStandardMaterial({color:'#304744',roughness:.48,metalness:.52}),wood=new T.MeshStandardMaterial({color:'#9d7853',roughness:.63}),white=new T.MeshStandardMaterial({color:'#e0e2d5',roughness:.84}),rubber=new T.MeshStandardMaterial({color:'#25413c',roughness:.95});
  function mesh(g,m,x,y,z){const o=new T.Mesh(g,m);o.position.set(x,y,z);o.castShadow=o.receiveShadow=true;scene.add(o);return o;}

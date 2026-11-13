@@ -1,29 +1,30 @@
-import * as THREE from './vendor/three/build/three.module.js?v=7.13.0';
-import { mergeGeometries } from './vendor/three/addons/utils/BufferGeometryUtils.js?v=7.13.0';
-import { COURT, advance, solveShot, predict, winnerOnLanding, clamp, damp, groundCrossing, createGroundMotion, stepGroundMotion } from './physics.mjs?v=7.13.0';
-import { FlightRecorder, EagleEyeReview } from './eagle-eye.mjs?v=7.13.0';
-import { HitIntent, canContact, receivingTarget, swingWindow } from './controls.mjs?v=7.13.0';
-import { JumpMotion, MovementOwnership, keyCommand, pointerCommand } from './interaction.mjs?v=7.13.0';
-import { freeLook, landingFromMap, moveLanding, normalizeLanding, landingName, LANDING_PRESETS } from './aiming.mjs?v=7.13.0';
-import { createAthlete } from './athlete.mjs?v=7.13.0';
-import { movementVector, gradeContact, strokeOutcome, shotTarget, SHOT_DEPTHS, Dash, targetDistance, DRILL_TARGETS, practiceFeed, smartStroke, racketPowerBoost, techniqueTarget } from './gameplay.mjs?v=7.13.0';
-import { OPPONENT_LEVELS, LEVEL_DESCRIPTIONS, LEVEL_REFERENCES, opponentLevel, placementSpread, matchFinished, rankName, freshCareer, parseCareer, settleMatch } from './competition.mjs?v=7.13.0';
-import {planOpponentStroke,recoveryBase,opponentFootwork,opponentReceiveMissChance,opponentStrokeExecution,opponentServeTarget,opponentContactWindow,opponentReceiveBase} from './opponent-ai.mjs?v=7.13.0';
-import { trackAngles, stepTracking, highBallOffset, stepHighBallOffset } from './tracking.mjs?v=7.13.0';
-import { loadSurfaceMaps, createEnvironment, CourtPresentation } from './presentation.mjs?v=7.13.0';
-import { createViewmodel } from './viewmodel.mjs?v=7.13.0';
-import { prepareHands } from './hand-sculpt.mjs?v=7.13.0';
-import {preparePlayerArm} from './player-arm.mjs?v=7.13.0';
-import { RenderBudget, AdaptiveResolution, renderProfile } from './render-budget.mjs?v=7.13.0';
-import { createRacketModel, disposeRacketModel, RACKET_PALETTES } from './racket-model.mjs?v=7.13.0';
-import { swingPose, moveVelocity, groundedCameraOffset, serveSupportPose, supportHandPose } from './motion.mjs?v=7.13.0';
-import { dressHall } from './hall-details.mjs?v=7.13.0';
-import { hallSurfaces } from './hall-surfaces.mjs?v=7.13.0';
-import { roofGeometry } from './roof-structure.mjs?v=7.13.0';
-import { createShuttleModel } from './shuttle-model.mjs?v=7.13.0';
-import { createCourtNet, NET_HALF_WIDTH } from './court-net.mjs?v=7.13.0';
-import { createTechniquePanel } from './technique-panel.mjs?v=7.13.0';
-import { PLAYER_STYLES, OPPONENT_STYLES, effectiveOpponentLevel, playerStatsFromInputs, playerStatsForStyle, normalizeSkills } from './player-styles.mjs?v=7.13.0';
+import * as THREE from './vendor/three/build/three.module.js?v=7.14.0';
+import { mergeGeometries } from './vendor/three/addons/utils/BufferGeometryUtils.js?v=7.14.0';
+import { COURT, advance, solveShot, predict, winnerOnLanding, clamp, damp, groundCrossing, createGroundMotion, stepGroundMotion } from './physics.mjs?v=7.14.0';
+import { FlightRecorder, EagleEyeReview } from './eagle-eye.mjs?v=7.14.0';
+import { HitIntent, canContact, receivingTarget, swingWindow } from './controls.mjs?v=7.14.0';
+import { JumpMotion, MovementOwnership, keyCommand, pointerCommand } from './interaction.mjs?v=7.14.0';
+import { freeLook, landingFromMap, moveLanding, normalizeLanding, landingName, LANDING_PRESETS } from './aiming.mjs?v=7.14.0';
+import { createAthlete } from './athlete.mjs?v=7.14.0';
+import { movementVector, gradeContact, strokeOutcome, shotTarget, SHOT_DEPTHS, Dash, targetDistance, DRILL_TARGETS, practiceFeed, smartStroke, racketPowerBoost, techniqueTarget } from './gameplay.mjs?v=7.14.0';
+import { OPPONENT_LEVELS, LEVEL_DESCRIPTIONS, LEVEL_REFERENCES, opponentLevel, placementSpread, matchFinished, rankName, freshCareer, parseCareer, settleMatch } from './competition.mjs?v=7.14.0';
+import {planOpponentStroke,recoveryBase,opponentFootwork,opponentReceiveMissChance,opponentStrokeExecution,opponentServeTarget,opponentContactWindow,opponentReceiveBase} from './opponent-ai.mjs?v=7.14.0';
+import { trackAngles, stepTracking, highBallOffset, stepHighBallOffset } from './tracking.mjs?v=7.14.0';
+import { loadSurfaceMaps, createEnvironment, CourtPresentation } from './presentation.mjs?v=7.14.0';
+import { createViewmodel } from './viewmodel.mjs?v=7.14.0';
+import { prepareHands } from './hand-sculpt.mjs?v=7.14.0';
+import {preparePlayerArm} from './player-arm.mjs?v=7.14.0';
+import { RenderBudget, AdaptiveResolution, renderProfile } from './render-budget.mjs?v=7.14.0';
+import {RenderLoop} from './render-loop.mjs?v=7.14.0';
+import { createRacketModel, disposeRacketModel, RACKET_PALETTES } from './racket-model.mjs?v=7.14.0';
+import { swingPose, moveVelocity, groundedCameraOffset, serveSupportPose, supportHandPose } from './motion.mjs?v=7.14.0';
+import { dressHall } from './hall-details.mjs?v=7.14.0';
+import { hallSurfaces } from './hall-surfaces.mjs?v=7.14.0';
+import { roofGeometry } from './roof-structure.mjs?v=7.14.0';
+import { createShuttleModel } from './shuttle-model.mjs?v=7.14.0';
+import { createCourtNet, NET_HALF_WIDTH } from './court-net.mjs?v=7.14.0';
+import { createTechniquePanel } from './technique-panel.mjs?v=7.14.0';
+import { PLAYER_STYLES, OPPONENT_STYLES, effectiveOpponentLevel, playerStatsFromInputs, playerStatsForStyle, normalizeSkills } from './player-styles.mjs?v=7.14.0';
 
 const $ = (s) => document.querySelector(s);
 const canvas = $('#court');
@@ -88,6 +89,7 @@ let previousManual = false;
 let gamepadHitHeld = false, gamepadJumpHeld = false, gamepadDashHeld = false;
 let inspectDrag=null,frameProbe=null,lastFrameTime=performance.now(),lastEffectsUI=-1;
 const renderBudget=new RenderBudget(),adaptiveResolution=new AdaptiveResolution();let qualityMode='auto';
+const renderLoop=new RenderLoop(animate);let graphicsLost=false,environmentTarget=null;
 const tmp = V(), tmp2 = V(), cameraGoal = V(), lookGoal = V();
 const UP = V(0, 1, 0);
 const shuttleSpin = new THREE.Quaternion();
@@ -1169,7 +1171,7 @@ function fixedUpdate(dt) {
 }
 
 function animate() {
-  requestAnimationFrame(animate);
+  if(graphicsLost)return;
   const frameNow=performance.now(),rawFrameMs=renderBudget.take(frameNow,{screen:state.screen,hidden:document.hidden});
   if(rawFrameMs===null)return;
   lastFrameTime=frameNow;
@@ -1224,7 +1226,7 @@ function animate() {
 }
 
 function requestLock() {
-  if (coarse || testing || state.comfortable) return;
+  if (coarse || testing || state.comfortable || graphicsLost) return;
   try {
     // Keep the browser's normal, OS-adjusted pointer-lock path. This makes
     // the game's 1.00x setting follow the same Windows mouse-speed curve as
@@ -1425,13 +1427,26 @@ async function init() {
     bootStage='assets';boot({stage:'准备人物与球馆材质',percent:40});
     const onWarning=warning=>{console.warn('Optional court asset:',warning);boot({warning:true});};
     const [,maps]=await Promise.all([prepareHands(THREE,{safe:safeBoot,onWarning}),loadSurfaceMaps(THREE,renderer,{safe:safeBoot,onWarning}),params.get('arm')!=='legacy'?preparePlayerArm(THREE,{safe:safeBoot,onWarning}):null]);surfaceMaps=maps;
-    if(!safeBoot){try{createEnvironment(THREE,renderer,scene);}catch(error){onWarning({label:'球馆反射',message:error.message});}}
+    if(!safeBoot){try{environmentTarget=createEnvironment(THREE,renderer,scene);}catch(error){onWarning({label:'球馆反射',message:error.message});}}
     presentation=new CourtPresentation(THREE,renderer);presentation.setSize(innerWidth,innerHeight);
     eagleEye = new EagleEyeReview(closeLineReview);
     bootStage='scene';boot({stage:'布置球场与校准操作',percent:75});
     createHall(); batchHall(); createPlayerRacket(); bot = createOpponent(); createEffects();initTechniquePanel();bindEvents();restorePreferences();if(safeBoot){$('#quality').value='balanced';applyQuality('balanced');}updateDifficultyUI();
-    canvas.addEventListener('webglcontextlost',event=>{event.preventDefault();pauseGame();$('#error-panel').classList.remove('hidden');$('#error-message').textContent='浏览器图形上下文中断。可能是显存不足、浏览器回收或驱动重置。请使用低负载启动恢复。';});
-    canvas.addEventListener('webglcontextrestored',()=>location.reload());
+    canvas.addEventListener('webglcontextlost',event=>{
+      event.preventDefault();graphicsLost=true;renderLoop.stop();pauseGame();
+      if(state.screen==='review'){reviewReturnScreen='play';eagleEye.close();pauseGame();}
+      keys.clear();hitIntent.clear();pointerDown=false;accumulator=0;document.exitPointerLock?.();
+      $('#error-panel').classList.remove('hidden');$('#error-message').textContent='浏览器图形连接暂时中断，比赛已暂停并保留比分。正在等待恢复；也可选择重新加载或低负载启动。';
+    });
+    canvas.addEventListener('webglcontextrestored',()=>{
+      graphicsLost=false;accumulator=0;clock.getDelta();adaptiveResolution.reset(performance.now());
+      // Render-target contents do not survive a context reset. Recreate the
+      // room reflection; retained mesh/texture sources are reuploaded by Three.
+      if(!safeBoot){environmentTarget?.dispose();try{environmentTarget=createEnvironment(THREE,renderer,scene);}catch{scene.environment=null;}}
+      applyRenderProfile();renderBudget.invalidate();$('#error-panel').classList.add('hidden');
+      if(state.screen==='pause')$('#pause-description').textContent='图形连接已恢复，比分已保留。点击继续比赛。';
+      renderLoop.start();
+    });
     if (testing) {
       window.__game = {
         state, player, opponent, ball,
@@ -1442,6 +1457,20 @@ async function init() {
       const panel=document.createElement('div');panel.id='test-panel';panel.style.cssText='position:fixed;left:20px;top:115px;z-index:50;background:#12382f;padding:12px;max-width:350px;font:12px sans-serif;border:1px solid #dcf49a';
       panel.innerHTML='<button id="run-play-test">运行长按 60 秒对打测试</button><button id="run-input-suite">验证左右球路与提前点击</button><button id="run-target-test">验证打点挑战</button><button id="run-v2-test">验证手动操作与比赛</button><button id="inspect-model">查看人物近景</button><button id="run-perf-test">测量 180 帧实际表现</button><button id="run-scene-test">检查当前场景坐标</button><pre id="test-result">等待测试</pre>';document.body.append(panel);
       panel.style.zIndex = '45';
+      const contextProof=document.createElement('button');contextProof.id='run-context-test';contextProof.textContent='验证图形中断恢复与比分保留';panel.prepend(contextProof);
+      contextProof.onclick=()=>{
+        const ext=renderer.getContext().getExtension('WEBGL_lose_context');
+        if(!ext){$('#test-result').textContent=JSON.stringify({type:'context recovery',supported:false});return;}
+        startGame('practice');state.score=[3,2];updateHud();
+        const before={score:[...state.score],timer:state.timer,hits:state.hits};let frozen;
+        canvas.addEventListener('webglcontextlost',()=>{
+          frozen={timer:state.timer,hits:state.hits,loopStopped:!renderLoop.running,frames:renderLoop.frames};
+          setTimeout(()=>ext.restoreContext(),250);
+        },{once:true});
+        canvas.addEventListener('webglcontextrestored',()=>setTimeout(()=>{
+          $('#test-result').textContent=JSON.stringify({type:'context recovery',before,frozen,after:{score:[...state.score],timer:state.timer,hits:state.hits,screen:state.screen,loopRunning:renderLoop.running,frames:renderLoop.frames},passed:state.screen==='pause'&&state.score.join()===before.score.join()&&state.timer===frozen.timer&&frozen.loopStopped&&renderLoop.running&&renderLoop.frames>frozen.frames},null,2);
+        },100),{once:true});ext.loseContext();
+      };
       const netProof=document.createElement('button');netProof.id='inspect-net';netProof.textContent='检查网带与局部触网波动 · Esc返回';panel.prepend(netProof);
       netProof.onclick=()=>{
         state.screen='net-inspect';state.inspectTime=2;renderBudget.invalidate();document.exitPointerLock?.();
@@ -1809,7 +1838,7 @@ async function init() {
         $('#test-result').textContent='人物近景：肩胯比例 / 五官 / 衣料 / 肘膝关节';
       });
     }
-    bootStage='frame';boot({stage:'绘制第一帧',percent:95});animate();boot({ready:true});
+    bootStage='frame';boot({stage:'绘制第一帧',percent:95});animate();renderLoop.start();boot({ready:true});
   } catch (e) {
     console.error(e);boot({error:bootStage==='renderer'?`浏览器未能创建 WebGL 图形环境：${e.message}。可尝试低负载启动，并确认 Chrome / Edge 的图形加速可用。`:`游戏在${bootStage==='assets'?'资源准备':'场景绘制'}时出错：${e.message}。请重试或选择低负载启动。`});
   }
