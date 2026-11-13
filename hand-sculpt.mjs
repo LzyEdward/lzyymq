@@ -1,11 +1,18 @@
 // Metre-scale closed hand sculpt. Smooth unions keep the wrist and thumb web
 // continuous; separate tapered finger paths preserve the interdigital gaps.
-let cachedGrip=null,cachedOpen=null;
+import {boundedAsset,handBufferLayout} from './asset-loading.mjs?v=6.9.1';
+let cachedGrip=null,cachedOpen=null,runtimeFallback=false;
 const bakedGeometries=new Map();
-export async function prepareHands(THREE){
+export async function prepareHands(THREE,{safe=false,onWarning=()=>{}}={}){
+ runtimeFallback=true;
+ if(safe)return;
  await Promise.all(['grip','open'].map(async name=>{
-  const response=await fetch(new URL(`./assets/hand-${name}.bin?v=6.9.0`,import.meta.url));if(!response.ok)throw new Error('手部模型加载失败');
-  const data=await response.arrayBuffer(),header=new Uint32Array(data,0,2),n=header[0],count=header[1];let offset=8;
+  const data=await boundedAsset(async signal=>{
+   const response=await fetch(new URL(`./assets/hand-${name}.bin?v=6.9.1`,import.meta.url),{signal});if(!response.ok)throw new Error(`手部模型 HTTP ${response.status}`);
+   const bytes=await response.arrayBuffer();handBufferLayout(bytes);return bytes;
+  },{timeout:10000,label:`${name}手部模型`,onWarning});
+  if(!data)return;
+  const {vertices:n,indices:count}=handBufferLayout(data);let offset=8;
   const positions=new Float32Array(data,offset,n*3);offset+=n*12;
   const packedNormals=new Int16Array(data,offset,n*3);offset+=n*6;
   const packedColors=new Uint8Array(data,offset,n*3);offset+=n*3;offset=Math.ceil(offset/4)*4;
@@ -55,7 +62,7 @@ export function sculptGrip(THREE,{open=false}={}){
  }
  let geo=bakedGeometries.get(open?'open':'grip');
  if(!geo){
- const step=.003,min=[-.065,-.285,-.062],max=[.39,.185,.142],dims=max.map((v,i)=>Math.ceil((v-min[i])/step)+1),[nx,ny,nz]=dims;
+ const step=runtimeFallback?.006:.003,min=[-.065,-.285,-.062],max=[.39,.185,.142],dims=max.map((v,i)=>Math.ceil((v-min[i])/step)+1),[nx,ny,nz]=dims;
  const grid=new Float32Array(nx*ny*nz),at=(x,y,z)=>(z*ny+y)*nx+x;
  for(let z=0;z<nz;z++)for(let y=0;y<ny;y++)for(let x=0;x<nx;x++)grid[at(x,y,z)]=field(min[0]+x*step,min[1]+y*step,min[2]+z*step);
  const ps=[],ids=[],edgeMap=new Map(),offsets=[[0,0,0],[1,0,0],[1,1,0],[0,1,0],[0,0,1],[1,0,1],[1,1,1],[0,1,1]],tets=[[0,5,1,6],[0,1,2,6],[0,2,3,6],[0,3,7,6],[0,7,4,6],[0,4,5,6]];

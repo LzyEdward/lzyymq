@@ -1,7 +1,9 @@
+import {boundedAsset} from './asset-loading.mjs?v=6.9.1';
 // Local PBR surfaces and a restrained depth-based contact-occlusion pass.
-export async function loadSurfaceMaps(THREE,renderer){
+export async function loadSurfaceMaps(THREE,renderer,{safe=false,onWarning=()=>{}}={}){
+ if(safe)return {};
  const loader=new THREE.TextureLoader(),anisotropy=Math.min(8,renderer.capabilities.getMaxAnisotropy());
- async function map(file,repeat,color=false){const t=await loader.loadAsync('./assets/textures/'+file);t.wrapS=t.wrapT=THREE.RepeatWrapping;t.repeat.set(...repeat);t.anisotropy=anisotropy;if(color)t.colorSpace=THREE.SRGBColorSpace;return t;}
+ async function map(file,repeat,color=false){let expired=false;const result=await boundedAsset(async()=>{const t=await loader.loadAsync('./assets/textures/'+file);if(expired){t.dispose();return null;}t.wrapS=t.wrapT=THREE.RepeatWrapping;t.repeat.set(...repeat);t.anisotropy=anisotropy;if(color)t.colorSpace=THREE.SRGBColorSpace;return t;},{timeout:8000,label:file,onWarning:warning=>{expired=true;onWarning(warning);}});return result;}
  const [wood,woodNormal,woodRough,rubberNormal,rubberRough]=await Promise.all([
   map('wooden_floor_02_Diffuse.jpg',[7.5,9.5],true),map('wooden_floor_02_nor_gl.jpg',[7.5,9.5]),map('wooden_floor_02_Rough.jpg',[7.5,9.5]),
   map('rubber_tiles_nor_gl.jpg',[8,16]),map('rubber_tiles_Rough.jpg',[8,16]),
@@ -22,7 +24,7 @@ export function createEnvironment(THREE,renderer,scene){
 export class CourtPresentation {
  constructor(THREE,renderer){
  this.THREE=THREE;this.renderer=renderer;this.quality='balanced';this.sceneInfo={};
-  this.target=new THREE.WebGLRenderTarget(1,1,{type:THREE.HalfFloatType,minFilter:THREE.LinearFilter,magFilter:THREE.LinearFilter,depthBuffer:true,samples:4});
+  this.target=new THREE.WebGLRenderTarget(1,1,{type:renderer.extensions.has('EXT_color_buffer_float')?THREE.HalfFloatType:THREE.UnsignedByteType,minFilter:THREE.LinearFilter,magFilter:THREE.LinearFilter,depthBuffer:true,samples:0});
   this.target.depthTexture=new THREE.DepthTexture(1,1,THREE.UnsignedIntType);
   this.uniforms={tColor:{value:this.target.texture},tDepth:{value:this.target.depthTexture},inverseProjection:{value:new THREE.Matrix4()},resolution:{value:new THREE.Vector2(1,1)},occlusion:{value:.7},exposure:{value:1}};
   this.material=new THREE.ShaderMaterial({uniforms:this.uniforms,depthTest:false,depthWrite:false,
@@ -42,8 +44,8 @@ export class CourtPresentation {
    ].join('\n')});
   this.scene=new THREE.Scene();this.camera=new THREE.Camera();this.scene.add(new THREE.Mesh(new THREE.PlaneGeometry(2,2),this.material));
  }
- setSize(width,height){const ratio=this.renderer.getPixelRatio();this.target.setSize(Math.round(width*ratio),Math.round(height*ratio));this.uniforms.resolution.value.set(this.target.width,this.target.height);}
- setQuality(quality){this.quality=quality;this.uniforms.occlusion.value=quality==='balanced'?0:.7;const samples=quality==='ultra'?2:0;if(this.target.samples!==samples){this.target.dispose();this.target.samples=samples;}this.setSize(innerWidth,innerHeight);}
+ setSize(width,height){this.width=width;this.height=height;const ratio=this.renderer.getPixelRatio(),active=this.quality!=='balanced';this.target.setSize(active?Math.round(width*ratio):1,active?Math.round(height*ratio):1);this.uniforms.resolution.value.set(this.target.width,this.target.height);}
+ setQuality(quality){this.quality=quality;this.uniforms.occlusion.value=quality==='balanced'?0:.7;const samples=quality==='ultra'?2:0;if(this.target.samples!==samples){this.target.dispose();this.target.samples=samples;}this.setSize(this.width||1,this.height||1);}
  render(scene,camera){
   const r=this.renderer;
   if(this.quality==='balanced'){r.setRenderTarget(null);r.render(scene,camera);this.sceneInfo={...r.info.render};return;}
