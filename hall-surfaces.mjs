@@ -25,5 +25,15 @@ export function hallSurfaces(T){
   // Restrained long wear marks outside the white playing lines.
   c.strokeStyle='#112f2814';c.lineWidth=1;for(let i=0;i<14;i++){const x=w*(i%2?.95:.05),y=rand()*h;c.beginPath();c.moveTo(x,y);c.lineTo(x+rand()*6-3,y+rand()*18);c.stroke();}
  });
- return {wall,glass,court};
+ const roof=draw(512,512,(c,w,h)=>{
+  c.fillStyle='#9da8a0';c.fillRect(0,0,w,h);
+  for(let i=0;i<6000;i++){c.fillStyle=i%2?'#eff7e808':'#0e211909';c.fillRect(rand()*w,rand()*h,1,1);}
+  for(const y of [0,256]){c.fillStyle='#43584d50';c.fillRect(0,y,w,2);c.fillStyle='#dfe8d43b';c.fillRect(0,y+2,w,1);}
+ });roof.wrapS=roof.wrapT=T.RepeatWrapping;roof.repeat.set(3,3);
+ const diffuser=draw(128,256,(c,w,h)=>{
+  c.fillStyle='#d5ddd2';c.fillRect(0,0,w,h);
+  const glow=c.createLinearGradient(0,0,w,0);glow.addColorStop(0,'#899b8b');glow.addColorStop(.16,'#eaf0df');glow.addColorStop(.5,'#f5f4e8');glow.addColorStop(.84,'#eaf0df');glow.addColorStop(1,'#899b8b');c.fillStyle=glow;c.fillRect(0,0,w,h);
+  c.fillStyle='#6e847518';for(let y=3;y<h;y+=6)c.fillRect(0,y,w,1);
+ });
+ return {wall,glass,court,roof,diffuser};
 }

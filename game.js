@@ -1,27 +1,28 @@
-import * as THREE from './vendor/three/build/three.module.js?v=7.5.0';
-import { mergeGeometries } from './vendor/three/addons/utils/BufferGeometryUtils.js?v=7.5.0';
-import { COURT, advance, solveShot, predict, winnerOnLanding, clamp, damp, groundCrossing, createGroundMotion, stepGroundMotion } from './physics.mjs?v=7.5.0';
-import { FlightRecorder, EagleEyeReview } from './eagle-eye.mjs?v=7.5.0';
-import { HitIntent, canContact, receivingTarget, swingWindow } from './controls.mjs?v=7.5.0';
-import { JumpMotion, MovementOwnership, keyCommand, pointerCommand } from './interaction.mjs?v=7.5.0';
-import { freeLook, landingFromMap, moveLanding, normalizeLanding, landingName, LANDING_PRESETS } from './aiming.mjs?v=7.5.0';
-import { createAthlete } from './athlete.mjs?v=7.5.0';
-import { movementVector, gradeContact, strokeOutcome, shotTarget, SHOT_DEPTHS, Dash, targetDistance, DRILL_TARGETS, practiceFeed, smartStroke, racketPowerBoost, techniqueTarget } from './gameplay.mjs?v=7.5.0';
-import { OPPONENT_LEVELS, LEVEL_DESCRIPTIONS, LEVEL_REFERENCES, opponentLevel, placementSpread, matchFinished, rankName, freshCareer, parseCareer, settleMatch } from './competition.mjs?v=7.5.0';
-import {planOpponentStroke,recoveryBase,opponentFootwork,opponentReceiveMissChance,opponentStrokeExecution,opponentServeTarget,opponentContactWindow,opponentReceiveBase} from './opponent-ai.mjs?v=7.5.0';
-import { trackAngles, stepTracking } from './tracking.mjs?v=7.5.0';
-import { loadSurfaceMaps, createEnvironment, CourtPresentation } from './presentation.mjs?v=7.5.0';
-import { createViewmodel } from './viewmodel.mjs?v=7.5.0';
-import { prepareHands } from './hand-sculpt.mjs?v=7.5.0';
-import { RenderBudget, AdaptiveResolution, renderProfile } from './render-budget.mjs?v=7.5.0';
-import { createRacketModel, RACKET_PALETTES } from './racket-model.mjs?v=7.5.0';
-import { swingPose, moveVelocity, groundedCameraOffset, serveSupportPose } from './motion.mjs?v=7.5.0';
-import { dressHall } from './hall-details.mjs?v=7.5.0';
-import { hallSurfaces } from './hall-surfaces.mjs?v=7.5.0';
-import { createShuttleModel } from './shuttle-model.mjs?v=7.5.0';
-import { createNetMaterial } from './net-material.mjs?v=7.5.0';
-import { createTechniquePanel } from './technique-panel.mjs?v=7.5.0';
-import { PLAYER_STYLES, OPPONENT_STYLES, effectiveOpponentLevel, playerStatsFromInputs, playerStatsForStyle, normalizeSkills } from './player-styles.mjs?v=7.5.0';
+import * as THREE from './vendor/three/build/three.module.js?v=7.6.0';
+import { mergeGeometries } from './vendor/three/addons/utils/BufferGeometryUtils.js?v=7.6.0';
+import { COURT, advance, solveShot, predict, winnerOnLanding, clamp, damp, groundCrossing, createGroundMotion, stepGroundMotion } from './physics.mjs?v=7.6.0';
+import { FlightRecorder, EagleEyeReview } from './eagle-eye.mjs?v=7.6.0';
+import { HitIntent, canContact, receivingTarget, swingWindow } from './controls.mjs?v=7.6.0';
+import { JumpMotion, MovementOwnership, keyCommand, pointerCommand } from './interaction.mjs?v=7.6.0';
+import { freeLook, landingFromMap, moveLanding, normalizeLanding, landingName, LANDING_PRESETS } from './aiming.mjs?v=7.6.0';
+import { createAthlete } from './athlete.mjs?v=7.6.0';
+import { movementVector, gradeContact, strokeOutcome, shotTarget, SHOT_DEPTHS, Dash, targetDistance, DRILL_TARGETS, practiceFeed, smartStroke, racketPowerBoost, techniqueTarget } from './gameplay.mjs?v=7.6.0';
+import { OPPONENT_LEVELS, LEVEL_DESCRIPTIONS, LEVEL_REFERENCES, opponentLevel, placementSpread, matchFinished, rankName, freshCareer, parseCareer, settleMatch } from './competition.mjs?v=7.6.0';
+import {planOpponentStroke,recoveryBase,opponentFootwork,opponentReceiveMissChance,opponentStrokeExecution,opponentServeTarget,opponentContactWindow,opponentReceiveBase} from './opponent-ai.mjs?v=7.6.0';
+import { trackAngles, stepTracking, highBallOffset, stepHighBallOffset } from './tracking.mjs?v=7.6.0';
+import { loadSurfaceMaps, createEnvironment, CourtPresentation } from './presentation.mjs?v=7.6.0';
+import { createViewmodel } from './viewmodel.mjs?v=7.6.0';
+import { prepareHands } from './hand-sculpt.mjs?v=7.6.0';
+import { RenderBudget, AdaptiveResolution, renderProfile } from './render-budget.mjs?v=7.6.0';
+import { createRacketModel, RACKET_PALETTES } from './racket-model.mjs?v=7.6.0';
+import { swingPose, moveVelocity, groundedCameraOffset, serveSupportPose } from './motion.mjs?v=7.6.0';
+import { dressHall } from './hall-details.mjs?v=7.6.0';
+import { hallSurfaces } from './hall-surfaces.mjs?v=7.6.0';
+import { roofGeometry } from './roof-structure.mjs?v=7.6.0';
+import { createShuttleModel } from './shuttle-model.mjs?v=7.6.0';
+import { createNetMaterial } from './net-material.mjs?v=7.6.0';
+import { createTechniquePanel } from './technique-panel.mjs?v=7.6.0';
+import { PLAYER_STYLES, OPPONENT_STYLES, effectiveOpponentLevel, playerStatsFromInputs, playerStatsForStyle, normalizeSkills } from './player-styles.mjs?v=7.6.0';
 
 const $ = (s) => document.querySelector(s);
 const canvas = $('#court');
@@ -178,7 +179,10 @@ function createHall() {
       for (let zz = 0; zz <= 4.6; zz += 1.15) box(.04, 4.3, .045, black, side * 14.46, 6.5, z + .2 + zz);
     }
   }
-  const roof = material('#263c38'); box(30, .15, 36, roof, 0, 10.5, 0);
+  const roof = new THREE.MeshStandardMaterial({map:architecture.roof,color:'#a7b8ad',roughness:.86,metalness:.06,emissive:'#52675b',emissiveIntensity:.18});
+  mesh(roofGeometry(THREE),roof);
+  const diffuserMaterial=new THREE.MeshStandardMaterial({map:architecture.diffuser,color:'#e6ebdf',emissiveMap:architecture.diffuser,emissive:'#eef2e1',emissiveIntensity:.8,roughness:.64});
+  const lampRim=material('#d0d6c9',.55,.18);
   for (let z = -15; z <= 15; z += 5) {
     box(29, .26, .24, black, 0, 9.2, z);
     cylinder(V(-14.3, 9.15, z), V(0, 10.4, z), .065, steel);
@@ -187,7 +191,9 @@ function createHall() {
     for (const x of [-7, 7]) {
       cylinder(V(x, 9.2, z), V(x, 8.55, z), .018, steel);
       box(.7, .1, 1.8, steel, x, 8.55, z);
-      box(.58, .025, 1.6, new THREE.MeshBasicMaterial({ color: '#effff3' }), x, 8.48, z);
+      box(.63,.024,1.68,lampRim,x,8.493,z);
+      box(.56, .014, 1.58, diffuserMaterial, x, 8.473, z);
+      for(const dz of [-.86,.86])box(.73,.035,.035,lampRim,x,8.49,z+dz);
     }
   }
   for (const x of [-10, 10]) box(.12, .12, 35, steel, x, 9.3, 0);
@@ -960,23 +966,12 @@ function positionServeHand(cork,pose){
 }
 function updateCamera(dt) {
   const ballInFront=ball.active&&state.lastHitter==='opponent'&&state.highBallAssist;
-  let wantedAuto=0;
-  if(ballInFront){
-    const dx=ball.pos.x-player.pos.x,dz=ball.pos.z-player.pos.z,horizontal=Math.hypot(dx,dz);
-    const ahead=(-dx*Math.sin(state.yaw)-dz*Math.cos(state.yaw))>0;
-    if(ahead){
-      // Keep yaw entirely under the mouse. For a high clear, reserve a little
-      // top-of-frame margin so the shuttle remains visible instead of stopping
-      // at the old 33-degree assist ceiling.
-      const targetPitch=Math.atan2(ball.pos.y-1.69,Math.max(.7,horizontal))-.10;
-      wantedAuto=clamp(targetPitch-state.manualPitch,0,.94);
-    }
-  }
-  state.autoPitchOffset=damp(state.autoPitchOffset,wantedAuto,ballInFront?5.5:2.6,dt);
-  state.pitch=clamp(state.manualPitch+state.autoPitchOffset,-1.42,1.545);
   const gait=groundedCameraOffset({speed:player.speed,lateral:player.vel.x,forward:player.vel.z,phase:player.step*6.6,intensity:state.motion});
   cameraGoal.set(player.renderPos.x+gait.x,1.69+state.jump-jumping.landing*.055+(state.jump>0?0:gait.y),player.renderPos.z+gait.z);
   camera.position.x=damp(camera.position.x,cameraGoal.x,27,dt);camera.position.y=damp(camera.position.y,cameraGoal.y,27,dt);camera.position.z=damp(camera.position.z,cameraGoal.z,27,dt);
+  const wantedAuto=highBallOffset({eye:camera.position,ball:ball.renderPos,yaw:state.yaw,manualPitch:state.manualPitch,fov:camera.fov,enabled:ballInFront&&!state.comfortable});
+  state.autoPitchOffset=stepHighBallOffset(state.autoPitchOffset,wantedAuto,dt);
+  if(!state.comfortable)state.pitch=clamp(state.manualPitch+state.autoPitchOffset,-1.42,1.545);
   state.impact*=Math.exp(-18*dt);camera.rotation.order='YXZ';camera.rotation.y=state.yaw;camera.rotation.x=state.pitch+Math.sin(state.timer*85)*state.impact;
   camera.rotation.z=damp(camera.rotation.z,gait.roll,16,dt);
   state.cameraPeak=Math.max(state.cameraPeak||0,camera.position.y);
@@ -1253,6 +1248,11 @@ function showHelp() {
 function hideHelp() { $('#help-overlay').classList.add('hidden'); }
 
 function setFocus(value){state.focus=Boolean(value);document.body.classList.toggle('focus',state.focus);$('#focus-toggle').checked=state.focus;$('#focus-btn').classList.toggle('active',state.focus);$('#focus-btn').setAttribute('aria-pressed',String(state.focus));}
+function setComfortable(value){
+ if(state.comfortable&&!value){state.manualPitch=state.pitch;state.autoPitchOffset=0;}
+ state.comfortable=Boolean(value);$('#comfortable-toggle').checked=state.comfortable;
+ if(state.comfortable)document.exitPointerLock?.();
+}
 function applyRenderProfile(){
  const profile=renderProfile(qualityMode,adaptiveResolution.scale,innerWidth,innerHeight,devicePixelRatio);
  renderer.setPixelRatio(profile.ratio);renderer.setSize(innerWidth,innerHeight);renderer.shadowMap.enabled=profile.shadows;renderer.shadowMap.needsUpdate=true;
@@ -1312,7 +1312,7 @@ function bindEvents() {
   $('#help-btn').addEventListener('click', showHelp); $('#close-help').addEventListener('click', hideHelp); $('#got-it').addEventListener('click', () => { hideHelp(); if (state.screen === 'pause') resumeGame(); });
   $('#sound-btn').addEventListener('click', () => { initAudio(); state.sound = !state.sound; if (master) master.gain.value = state.sound ? .5 : 0; $('#sound-btn').style.opacity = state.sound ? 1 : .4; $('#sound-btn').textContent = state.sound ? '♪' : '♩';savePreferences(); });
   $('#assist-toggle').addEventListener('change', e => setAssist(e.target.checked)); $('#sensitivity').addEventListener('input', e => state.sensitivity = Number(e.target.value));
-  $('#comfortable-toggle').addEventListener('change', e => {state.comfortable=e.target.checked;if(state.comfortable)document.exitPointerLock?.();});
+  $('#comfortable-toggle').addEventListener('change', e => setComfortable(e.target.checked));
   $('#aim-left').addEventListener('click', () => state.aim = clamp(state.aim - .32, -1, 1));
   $('#aim-right').addEventListener('click', () => state.aim = clamp(state.aim + .32, -1, 1));
   $('#dash-btn').addEventListener('click', lunge);
@@ -1349,7 +1349,7 @@ function bindEvents() {
     if (e.code === 'KeyF') setAssist(!state.assists);
     if(e.code==='KeyH')setControlsVisible(!state.controlsVisible);
     if (e.code === 'KeyV') {
-      state.comfortable = !state.comfortable; $('#comfortable-toggle').checked = state.comfortable;
+      setComfortable(!state.comfortable);
       if (state.comfortable) document.exitPointerLock?.(); else requestLock();
       feedback(state.comfortable ? '跟球镜头' : '自由镜头', 'V 随时切换 · 跑位方向不受镜头影响');
     }
@@ -1649,13 +1649,27 @@ async function init() {
       });
       const overhead=document.createElement('button');overhead.id='show-overhead';overhead.textContent='实看头顶高球';panel.insertBefore(overhead,$('#test-result'));
       overhead.addEventListener('click',()=>{
-        startGame('practice');state.sound=false;state.lastHitter='opponent';state.phase='rally';
+        startGame('practice');state.sound=false;state.lastHitter='opponent';state.phase='rally';state.comfortable=false;state.highBallAssist=true;
         player.pos.set(0,0,4);player.previous.copy(player.pos);player.renderPos.copy(player.pos);
         ball.pos.set(.05,7,3.85);ball.previous.copy(ball.pos);ball.renderPos.copy(ball.pos);ball.vel.set(0,-.2,0);ball.active=true;state.lastMove=100;state.prediction=null;
-        for(let i=0;i<90;i++)updatePlayer(1/120);
-        updateCamera(.2);updateOpponentModel(.02);updateEffects(.02);updateHud();racket.visible=true;
+        for(let i=0;i<60;i++)updateCamera(1/120);
+        updateOpponentModel(.02);updateEffects(.02);updateHud();racket.visible=true;
         state.screen='overhead-preview';$('#test-result').textContent='已固定头顶高球实景 · 仰角 '+Math.round(state.pitch*180/Math.PI)+'° · 球在准星附近';
+        panel.classList.add('hidden');$('#masthead').classList.add('hidden');
       });
+      const highBallTest=document.createElement('button');highBallTest.id='run-highball-test';highBallTest.textContent='验证自由视角头顶球与跳跃眼高';panel.insertBefore(highBallTest,$('#test-result'));
+      highBallTest.onclick=()=>{
+        const saved={comfortable:state.comfortable,highBallAssist:state.highBallAssist,sound:state.sound},checks=[];
+        for(const scenario of [{name:'overhead',ball:[.05,7,3.85],jump:0},{name:'jumped-eye',ball:[.1,4.2,2.8],jump:.9},{name:'distant-clear',ball:[-.4,8,-2],jump:0}]){
+          startGame('practice');state.sound=false;state.comfortable=false;state.highBallAssist=true;state.lastHitter='opponent';state.phase='rally';state.manualPitch=-.03;state.autoPitchOffset=0;state.yaw=0;
+          player.pos.set(0,0,4);player.renderPos.copy(player.pos);player.vel.set(0,0,0);player.speed=0;state.jump=scenario.jump;
+          ball.pos.fromArray(scenario.ball);ball.renderPos.copy(ball.pos);ball.active=true;
+          for(let i=0;i<60;i++)updateCamera(1/120);
+          updateEffects(.02);const projected=shuttle.position.clone().project(camera);
+          checks.push({name:scenario.name,pass:Math.abs(projected.x)<.2&&projected.y>.1&&projected.y<.65&&state.yaw===0,screen:projected.toArray().map(n=>+n.toFixed(3)),eye:+camera.position.y.toFixed(3),pitchDegrees:Math.round(state.pitch*180/Math.PI)});
+        }
+        Object.assign(state,saved);state.jump=0;$('#test-result').textContent=JSON.stringify({pass:checks.every(c=>c.pass),checks},null,2);pauseGame();
+      };
       v5.addEventListener('click',()=>{
         const checks=[],savedLevel=$('#difficulty').value,savedPoints=$('#match-points').value,careerBefore=career;
         try{
