@@ -8,3 +8,23 @@ export function handPaths(open=false){
   return [[.039,y,-.014],[.008,y-.001,-.025],[-.018+short,y-.004,-.013],[-.019+short,y-.010,.016]];
  });
 }
+
+// The serve pinch and a loose balancing hand share roots and phalanx lengths.
+// Only joint directions change, so releasing the shuttle doesn't grow fingers.
+export function supportFingerPaths(relaxation=0){
+ const amount=Math.max(0,Math.min(1,Number.isFinite(relaxation)?relaxation:0));
+ const pinch=handPaths(true);
+ if(amount===0)return pinch;
+ return pinch.map((path,f)=>{
+  const result=[path[0].slice()];
+  const targets=f===4?[[ -.32,.72,.52],[-.52,.77,.25],[-.73,.66,.05]]:
+   [[-1,(1.5-f)*.12,-.16],[-.96,(1.5-f)*.10,.25],[-.62,(1.5-f)*.06,.78]];
+  for(let k=0;k<3;k++){
+   const original=path[k+1].map((n,i)=>n-path[k][i]),length=Math.hypot(...original);
+   const target=targets[k],targetLength=Math.hypot(...target);
+   const direction=original.map((n,i)=>n/length*(1-amount)+target[i]/targetLength*amount),norm=Math.hypot(...direction);
+   result.push(result[k].map((n,i)=>n+direction[i]/norm*length));
+  }
+  return result;
+ });
+}

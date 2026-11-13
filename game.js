@@ -11,13 +11,13 @@ import { OPPONENT_LEVELS, LEVEL_DESCRIPTIONS, LEVEL_REFERENCES, opponentLevel, p
 import {planOpponentStroke,recoveryBase,opponentFootwork,opponentReceiveMissChance,opponentStrokeExecution,opponentServeTarget,opponentContactWindow,opponentReceiveBase} from './opponent-ai.mjs?v=92ef48cb8985b6c3';
 import { trackAngles, stepTracking, highBallOffset, stepHighBallOffset } from './tracking.mjs?v=06dbfbbf1f80a4e0';
 import { loadSurfaceMaps, createEnvironment, CourtPresentation } from './presentation.mjs?v=0cc85ddf223c65a1';
-import { createViewmodel } from './viewmodel.mjs?v=60b60bd6e34c598a';
-import { prepareHands } from './hand-sculpt.mjs?v=26581a33b80c9ba8';
-import {preparePlayerArm} from './player-arm.mjs?v=367dc41c1ae072fd';
+import { createViewmodel } from './viewmodel.mjs?v=26c2e1b92d5e0935';
+import { prepareHands } from './hand-sculpt.mjs?v=e0a20246a13fd7b0';
+import {preparePlayerArm} from './player-arm.mjs?v=1da804b30bbeb67c';
 import { RenderBudget, AdaptiveResolution, renderProfile } from './render-budget.mjs?v=661910472f512423';
 import {RenderLoop} from './render-loop.mjs?v=28e2db7090a5188b';
 import { createRacketModel, disposeRacketModel, RACKET_PALETTES } from './racket-model.mjs?v=d4d6fb2842faedad';
-import { swingPose, moveVelocity, groundedCameraOffset, serveSupportPose, supportHandPose } from './motion.mjs?v=08d6915349622810';
+import { swingPose, moveVelocity, groundedCameraOffset, serveSupportPose, supportHandPose } from './motion.mjs?v=1d9ac67dad6783c3';
 import { dressHall } from './hall-details.mjs?v=c6f9ed4d4d8b5a00';
 import { hallSurfaces } from './hall-surfaces.mjs?v=69b556d780a6feef';
 import { roofGeometry } from './roof-structure.mjs?v=ae5f49678bee1115';
@@ -957,6 +957,7 @@ function updateSwing(dt) {
 function positionServeHand(cork,pose){
   const hand=racket.userData.support;if(!hand)return;
   hand.visible=Boolean(pose);if(!pose)return;
+  hand.userData.relaxation=pose.relaxation??0;
   hand.rotation.fromArray([...pose.rotation,'XYZ']);
   if(pose.position){hand.position.fromArray(pose.position);return;}
   const pinch=V(-.023,.137,.018).multiply(hand.scale).applyQuaternion(hand.quaternion);
@@ -1517,14 +1518,19 @@ async function init() {
         landingMarker.visible=targetMarker.visible=aimMarker.visible=shuttleShadow.visible=false;
       };
       const handViews=document.createElement('select');handViews.id='hand-inspect-view';handViews.setAttribute('aria-label','手部检查视角');
+      handViews.add(new Option('左手捏羽近景','support-pinch'));handViews.add(new Option('左手自然张开近景','support-ready'));
       for(const [value,label] of [['grip','握拍近景'],['palm','掌侧近景'],['back','手背近景'],['racket','整拍与握拍'],['idle','实战待机'],['prep','高远准备'],['contact','高远触球'],['high','高位伸展触球'],['backhand','反手伸展触球'],['follow','杀球收拍'],['net','网前搓球'],['serve','发球准备'],['serve-hold','左手捏球'],['serve-release','松手送球'],['serve-follow','发球收手']])handViews.add(new Option(label,value));
       const inspectHand=()=>{
         renderBudget.invalidate();
         state.screen='hand-inspect';state.handsOn=false;document.exitPointerLock?.();
         for(const id of ['menu','hud','pause-overlay'])$('#'+id).classList.add('hidden');
-        camera.position.set(0,1.69,4.5);camera.rotation.set(0,0,0);camera.fov=['grip','palm','back','racket'].includes(handViews.value)?50:69;camera.updateProjectionMatrix();
+        camera.position.set(0,1.69,4.5);camera.rotation.set(0,0,0);camera.fov=['grip','palm','back','racket','support-pinch','support-ready'].includes(handViews.value)?50:69;camera.updateProjectionMatrix();
         const view=handViews.value;racket.visible=true;positionServeHand(null,null);shuttle.visible=false;
-        if(view.startsWith('serve-')){
+        if(view.startsWith('support-')){
+          racket.position.set(.9,-1.2,-2);racket.rotation.set(0,0,0);
+          positionServeHand(null,{position:[-.03,-.10,-.40],rotation:[0,.4,.1],relaxation:view==='support-ready'?1:0});
+        }
+        else if(view.startsWith('serve-')){
           const elapsed={'serve-hold':0,'serve-release':.10,'serve-follow':.26}[view],phase=elapsed===0?'serve':elapsed<.2?'serving':'rally';
           const cork=V(-.1,-.44+Math.sin(Math.min(1,elapsed/.2)*Math.PI)*.25,-1.15);
           const pose=swingPose({elapsed,kind:'serve',contact:cork.toArray(),contactTime:.2});racket.position.fromArray(pose.position);racket.rotation.fromArray([...pose.rotation,'XYZ']);

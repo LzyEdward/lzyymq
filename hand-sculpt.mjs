@@ -2,7 +2,7 @@
 // continuous; separate tapered finger paths preserve the interdigital gaps.
 import {boundedAsset,handBufferLayout} from './asset-loading.mjs?v=4d9c46f80c2cf48c';
 import {handTint,handUV,createHandSkin} from './hand-surface.mjs?v=e4f19a20f78b897f';
-import {handPaths} from './hand-pose.mjs?v=7bd8ab438604e4f3';
+import {handPaths} from './hand-pose.mjs?v=5a35072752929282';
 let cachedGrip=null,cachedOpen=null,runtimeFallback=false;
 const bakedGeometries=new Map();
 export async function prepareHands(THREE,{safe=false,onWarning=()=>{}}={}){

@@ -10,6 +10,7 @@ export function refineSkin(THREE, geometry, levels=2) {
   return {p,c,uv,weights};
  });
  let triangles=Array.from(geometry.index.array);
+ let cornerUV=geometry.userData.cornerUV?.slice();
  for(let level=0;level<levels;level++){
   const edges=new Map(),neighbors=points.map(()=>new Set()),boundary=points.map(()=>new Set());
   for(let i=0;i<triangles.length;i+=3)for(let j=0;j<3;j++){
@@ -29,8 +30,12 @@ export function refineSkin(THREE, geometry, levels=2) {
    const weights=new Map();for(const point of [points[a],points[b]])for(const [bone,weight] of point.weights)weights.set(bone,(weights.get(bone)||0)+weight*.5);
    edge.index=next.length;next.push({p,c:points[a].c.clone().lerp(points[b].c,.5),uv:points[a].uv.clone().lerp(points[b].uv,.5),weights});
   }
-  const edgeIndex=(a,b)=>edges.get(a<b?`${a},${b}`:`${b},${a}`).index,newTriangles=[];
-  for(let i=0;i<triangles.length;i+=3){const [a,b,c]=triangles.slice(i,i+3),ab=edgeIndex(a,b),bc=edgeIndex(b,c),ca=edgeIndex(c,a);newTriangles.push(a,ab,ca,b,bc,ab,c,ca,bc,ab,bc,ca);}
+  const edgeIndex=(a,b)=>edges.get(a<b?`${a},${b}`:`${b},${a}`).index,newTriangles=[],newCornerUV=[];
+  for(let i=0;i<triangles.length;i+=3){
+   const [a,b,c]=triangles.slice(i,i+3),ab=edgeIndex(a,b),bc=edgeIndex(b,c),ca=edgeIndex(c,a);newTriangles.push(a,ab,ca,b,bc,ab,c,ca,bc,ab,bc,ca);
+   if(cornerUV){const u=Array.from({length:3},(_,j)=>cornerUV.slice((i+j)*2,(i+j)*2+2)),mid=(a,b)=>a.map((x,k)=>(x+b[k])*.5),uvAB=mid(u[0],u[1]),uvBC=mid(u[1],u[2]),uvCA=mid(u[2],u[0]);for(const uv of [u[0],uvAB,uvCA,u[1],uvBC,uvAB,u[2],uvCA,uvBC,uvAB,uvBC,uvCA])newCornerUV.push(...uv);}
+  }
+  if(cornerUV)cornerUV=newCornerUV;
   points=next;triangles=newTriangles;
  }
  const out=new THREE.BufferGeometry();
@@ -43,5 +48,17 @@ export function refineSkin(THREE, geometry, levels=2) {
   out.setAttribute('skinIndex',new THREE.Uint16BufferAttribute(ids,4));out.setAttribute('skinWeight',new THREE.Float32BufferAttribute(weights,4));
  }
  for(const group of geometry.groups)out.addGroup(group.start*4**levels,group.count*4**levels,group.materialIndex);
- out.setIndex(triangles);out.computeVertexNormals();out.computeBoundingSphere();return out;
+ out.setIndex(triangles);out.computeVertexNormals();out.computeBoundingSphere();
+ if(!cornerUV)return out;
+ // Subdivide the welded anatomical surface first, then split only the UV
+ // discontinuities. Geometry and normals stay continuous at the texture seam.
+ const split=new THREE.BufferGeometry(),streams=Object.fromEntries(Object.keys(out.attributes).map(name=>[name,[]])),lookup=new Map(),index=[];
+ for(let i=0;i<triangles.length;i++){
+  const old=triangles[i],uv=cornerUV.slice(i*2,i*2+2),key=`${old}:${uv[0].toFixed(8)}:${uv[1].toFixed(8)}`;
+  let next=lookup.get(key);
+  if(next===undefined){next=lookup.size;lookup.set(key,next);for(const [name,attribute]of Object.entries(out.attributes)){const values=name==='uv'?uv:Array.from(attribute.array.slice(old*attribute.itemSize,(old+1)*attribute.itemSize));streams[name].push(...values);}}
+  index.push(next);
+ }
+ for(const [name,attribute]of Object.entries(out.attributes))split.setAttribute(name,new THREE.BufferAttribute(new attribute.array.constructor(streams[name]),attribute.itemSize,attribute.normalized));
+ split.setIndex(index);for(const group of out.groups)split.addGroup(group.start,group.count,group.materialIndex);split.computeBoundingSphere();split.userData.uvSeamsPreserved=true;return split;
 }

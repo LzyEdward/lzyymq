@@ -1,4 +1,4 @@
-# LZYYMQ · 羽境 FEATHER COURT 7.15
+# LZYYMQ · 羽境 FEATHER COURT 7.16
 
 离线第一人称 3D 羽毛球游戏，页面品牌名为 LZYYMQ。Three.js 与场景资源随包提供，不依赖 CDN。
 

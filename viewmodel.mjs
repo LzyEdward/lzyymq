@@ -1,6 +1,6 @@
-import { sculptGrip } from './hand-sculpt.mjs?v=26581a33b80c9ba8';
+import { sculptGrip } from './hand-sculpt.mjs?v=e0a20246a13fd7b0';
 import {createArmKinematics} from './first-person-arm.mjs?v=266661bd87fc52e1';
-import {createSkinnedPlayerArm} from './player-arm.mjs?v=367dc41c1ae072fd';
+import {createSkinnedPlayerArm} from './player-arm.mjs?v=1da804b30bbeb67c';
 
 // Dedicated first-person anatomy: one closed wrist, palm, thumb web and hand.
 export function createViewmodel(THREE,createRacket,{skinMap=null,articulated=false}={}){
@@ -30,7 +30,7 @@ export function createViewmodel(THREE,createRacket,{skinMap=null,articulated=fal
    const pose=rig.pose({position:root.position.toArray(),rotation:[root.rotation.x,root.rotation.y,root.rotation.z]});
    root.position.fromArray(pose.position);root.rotation.fromArray([...pose.rotation,'XYZ']);const chain=rig.chain(root);arm.update(root,chain);
    root.userData.armReport={reachable:chain.reachable,extension:chain.extension,correction:pose.correction};
-   if(leftArm&&support.visible)leftArm.update(support,leftRig.chain(support));
+   if(leftArm&&support.visible){leftArm.relaxFingers(support.userData.relaxation);leftArm.update(support,leftRig.chain(support));leftArm.poseNails(open.details);}
    root.updateWorldMatrix(true,true);
   };}
  }

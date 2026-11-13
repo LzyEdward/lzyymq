@@ -1,6 +1,6 @@
 import * as source from './assets/athlete-data.mjs?v=7f28ea9b22f91323';
 import {boundedAsset} from './asset-loading.mjs?v=4d9c46f80c2cf48c';
-import {handPaths} from './hand-pose.mjs?v=7bd8ab438604e4f3';
+import {handPaths,supportFingerPaths} from './hand-pose.mjs?v=5a35072752929282';
 import {ARM_WRIST,ARM_ELBOW} from './first-person-arm.mjs?v=266661bd87fc52e1';
 import {handUV} from './hand-surface.mjs?v=e4f19a20f78b897f';
 let armGeometry=null;
@@ -17,7 +17,7 @@ export function armBufferLayout(bytes){
 export async function preparePlayerArm(T,{safe=false,onWarning=()=>{}}={}){
  armGeometry=null;if(safe)return;
  armGeometry=await boundedAsset(async signal=>{
-  const response=await fetch(new URL('./assets/player-arm.bin?v=7.9.0',import.meta.url),{signal});if(!response.ok)throw new Error(`完整手臂 HTTP ${response.status}`);
+  const response=await fetch(new URL('./assets/player-arm.bin?v=7.16.0',import.meta.url),{signal});if(!response.ok)throw new Error(`完整手臂 HTTP ${response.status}`);
   const bytes=await response.arrayBuffer(),{vertices,indices,groups,bones,layout,indexOffset,groupOffset}=armBufferLayout(bytes),geometry=new T.BufferGeometry();
   for(const {name,Type,size,at} of layout){let values=new Type(bytes,at,vertices*size);if(name==='normal')values=Float32Array.from(values,v=>v/32767);if(name==='color')values=Float32Array.from(values,v=>v/255);if(name==='skinWeight')values=Float32Array.from(values,v=>v/65535);geometry.setAttribute(name,new T.BufferAttribute(values,size));}
   const ids=new Uint32Array(bytes,indexOffset,indices);if(ids.some(v=>v>=vertices)||geometry.attributes.skinIndex.array.some(v=>v>=bones))throw new Error('完整手臂索引无效');
@@ -40,6 +40,24 @@ export function createSkinnedPlayerArm(T,{skin,fabric,open=false}={}){
  const lower=map(elbow,wrist,targetElbow,targetWrist,.87,.87),paths=handPaths(open);
  for(let f=1;f<=5;f++)for(let k=1;k<=3;k++){
   const name=`finger${f}-${k}.R`,a=bind.get(name),b=k<3?bind.get(`finger${f}-${k+1}.R`):a.clone().add(a.clone().sub(bind.get(`finger${f}-${k-1}.R`)).multiplyScalar(.73)),path=paths[f===1?4:f-2];constant.set(name,map(a,b,V(...path[k-1]),V(...path[k]),.96,.96));
+ }
+ const pinchMatrices=new Map([...constant].map(([key,matrix])=>[key,matrix.clone()]));let lastRelaxation=0;
+ function relaxFingers(amount=0){
+  if(!open)return;
+  amount=Math.max(0,Math.min(1,Number.isFinite(amount)?amount:0));if(Math.abs(amount-lastRelaxation)<1e-5)return;
+  lastRelaxation=amount;const paths=supportFingerPaths(amount);
+  for(let f=1;f<=5;f++)for(let k=1;k<=3;k++){
+   const name=`finger${f}-${k}.R`,a=bind.get(name),b=k<3?bind.get(`finger${f}-${k+1}.R`):a.clone().add(a.clone().sub(bind.get(`finger${f}-${k-1}.R`)).multiplyScalar(.73)),path=paths[f===1?4:f-2];
+   constant.set(name,map(a,b,V(...path[k-1]),V(...path[k]),.96,.96));
+  }
+ }
+ function poseNails(details){
+  if(!open)return;
+  for(const [index,nail]of details.entries()){
+   const name=`finger${index===4?1:index+2}-3.R`;
+   if(!nail.userData.pinchMatrix){nail.updateMatrix();nail.userData.pinchMatrix=nail.matrix.clone();}
+   nail.matrixAutoUpdate=false;nail.matrix.copy(constant.get(name)).multiply(pinchMatrices.get(name).clone().invert()).multiply(nail.userData.pinchMatrix);nail.matrixWorldNeedsUpdate=true;
+  }
  }
  const joints=ARM_BONES.map(name=>{const bone=new T.Bone();bone.name='FPS '+name;bone.matrixAutoUpdate=false;return bone;}),skeleton=new T.Skeleton(joints,joints.map(()=>new T.Matrix4()));
  // Albedo uses the anatomical UV atlas. Palm creases need their own posed,
@@ -91,5 +109,5 @@ export function createSkinnedPlayerArm(T,{skin,fabric,open=false}={}){
   for(let i=0;i<joints.length;i++)joints[i].matrix.copy(ARM_BONES[i]==='upperarm01.R'?upperMatrix:ARM_BONES[i]==='lowerarm01.R'?lowerMatrix:constant.get(ARM_BONES[i]));
   root.updateWorldMatrix(true,true);skeleton.update();
  }
- return {root,mesh,update,skeleton};
+ return {root,mesh,update,skeleton,relaxFingers,poseNails};
 }
