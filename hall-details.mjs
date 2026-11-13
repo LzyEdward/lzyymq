@@ -29,6 +29,34 @@ export function dressHall(T,scene){
  const clock=mesh(new T.CircleGeometry(.36,48),new T.MeshStandardMaterial({map:tex,roughness:.55}),8,3.45,-17.55);clock.castShadow=false;
  const frame=mesh(new T.TorusGeometry(.37,.018,8,48),dark,8,3.45,-17.57);
  const towel=new T.MeshStandardMaterial({color:'#adbfb4',roughness:1});box(.37,.025,.4,towel,8.1,.53,-10.5);box(.37,.26,.025,towel,8.1,.4,-10.23);
+ // Soft sports luggage, piping, webbing handles, zippers and capped bottles.
+ // Shared materials are merged with the static hall after construction.
+ const canvasGrain=new Uint8Array(64*64);for(let j=0;j<64;j++)for(let i=0;i<64;i++)canvasGrain[j*64+i]=120+((i+j)%2?15:-15)+Math.round(Math.sin(i*17+j*41)*8);
+ const weave=new T.DataTexture(canvasGrain,64,64,T.RedFormat);weave.wrapS=weave.wrapT=T.RepeatWrapping;weave.repeat.set(7,3);weave.needsUpdate=true;
+ const luggage=new T.MeshStandardMaterial({color:'#3c5360',roughness:.92,bumpMap:weave,bumpScale:.00055});
+ const piping=new T.MeshStandardMaterial({color:'#b9b9a2',roughness:.86}),webbing=new T.MeshStandardMaterial({color:'#1d292d',roughness:.96,bumpMap:weave,bumpScale:.0003});
+ const zipper=new T.MeshStandardMaterial({color:'#9ea9a5',roughness:.33,metalness:.68}),bottle=new T.MeshPhysicalMaterial({color:'#7faaa7',roughness:.27,clearcoat:.5,metalness:.08});
+ function rounded(w,h,d,r){const g=new T.BoxGeometry(w,h,d,10,6,6),p=g.attributes.position,n=g.attributes.normal;
+  for(let i=0;i<p.count;i++){const a=v(p.getX(i),p.getY(i),p.getZ(i)),b=v(T.MathUtils.clamp(a.x,-w/2+r,w/2-r),T.MathUtils.clamp(a.y,-h/2+r,h/2-r),T.MathUtils.clamp(a.z,-d/2+r,d/2-r)),direction=a.clone().sub(b).normalize();a.copy(b).addScaledVector(direction,r);p.setXYZ(i,a.x,a.y,a.z);n.setXYZ(i,direction.x,direction.y,direction.z);}return g;}
+ function curve(points,r,mat){const g=new T.TubeGeometry(new T.CatmullRomCurve3(points),Math.max(12,points.length*5),r,5,false);return mesh(g,mat,0,0,0);}
+ for(const [xx,zz] of [[-8.8,-10.4],[8.7,-10.4],[10.4,9]]){
+  const center=v(xx,.72,zz),turn=new T.Quaternion().setFromAxisAngle(v(0,1,0),.18),place=p=>p.applyQuaternion(turn).add(center);
+  const bag=mesh(rounded(.95,.35,.43,.065),luggage,...center.toArray());bag.quaternion.copy(turn);
+  for(const side of [-1,1]){
+   const shape=[[-.35,.11],[-.395,.06],[-.395,-.06],[-.35,-.11],[.35,-.11],[.395,-.06],[.395,.06],[.35,.11],[-.35,.11]].map(([x,y])=>place(v(x,y,side*.218)));
+   curve(shape,.003,piping);
+   const strap=[[-.20,.115],[-.18,.285],[0,.33],[.18,.285],[.20,.115]].map(([x,y])=>v(x,y,side*.12));
+   const strapGeometry=new T.TubeGeometry(new T.CatmullRomCurve3(strap),24,.012,6,false);strapGeometry.translate(0,0,-side*.12);strapGeometry.scale(1,1,.15);strapGeometry.translate(0,0,side*.12);
+   const handle=mesh(strapGeometry,webbing,...center.toArray());handle.quaternion.copy(turn);
+  }
+  curve([place(v(-.37,.176,0)),place(v(0,.181,0)),place(v(.37,.176,0))],.002,zipper);
+  const pull=mesh(new T.TorusGeometry(.012,.002,4,12),zipper,...place(v(.32,.185,.006)).toArray());pull.rotation.x=Math.PI/2;
+  const bottleX=xx+.78;
+  mesh(new T.CylinderGeometry(.053,.058,.20,16),bottle,bottleX,.63,zz);
+  mesh(new T.CylinderGeometry(.026,.051,.05,16),bottle,bottleX,.755,zz);
+  mesh(new T.CylinderGeometry(.029,.029,.025,16),webbing,bottleX,.79,zz);
+  mesh(new T.CylinderGeometry(.0551,.0571,.08,16,1,true),piping,bottleX,.62,zz);
+ }
  // Wall skirting, acoustic-panel joints and grounded practical equipment.
  for(const side of [-1,1]){
   box(29.3,.13,.07,dark,0,.065,side*17.59);

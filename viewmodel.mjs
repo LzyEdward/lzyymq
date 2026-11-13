@@ -1,4 +1,4 @@
-import { sculptGrip } from './hand-sculpt.mjs?v=7.3.0';
+import { sculptGrip } from './hand-sculpt.mjs?v=7.4.0';
 
 // Dedicated first-person anatomy: one closed wrist, palm, thumb web and hand.
 export function createViewmodel(THREE,createRacket,{skinMap=null}={}){

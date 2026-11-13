@@ -1,5 +1,6 @@
 // ASTROX 100ZZ Dark Navy (554). Shape and asymmetric paint reference:
 // https://badmintonworldbalcatta.com/products/astrox-100zz-dark-navy-4ug5
+import {createWovenStrings} from './woven-strings.mjs?v=7.4.0';
 export const RACKET_PALETTES={astrox100zz:{rim:'#2866ac',carbon:'#111e30',grip:'#202328',accent:'#eef4fa',gold:'#fa6524'},'control-original':{rim:'#c4ec78',carbon:'#22302e',grip:'#eeeadd',accent:'#edf4d9',gold:'#c4ec78'},'aero-blue':{rim:'#82d6e1',carbon:'#20323a',grip:'#dce7e2',accent:'#b4f2ee',gold:'#dce7e2'}};
 export function createRacketModel(THREE,{skin='astrox100zz',player=false}={}){
  const root=new THREE.Group(),V=(...p)=>new THREE.Vector3(...p),colors=RACKET_PALETTES[skin]||RACKET_PALETTES.astrox100zz;
@@ -39,9 +40,10 @@ export function createRacketModel(THREE,{skin='astrox100zz',player=false}={}){
  const white=[],red=[],inside=(x,y)=>Math.abs(x/.098)**2.3+Math.abs((y-.51)/.139)**2.3<=1;
  const stencil=(x,y)=>{const xx=x/.063,yy=(y-.518)/.051;for(const c of [-.51,.51]){if((xx-c)**2+(yy-.36)**2<.19**2)return true;if(yy<.02&&yy>-.58&&Math.abs(xx-c)<(.58+yy)*.56)return true;}return false;};
  function string(a,b){const steps=120;for(let j=0;j<steps;j++){const p=a.clone().lerp(b,j/steps),next=a.clone().lerp(b,(j+1)/steps),mid=p.clone().lerp(next,.5);if(!inside(mid.x,mid.y))continue;const list=stencil(mid.x,mid.y)?red:white;list.push(p.x,p.y,p.z,next.x,next.y,next.z);}}
- for(let i=-11;i<=11;i++)string(V(i*.0083,.365,.00025),V(i*.0083,.655,.00025));
- for(let i=-15;i<=15;i++)string(V(-.105,.51+i*.0083,-.00025),V(.105,.51+i*.0083,-.00025));
- for(const [vertices,color,name] of [[white,'#e5e5df','Woven white strings'],[red,'#c13430','Yonex string stencil']]){const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(vertices,3));const lines=new THREE.LineSegments(g,new THREE.LineBasicMaterial({color}));lines.name=name;root.add(lines);}
+ for(let i=0;i<22;i++)string(V((i-10.5)*.0083,.365,.00025),V((i-10.5)*.0083,.655,.00025));
+ for(let i=0;i<21;i++)string(V(-.105,.51+(i-10)*.012,-.00025),V(.105,.51+(i-10)*.012,-.00025));
+ if(player)root.add(createWovenStrings(THREE,{stencil}));
+ else for(const [vertices,color,name] of [[white,'#e5e5df','Woven white strings'],[red,'#c13430','Yonex string stencil']]){const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(vertices,3));const lines=new THREE.LineSegments(g,new THREE.LineBasicMaterial({color}));lines.name=name;root.add(lines);}
  // Wrap printing around the slim cylinder; no opaque billboard across shaft.
  if(typeof document!=='undefined'){
   const canvas=document.createElement('canvas');canvas.width=256;canvas.height=1024;const ctx=canvas.getContext('2d');

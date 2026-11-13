@@ -1,4 +1,4 @@
-import {advance} from './physics.mjs?v=7.3.0';
+import {advance} from './physics.mjs?v=7.4.0';
 // Input intent is independent of the racket animation. A click may be early;
 // holding a button keeps the next return armed without repeated clicks.
 export class HitIntent {

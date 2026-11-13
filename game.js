@@ -1,27 +1,27 @@
-import * as THREE from './vendor/three/build/three.module.js?v=7.3.0';
-import { mergeGeometries } from './vendor/three/addons/utils/BufferGeometryUtils.js?v=7.3.0';
-import { COURT, advance, solveShot, predict, winnerOnLanding, clamp, damp, groundCrossing, createGroundMotion, stepGroundMotion } from './physics.mjs?v=7.3.0';
-import { FlightRecorder, EagleEyeReview } from './eagle-eye.mjs?v=7.3.0';
-import { HitIntent, canContact, receivingTarget, swingWindow } from './controls.mjs?v=7.3.0';
-import { JumpMotion, MovementOwnership, keyCommand, pointerCommand } from './interaction.mjs?v=7.3.0';
-import { freeLook, landingFromMap, moveLanding, normalizeLanding, landingName, LANDING_PRESETS } from './aiming.mjs?v=7.3.0';
-import { createAthlete } from './athlete.mjs?v=7.3.0';
-import { movementVector, gradeContact, strokeOutcome, shotTarget, SHOT_DEPTHS, Dash, targetDistance, DRILL_TARGETS, practiceFeed, smartStroke, racketPowerBoost, techniqueTarget } from './gameplay.mjs?v=7.3.0';
-import { OPPONENT_LEVELS, LEVEL_DESCRIPTIONS, LEVEL_REFERENCES, opponentLevel, placementSpread, matchFinished, rankName, freshCareer, parseCareer, settleMatch } from './competition.mjs?v=7.3.0';
-import {planOpponentStroke,recoveryBase,opponentFootwork,opponentReceiveMissChance,opponentStrokeExecution,opponentServeTarget,opponentContactWindow,opponentReceiveBase} from './opponent-ai.mjs?v=7.3.0';
-import { trackAngles, stepTracking } from './tracking.mjs?v=7.3.0';
-import { loadSurfaceMaps, createEnvironment, CourtPresentation } from './presentation.mjs?v=7.3.0';
-import { createViewmodel } from './viewmodel.mjs?v=7.3.0';
-import { prepareHands } from './hand-sculpt.mjs?v=7.3.0';
-import { RenderBudget, AdaptiveResolution, renderProfile } from './render-budget.mjs?v=7.3.0';
-import { createRacketModel, RACKET_PALETTES } from './racket-model.mjs?v=7.3.0';
-import { swingPose, moveVelocity, groundedCameraOffset, serveSupportPose } from './motion.mjs?v=7.3.0';
-import { dressHall } from './hall-details.mjs?v=7.3.0';
-import { hallSurfaces } from './hall-surfaces.mjs?v=7.3.0';
-import { createShuttleModel } from './shuttle-model.mjs?v=7.3.0';
-import { createNetMaterial } from './net-material.mjs?v=7.3.0';
-import { createTechniquePanel } from './technique-panel.mjs?v=7.3.0';
-import { PLAYER_STYLES, OPPONENT_STYLES, effectiveOpponentLevel, playerStatsFromInputs, playerStatsForStyle, normalizeSkills } from './player-styles.mjs?v=7.3.0';
+import * as THREE from './vendor/three/build/three.module.js?v=7.4.0';
+import { mergeGeometries } from './vendor/three/addons/utils/BufferGeometryUtils.js?v=7.4.0';
+import { COURT, advance, solveShot, predict, winnerOnLanding, clamp, damp, groundCrossing, createGroundMotion, stepGroundMotion } from './physics.mjs?v=7.4.0';
+import { FlightRecorder, EagleEyeReview } from './eagle-eye.mjs?v=7.4.0';
+import { HitIntent, canContact, receivingTarget, swingWindow } from './controls.mjs?v=7.4.0';
+import { JumpMotion, MovementOwnership, keyCommand, pointerCommand } from './interaction.mjs?v=7.4.0';
+import { freeLook, landingFromMap, moveLanding, normalizeLanding, landingName, LANDING_PRESETS } from './aiming.mjs?v=7.4.0';
+import { createAthlete } from './athlete.mjs?v=7.4.0';
+import { movementVector, gradeContact, strokeOutcome, shotTarget, SHOT_DEPTHS, Dash, targetDistance, DRILL_TARGETS, practiceFeed, smartStroke, racketPowerBoost, techniqueTarget } from './gameplay.mjs?v=7.4.0';
+import { OPPONENT_LEVELS, LEVEL_DESCRIPTIONS, LEVEL_REFERENCES, opponentLevel, placementSpread, matchFinished, rankName, freshCareer, parseCareer, settleMatch } from './competition.mjs?v=7.4.0';
+import {planOpponentStroke,recoveryBase,opponentFootwork,opponentReceiveMissChance,opponentStrokeExecution,opponentServeTarget,opponentContactWindow,opponentReceiveBase} from './opponent-ai.mjs?v=7.4.0';
+import { trackAngles, stepTracking } from './tracking.mjs?v=7.4.0';
+import { loadSurfaceMaps, createEnvironment, CourtPresentation } from './presentation.mjs?v=7.4.0';
+import { createViewmodel } from './viewmodel.mjs?v=7.4.0';
+import { prepareHands } from './hand-sculpt.mjs?v=7.4.0';
+import { RenderBudget, AdaptiveResolution, renderProfile } from './render-budget.mjs?v=7.4.0';
+import { createRacketModel, RACKET_PALETTES } from './racket-model.mjs?v=7.4.0';
+import { swingPose, moveVelocity, groundedCameraOffset, serveSupportPose } from './motion.mjs?v=7.4.0';
+import { dressHall } from './hall-details.mjs?v=7.4.0';
+import { hallSurfaces } from './hall-surfaces.mjs?v=7.4.0';
+import { createShuttleModel } from './shuttle-model.mjs?v=7.4.0';
+import { createNetMaterial } from './net-material.mjs?v=7.4.0';
+import { createTechniquePanel } from './technique-panel.mjs?v=7.4.0';
+import { PLAYER_STYLES, OPPONENT_STYLES, effectiveOpponentLevel, playerStatsFromInputs, playerStatsForStyle, normalizeSkills } from './player-styles.mjs?v=7.4.0';
 
 const $ = (s) => document.querySelector(s);
 const canvas = $('#court');
@@ -211,14 +211,6 @@ function createHall() {
     for (let i = 0; i < 3; i++) box(4.4, .13, .055, benchWood, x, .7 + i * .16, z - .3);
   }
   bench(-8.5, -10.5); bench(8.5, -10.5); bench(9.8, 9);
-  const bag = material('#b17b4d'), bagDark = material('#3d594d');
-  for (const [x, z] of [[-8.8, -10.4], [8.7, -10.4], [10.4, 9]]) {
-    const g = box(.9, .35, .42, bag, x, .71, z); g.rotation.y = .2;
-    box(.72, .02, .05, bagDark, x, .91, z);
-    cylinder(V(x - .18, .86, z), V(x - .05, 1.04, z), .014, bagDark);
-    cylinder(V(x + .18, .86, z), V(x + .05, 1.04, z), .014, bagDark);
-    mesh(new THREE.CylinderGeometry(.065, .065, .26, 12), material('#b6c9bc', .25, .4), x + .8, .63, z);
-  }
   // A distant second court gives the hall a believable scale.
   const second = box(5.7, .01, 13.6, material('#305b50'), -10, -.033, 0); second.receiveShadow = true;
   const faint = new THREE.MeshBasicMaterial({ color: '#bbc5a0' });
@@ -1187,7 +1179,7 @@ function animate() {
   if(state.screen==='play'&&qualityMode==='auto'&&adaptiveResolution.sample(rawFrameMs,frameNow))applyRenderProfile();
   if(frameProbe){if(frameProbe.warmup-->0){}else frameProbe.samples.push(rawFrameMs);if(frameProbe.samples.length>=180){const times=frameProbe.samples.sort((a,b)=>a-b),mean=times.reduce((a,b)=>a+b,0)/times.length;$('#test-result').textContent=JSON.stringify({type:'real animation frames',frames:times.length,averageFps:Math.round(10000/mean)/10,medianMs:Math.round(times[90]*10)/10,p95Ms:Math.round(times[171]*10)/10,viewport:[innerWidth,innerHeight],pixelRatio:renderer.getPixelRatio(),quality:presentation.quality,drawCalls:presentation.sceneInfo.calls,triangles:presentation.sceneInfo.triangles},null,2);frameProbe=null;pauseGame();}}
   const dt = Math.min(rawFrameMs/1000, .06); state.elapsed += dt; fps = damp(fps, 1 / Math.max(dt, .001), 1, dt);
-  if(state.screen!=='hand-inspect')shuttle.visible=state.screen!=='inspect';
+  if(state.screen!=='hand-inspect')shuttle.visible=!['inspect','equipment-inspect'].includes(state.screen);
   if (state.screen === 'menu') {
     menuTime += dt; camera.position.set(10.4 + Math.sin(menuTime * .1) * .5, 5.1 + Math.sin(menuTime * .13) * .1, 11.8); camera.lookAt(-.4, .85, -.8); camera.fov = 51; camera.updateProjectionMatrix();
     bot.root.position.set(-.6,0,-4.3);bot.root.rotation.y=0;bot.label.visible=true;bot.update({time:menuTime,dt});
@@ -1341,7 +1333,7 @@ function bindEvents() {
     if (['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Tab'].includes(e.code) && state.screen === 'play') e.preventDefault();
     if (e.repeat) return;
     if (e.code === 'KeyB') { openLineReview(); return; }
-    if (e.code === 'Escape' || e.code === 'KeyP') { if(['inspect','hand-inspect','shuttle-inspect'].includes(state.screen)){exitGame();$('#test-panel')?.classList.remove('hidden');$('#masthead')?.classList.remove('hidden');}else if (state.screen === 'play') pauseGame(); else if (state.screen === 'pause') resumeGame(); return; }
+    if (e.code === 'Escape' || e.code === 'KeyP') { if(['inspect','hand-inspect','shuttle-inspect','equipment-inspect'].includes(state.screen)){exitGame();$('#test-panel')?.classList.remove('hidden');$('#masthead')?.classList.remove('hidden');}else if (state.screen === 'play') pauseGame(); else if (state.screen === 'pause') resumeGame(); return; }
     if (state.screen !== 'play') return;
     if(['AltLeft','AltRight'].includes(e.code)){e.preventDefault();state.aimAlt=true;hitIntent.clear();}
     keys.add(e.code);
@@ -1429,6 +1421,13 @@ async function init() {
       const panel=document.createElement('div');panel.id='test-panel';panel.style.cssText='position:fixed;left:20px;top:115px;z-index:50;background:#12382f;padding:12px;max-width:350px;font:12px sans-serif;border:1px solid #dcf49a';
       panel.innerHTML='<button id="run-play-test">运行长按 60 秒对打测试</button><button id="run-input-suite">验证左右球路与提前点击</button><button id="run-target-test">验证打点挑战</button><button id="run-v2-test">验证手动操作与比赛</button><button id="inspect-model">查看人物近景</button><button id="run-perf-test">测量 180 帧实际表现</button><button id="run-scene-test">检查当前场景坐标</button><pre id="test-result">等待测试</pre>';document.body.append(panel);
       panel.style.zIndex = '45';
+      const equipmentProof=document.createElement('button');equipmentProof.id='inspect-equipment';equipmentProof.textContent='检查球包与场边器材 · Esc返回';panel.prepend(equipmentProof);
+      equipmentProof.onclick=()=>{
+        state.screen='equipment-inspect';renderBudget.invalidate();document.exitPointerLock?.();
+        for(const id of ['menu','hud','pause-overlay','masthead','test-panel'])$('#'+id).classList.add('hidden');
+        racket.visible=false;racket.userData.support.visible=false;shuttle.visible=false;landingMarker.visible=targetMarker.visible=aimMarker.visible=shuttleShadow.visible=false;
+        camera.position.set(8.6,1.15,-8.9);camera.fov=44;camera.lookAt(8.9,.73,-10.4);camera.updateProjectionMatrix();
+      };
       const shuttleProof=document.createElement('button');shuttleProof.id='inspect-shuttle';shuttleProof.textContent='检查16羽毛球近景 · Esc返回';panel.prepend(shuttleProof);
       shuttleProof.onclick=()=>{
         state.screen='shuttle-inspect';renderBudget.invalidate();document.exitPointerLock?.();
