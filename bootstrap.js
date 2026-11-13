@@ -27,4 +27,4 @@ window.addEventListener('error',event=>{if(!ready&&event.message)fail(`启动出
 window.addEventListener('unhandledrejection',event=>{if(!ready)fail(`启动未完成：${event.reason?.message||'资源加载失败'}。请重试或选择低负载启动。`);});
 progress('连接游戏文件',6);
 detail.textContent=query.has('safe')?'低负载启动：先进入球场，减少初次加载。':'第一次进入需要加载球馆与人物，请稍候。';
-import('./game.js?v=6.9.1').catch(error=>fail(`游戏文件未加载完成：${error.message}。请检查网络后重试，或选择低负载启动。`));
+import('./game.js?v=7.0.0').catch(error=>fail(`游戏文件未加载完成：${error.message}。请检查网络后重试，或选择低负载启动。`));

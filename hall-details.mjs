@@ -29,6 +29,19 @@ export function dressHall(T,scene){
  const clock=mesh(new T.CircleGeometry(.36,48),new T.MeshStandardMaterial({map:tex,roughness:.55}),8,3.45,-17.55);clock.castShadow=false;
  const frame=mesh(new T.TorusGeometry(.37,.018,8,48),dark,8,3.45,-17.57);
  const towel=new T.MeshStandardMaterial({color:'#adbfb4',roughness:1});box(.37,.025,.4,towel,8.1,.53,-10.5);box(.37,.26,.025,towel,8.1,.4,-10.23);
+ // Wall skirting, acoustic-panel joints and grounded practical equipment.
+ for(const side of [-1,1]){
+  box(29.3,.13,.07,dark,0,.065,side*17.59);
+  for(let xx=-13.5;xx<=13.5;xx+=2.7){box(.018,2.67,.025,dark,xx,1.43,side*17.64);}
+  for(const xx of [-11.4,11.4]){
+   box(.64,.7,.035,rubber,xx,1.45,side*17.5);
+   const extinguisher=mesh(new T.CylinderGeometry(.09,.09,.38,14),new T.MeshStandardMaterial({color:'#a64132',roughness:.52}),xx,1.39,side*17.42);
+   box(.15,.045,.08,dark,xx,1.6,side*17.42);bar(v(xx+.08,1.58,side*17.42),v(xx+.13,1.3,side*17.4),.012);
+  }
+ }
+ // Mat joins stay subtle and outside the playing lines.
+ const seam=new T.MeshStandardMaterial({color:'#245b52',roughness:.95});
+ for(const xx of [-3.88,3.88])box(.008,.003,16.1,seam,xx,-.005,0);
  // Baked soft contact shadows for furniture that doesn't need another shadow light.
  const shadowCanvas=document.createElement('canvas');shadowCanvas.width=shadowCanvas.height=128;const s=shadowCanvas.getContext('2d'),gradient=s.createRadialGradient(64,64,4,64,64,64);gradient.addColorStop(0,'#071b174f');gradient.addColorStop(.5,'#071b1724');gradient.addColorStop(1,'#071b1700');s.fillStyle=gradient;s.fillRect(0,0,128,128);
  const shadowMat=new T.MeshBasicMaterial({map:new T.CanvasTexture(shadowCanvas),transparent:true,depthWrite:false});

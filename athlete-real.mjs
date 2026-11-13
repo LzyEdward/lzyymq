@@ -1,5 +1,5 @@
-import * as data from './assets/athlete-data.mjs?v=6.9.1';
-import {FootPlant} from './footwork.mjs?v=6.9.1';
+import * as data from './assets/athlete-data.mjs?v=7.0.0';
+import {FootPlant} from './footwork.mjs?v=7.0.0';
 
 // A continuous CC0 anatomical mesh, 48-bone skin, and two-bone limb IK.
 export function createAthlete(THREE, createRacket) {
@@ -13,7 +13,7 @@ export function createAthlete(THREE, createRacket) {
   for(let y=0;y<size;y++)for(let x=0;x<size;x++){const n=(Math.sin(x*71.3+y*113.1)*43758.5453)%1,c=Math.floor(128+n*(cloth?23:13));ctx.fillStyle='rgb('+c+','+c+','+c+')';ctx.fillRect(x,y,1,1);}
   const texture=new THREE.CanvasTexture(canvas);texture.wrapS=texture.wrapT=THREE.RepeatWrapping;texture.repeat.set(cloth?100:9,cloth?100:9);return texture;
  }
- const weave=grain(32,true),skin=new THREE.MeshPhysicalMaterial({vertexColors:true,roughness:.48,bumpMap:grain(64),bumpScale:.00045,clearcoat:.08,clearcoatRoughness:.6,sheen:.12,sheenColor:'#dcad91'});
+ const weave=grain(32,true),skin=new THREE.MeshPhysicalMaterial({vertexColors:true,roughness:.61,bumpMap:grain(64),bumpScale:.00022,clearcoat:.015,clearcoatRoughness:.8,sheen:.08,sheenColor:'#c39882'});
  const jersey=new THREE.MeshPhysicalMaterial({color:'#e3e9df',roughness:.84,bumpMap:weave,bumpScale:.00065,sheen:.7,sheenRoughness:.9,sheenColor:'#ffffff'});
  jersey.onBeforeCompile=shader=>{
   shader.vertexShader=shader.vertexShader.replace('#include <common>','#include <common>\nvarying vec3 vCloth;').replace('#include <begin_vertex>','#include <begin_vertex>\nvCloth=position;');
@@ -166,5 +166,7 @@ export function createAthlete(THREE, createRacket) {
   }
   skeleton.update();
  }
- update();return {root,body,torso,head,legs:[bones['upperleg01.L'],bones['upperleg01.R']],knees:[bones['lowerleg01.L'],bones['lowerleg01.R']],arms:[bones['upperarm01.L'],bones['upperarm01.R']],elbows:[bones['lowerarm01.L'],bones['lowerarm01.R']],wrists:[bones['wrist.L'],bones['wrist.R']],skeleton,meshes,bones,bind,shoes,racket,update};
+ const kits={allround:['#e3e9df','#1c343c','#378683'],linDan08:['#c63b38','#1b2630','#d9bb68'],leeChongWei:['#e6c550','#172738','#d8e7ee'],chenLong:['#dfe8ed','#203344','#607e9d'],taufik:['#dce6d2','#243c31','#b48c56']};
+ function setKit(key='allround'){const [shirt,pants,accent]=kits[key]||kits.allround;jersey.color.set(shirt);shorts.color.set(pants);trim.color.set(accent);root.userData.kit=key;}
+ update();return {root,body,torso,head,legs:[bones['upperleg01.L'],bones['upperleg01.R']],knees:[bones['lowerleg01.L'],bones['lowerleg01.R']],arms:[bones['upperarm01.L'],bones['upperarm01.R']],elbows:[bones['lowerarm01.L'],bones['lowerarm01.R']],wrists:[bones['wrist.L'],bones['wrist.R']],skeleton,meshes,bones,bind,shoes,racket,update,setKit};
 }

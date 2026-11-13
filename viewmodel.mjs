@@ -1,4 +1,4 @@
-import { sculptGrip } from './hand-sculpt.mjs?v=6.9.1';
+import { sculptGrip } from './hand-sculpt.mjs?v=7.0.0';
 
 // Dedicated first-person anatomy: one closed wrist, palm, thumb web and hand.
 export function createViewmodel(THREE,createRacket){
@@ -9,6 +9,7 @@ export function createViewmodel(THREE,createRacket){
  root.userData.gripReport={handleAxis:[0,.075,0],minimumSkinRadius:.0133,closedSurface:true,fingers:5,method:'sculpted continuous grip'};
  root.userData.armMeshes=[hand.mesh];
  const fabric=new THREE.MeshPhysicalMaterial({color:'#dce3df',roughness:.9,sheen:.5});
+ root.userData.fabric=fabric;
  function sleeve(parent){
   const cuff=new THREE.Mesh(new THREE.CylinderGeometry(.043,.047,.17,40,12,true),fabric);
   cuff.name='Rounded sleeve';cuff.position.set(.331,-.226,.082);cuff.quaternion.setFromUnitVectors(V(0,1,0),V(.63,-.77,.14).normalize());

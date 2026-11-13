@@ -1,25 +1,26 @@
-import * as THREE from './vendor/three/build/three.module.js?v=6.9.1';
-import { mergeGeometries } from './vendor/three/addons/utils/BufferGeometryUtils.js?v=6.9.1';
-import { COURT, advance, solveShot, predict, winnerOnLanding, clamp, damp, groundCrossing, createGroundMotion, stepGroundMotion } from './physics.mjs?v=6.9.1';
-import { FlightRecorder, EagleEyeReview } from './eagle-eye.mjs?v=6.9.1';
-import { HitIntent, canContact, receivingTarget, swingWindow } from './controls.mjs?v=6.9.1';
-import { JumpMotion, MovementOwnership, keyCommand, pointerCommand } from './interaction.mjs?v=6.9.1';
-import { freeLook, landingFromMap, moveLanding, normalizeLanding, landingName, LANDING_PRESETS } from './aiming.mjs?v=6.9.1';
-import { createAthlete } from './athlete.mjs?v=6.9.1';
-import { movementVector, gradeContact, strokeOutcome, shotTarget, SHOT_DEPTHS, Dash, targetDistance, DRILL_TARGETS, practiceFeed, smartStroke, racketPowerBoost, techniqueTarget } from './gameplay.mjs?v=6.9.1';
-import { OPPONENT_LEVELS, LEVEL_DESCRIPTIONS, LEVEL_REFERENCES, opponentLevel, placementSpread, matchFinished, rankName, freshCareer, parseCareer, settleMatch } from './competition.mjs?v=6.9.1';
-import {planOpponentStroke,recoveryBase,opponentFootwork,opponentReceiveMissChance,opponentStrokeExecution,opponentServeTarget,opponentContactWindow,opponentReceiveBase} from './opponent-ai.mjs?v=6.9.1';
-import { trackAngles, stepTracking } from './tracking.mjs?v=6.9.1';
-import { loadSurfaceMaps, createEnvironment, CourtPresentation } from './presentation.mjs?v=6.9.1';
-import { createViewmodel } from './viewmodel.mjs?v=6.9.1';
-import { prepareHands } from './hand-sculpt.mjs?v=6.9.1';
-import { RenderBudget, AdaptiveResolution, renderProfile } from './render-budget.mjs?v=6.9.1';
-import { createRacketModel, RACKET_PALETTES } from './racket-model.mjs?v=6.9.1';
-import { swingPose, moveVelocity, groundedCameraOffset } from './motion.mjs?v=6.9.1';
-import { dressHall } from './hall-details.mjs?v=6.9.1';
-import { createNetMaterial } from './net-material.mjs?v=6.9.1';
-import { createTechniquePanel } from './technique-panel.mjs?v=6.9.1';
-import { PLAYER_STYLES, OPPONENT_STYLES, effectiveOpponentLevel, playerStatsFromInputs, playerStatsForStyle, normalizeSkills } from './player-styles.mjs?v=6.9.1';
+import * as THREE from './vendor/three/build/three.module.js?v=7.0.0';
+import { mergeGeometries } from './vendor/three/addons/utils/BufferGeometryUtils.js?v=7.0.0';
+import { COURT, advance, solveShot, predict, winnerOnLanding, clamp, damp, groundCrossing, createGroundMotion, stepGroundMotion } from './physics.mjs?v=7.0.0';
+import { FlightRecorder, EagleEyeReview } from './eagle-eye.mjs?v=7.0.0';
+import { HitIntent, canContact, receivingTarget, swingWindow } from './controls.mjs?v=7.0.0';
+import { JumpMotion, MovementOwnership, keyCommand, pointerCommand } from './interaction.mjs?v=7.0.0';
+import { freeLook, landingFromMap, moveLanding, normalizeLanding, landingName, LANDING_PRESETS } from './aiming.mjs?v=7.0.0';
+import { createAthlete } from './athlete.mjs?v=7.0.0';
+import { movementVector, gradeContact, strokeOutcome, shotTarget, SHOT_DEPTHS, Dash, targetDistance, DRILL_TARGETS, practiceFeed, smartStroke, racketPowerBoost, techniqueTarget } from './gameplay.mjs?v=7.0.0';
+import { OPPONENT_LEVELS, LEVEL_DESCRIPTIONS, LEVEL_REFERENCES, opponentLevel, placementSpread, matchFinished, rankName, freshCareer, parseCareer, settleMatch } from './competition.mjs?v=7.0.0';
+import {planOpponentStroke,recoveryBase,opponentFootwork,opponentReceiveMissChance,opponentStrokeExecution,opponentServeTarget,opponentContactWindow,opponentReceiveBase} from './opponent-ai.mjs?v=7.0.0';
+import { trackAngles, stepTracking } from './tracking.mjs?v=7.0.0';
+import { loadSurfaceMaps, createEnvironment, CourtPresentation } from './presentation.mjs?v=7.0.0';
+import { createViewmodel } from './viewmodel.mjs?v=7.0.0';
+import { prepareHands } from './hand-sculpt.mjs?v=7.0.0';
+import { RenderBudget, AdaptiveResolution, renderProfile } from './render-budget.mjs?v=7.0.0';
+import { createRacketModel, RACKET_PALETTES } from './racket-model.mjs?v=7.0.0';
+import { swingPose, moveVelocity, groundedCameraOffset } from './motion.mjs?v=7.0.0';
+import { dressHall } from './hall-details.mjs?v=7.0.0';
+import { hallSurfaces } from './hall-surfaces.mjs?v=7.0.0';
+import { createNetMaterial } from './net-material.mjs?v=7.0.0';
+import { createTechniquePanel } from './technique-panel.mjs?v=7.0.0';
+import { PLAYER_STYLES, OPPONENT_STYLES, effectiveOpponentLevel, playerStatsFromInputs, playerStatsForStyle, normalizeSkills } from './player-styles.mjs?v=7.0.0';
 
 const $ = (s) => document.querySelector(s);
 const canvas = $('#court');
@@ -123,6 +124,7 @@ function textPanel(text, w = 3, h = 1, options = {}) {
 }
 
 function createHall() {
+  const architecture=hallSurfaces(THREE);
   scene.background = new THREE.Color('#71827d');
   scene.fog = new THREE.FogExp2('#617874', .007);
   const hemi = new THREE.HemisphereLight('#e4edf1', '#7b7768', .66); scene.add(hemi);
@@ -131,6 +133,7 @@ function createHall() {
   sun.shadow.camera.top = 19; sun.shadow.camera.bottom = -19; sun.shadow.camera.near = .1; sun.shadow.camera.far = 65;
   sun.shadow.normalBias = .018; sun.shadow.bias = -.00012; sun.shadow.radius = 4; scene.add(sun);
   const fill = new THREE.DirectionalLight('#d0e0ec', .65); fill.position.set(10, 10, 4); scene.add(fill);
+  const bounce=new THREE.DirectionalLight('#d6ddd2',.38);bounce.position.set(0,3,14);scene.add(bounce);
   const overhead=new THREE.SpotLight('#fff3df',110,23,Math.PI*.37,1,2);overhead.position.set(0,8,1);overhead.target.position.set(0,0,-2);overhead.castShadow=true;overhead.shadow.mapSize.set(512,512);overhead.shadow.normalBias=.018;overhead.shadow.bias=-.0001;scene.add(overhead,overhead.target);
   const floorTex = texture(1024, 1024, (c, w, h) => {
     c.fillStyle = '#a58b61'; c.fillRect(0, 0, w, h);
@@ -143,15 +146,15 @@ function createHall() {
     }
   });
   floorTex.wrapS = floorTex.wrapT = THREE.RepeatWrapping; floorTex.repeat.set(6, 8);
-  const floor = box(31, .2, 39, new THREE.MeshPhysicalMaterial({ map: surfaceMaps.wood, normalMap:surfaceMaps.woodNormal,normalScale:new THREE.Vector2(.32,.32),roughnessMap:surfaceMaps.woodRough,roughness:.74,clearcoat:.18,clearcoatRoughness:.4 }), 0, -.15, 0); floor.receiveShadow = true;
-  floorTex.dispose();
+  const floor = box(31, .2, 39, new THREE.MeshPhysicalMaterial({ map: surfaceMaps.wood||floorTex, normalMap:surfaceMaps.woodNormal||null,normalScale:new THREE.Vector2(.22,.22),roughnessMap:surfaceMaps.woodRough||null,roughness:.78,clearcoat:.12,clearcoatRoughness:.55 }), 0, -.15, 0); floor.receiveShadow = true;
+  if(surfaceMaps.wood)floorTex.dispose();
   const courtTex = texture(512, 512, (c, w, h) => {
     c.fillStyle = '#33776c'; c.fillRect(0, 0, w, h);
     for (let i = 0; i < 26000; i++) { c.fillStyle = i % 2 ? '#ffffff06' : '#00000008'; c.fillRect(rand(0, w), rand(0, h), 1, 1); }
     for(let i=0;i<120;i++){const x=rand(0,w),y=rand(0,h);c.strokeStyle=i%2?'#b8c6ac0a':'#18392c0d';c.lineWidth=rand(.5,2);c.beginPath();c.ellipse(x,y,rand(3,17),rand(1,3),rand(-2,2),0,Math.PI*1.4);c.stroke();}
   });
   courtTex.wrapS = courtTex.wrapT = THREE.RepeatWrapping; courtTex.repeat.set(3, 7);
-  const mat = box(7.9, .035, 16.2, new THREE.MeshPhysicalMaterial({ map: courtTex, normalMap:surfaceMaps.rubberNormal,normalScale:new THREE.Vector2(.12,.12),roughnessMap:surfaceMaps.rubberRough,roughness:.82,clearcoat:.09,clearcoatRoughness:.78 }), 0, -.025, 0); mat.receiveShadow = true;
+  const mat = box(7.9, .035, 16.2, new THREE.MeshPhysicalMaterial({ map: courtTex, normalMap:surfaceMaps.rubberNormal||null,normalScale:new THREE.Vector2(.12,.12),roughnessMap:surfaceMaps.rubberRough||null,roughness:.82,clearcoat:.09,clearcoatRoughness:.78 }), 0, -.025, 0); mat.receiveShadow = true;
   const runoff = material('#224f48');
   box(.12, .025, 16.2, runoff, -3.97, -.01, 0); box(.12, .025, 16.2, runoff, 3.97, -.01, 0);
   const line = new THREE.MeshStandardMaterial({ color: '#e5e9dc',roughness:.78 });
@@ -163,16 +166,18 @@ function createHall() {
   [-6.7, -5.94, -1.98, 1.98, 5.94, 6.7].forEach(z => lineAt(-3.05, z, 3.05, z));
   lineAt(0, -6.7, 0, -1.98); lineAt(0, 1.98, 0, 6.7);
   const wall = material('#435651'), lower = material('#3d534b'), black = material('#253732'), steel = material('#667b75', .4, .6);
+  wall.map=architecture.wall;wall.roughness=.95;lower.map=architecture.wall;lower.roughness=.91;
   box(31, 11, .3, wall, 0, 5.3, -18); box(31, 11, .3, wall, 0, 5.3, 18);
   box(.3, 11, 36, wall, -15, 5.3, 0); box(.3, 11, 36, wall, 15, 5.3, 0);
   box(30, 2.8, .2, lower, 0, 1.4, -17.78); box(30, 2.8, .2, lower, 0, 1.4, 17.78);
   const panelWood = material('#907a58');
+  const windowMaterial=new THREE.MeshStandardMaterial({map:architecture.glass,color:'#d5e2df',emissiveMap:architecture.glass,emissive:'#c9d7d0',emissiveIntensity:.3,roughness:.4,metalness:.08});
   for (const side of [-1, 1]) {
     box(.3, 3.1, 36, panelWood, side * 14.7, 1.5, 0);
     for (let z = -17.5; z < 18; z += .32) box(.04, 3.1, .038, black, side * 14.5, 1.5, z);
     for (let z = -15; z <= 15; z += 5) {
       box(.38, 10.6, .38, black, side * 14.4, 5.2, z);
-      box(.02, 4.2, 4.5, new THREE.MeshStandardMaterial({ color: '#cfe1d5', emissive: '#b2d0c2', emissiveIntensity: .65, roughness: .25 }), side * 14.52, 6.5, z + 2.5);
+      box(.02, 4.2, 4.5, windowMaterial, side * 14.52, 6.5, z + 2.5);
       for (let yy = 4.4; yy <= 8.7; yy += 1.4) box(.04, .055, 4.6, black, side * 14.47, yy, z + 2.5);
       for (let zz = 0; zz <= 4.6; zz += 1.15) box(.04, 4.3, .045, black, side * 14.46, 6.5, z + .2 + zz);
     }
@@ -420,6 +425,7 @@ function applyPlayerStyle(key){
   const stats=playerStatsForStyle(key);state.playerStyle=PLAYER_STYLES[key]?key:'custom';
   for(const [name,value] of Object.entries(stats)){const input=$(`#player-${name}`);if(input){input.value=Math.round(value*100);input.parentElement.querySelector('output').value=`${input.value}%`;input.parentElement.querySelector('output').textContent=`${input.value}%`;}}
   state.playerStats=stats;
+  if(racket?.userData.fabric)racket.userData.fabric.color.set(({linDan08:'#ba3533',leeChongWei:'#d9c255',chenLong:'#dce4e8',taufik:'#d4dfce'})[key]||'#dce3df');
   if(techniquePanel)techniquePanel.write('player',stats);
   $('#player-style').value=state.playerStyle;
   document.querySelectorAll('[data-player-style]').forEach(button=>{const active=button.dataset.playerStyle===state.playerStyle;button.classList.toggle('active',active);button.setAttribute('aria-pressed',String(active));});
@@ -460,6 +466,7 @@ function initTechniquePanel(){
   });
 }
 function updateDifficultyUI(){
+  bot?.setKit?.($('#opponent-style').value);renderBudget.invalidate();
   const level=effectiveOpponentLevel(opponentLevel($('#difficulty').value),$('#opponent-style').value,state.opponentStats);
   updateTechniqueSummary();
   const style=OPPONENT_STYLES[$('#opponent-style')?.value||'allround'];
@@ -502,6 +509,7 @@ function startGame(mode = 'match', preserveSettings = false) {
   $('#eagle-point-review').classList.add('hidden'); $('#last-line-review').disabled = true;
   initAudio(); state.mode = mode; state.difficulty = $('#difficulty').value;
   state.playerStyle=$('#player-style').value;state.opponentStyle=$('#opponent-style').value;state.playerStats=playerStatsFromInputs();state.highBallAssist=$('#high-ball-toggle').checked;
+  bot.setKit(state.opponentStyle);
   Object.assign(state, { screen: 'play', phase: 'serve', score: [0, 0], rally: 0, maxRally: 0, hits: 0, maxSpeed: 0, finished: false, stamina: 100, swing: 0, swingContact: false, swingMissed: false, jump: 0, jumpV: 0, timer: 0, serveCount: 0, yaw: 0, pitch: -.03,manualPitch:-.03,autoPitchOffset:0, aim: 0, countdown: 0, pointDelay: 0, charge: 0, hitstop: 0, lastMove: -10, lastLook: -10, targetIndex: -1, target: null, targetArmed: false, targetHits: 0, targetShots: 0, targetStreak: 0 });
   try { state.targetBest = testing ? 0 : Number(localStorage.getItem('feather-court-2-target-best')) || 0; } catch { state.targetBest = 0; }
   state.depth = -4.7;state.manualLanding=false;state.shotCueUntil=0;state.aiming=false;state.aimAlt=false;state.swingTarget=null;state.serveTarget=null;state.lastLanding=null;document.body.classList.remove('choosing-landing');state.contactFlash=0;state.profile=$('#opponent-profile').value;dash.reset();setControlsVisible(false);

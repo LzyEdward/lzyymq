@@ -4,6 +4,8 @@ export const RACKET_PALETTES={astrox100zz:{rim:'#2866ac',carbon:'#111e30',grip:'
 export function createRacketModel(THREE,{skin='astrox100zz',player=false}={}){
  const root=new THREE.Group(),V=(...p)=>new THREE.Vector3(...p),colors=RACKET_PALETTES[skin]||RACKET_PALETTES.astrox100zz;
  const mats=Object.fromEntries(Object.entries(colors).map(([name,color])=>[name,new THREE.MeshPhysicalMaterial({color,roughness:name==='grip'?.91:.32,metalness:name==='grip'?0:.25,clearcoat:name==='grip'?0:.4})]));root.userData.styleMaterials=mats;
+ const grainBytes=new Uint8Array(64*256);for(let y=0;y<256;y++)for(let x=0;x<64;x++){const weave=Math.sin((x+y*.55)*Math.PI)*Math.sin((y-x*.35)*Math.PI*.7),pore=Math.sin(x*123.7+y*47.3);grainBytes[y*64+x]=Math.round(127+weave*32+pore*12);}
+ const gripGrain=new THREE.DataTexture(grainBytes,64,256,THREE.RedFormat);gripGrain.wrapS=gripGrain.wrapT=THREE.RepeatWrapping;gripGrain.repeat.set(1,1);gripGrain.needsUpdate=true;mats.grip.bumpMap=gripGrain;mats.grip.bumpScale=.00012;mats.grip.roughness=.86;
  const add=(geo,mat,name)=>{const m=new THREE.Mesh(geo,mat);m.name=name;m.castShadow=true;root.add(m);return m;};
  function bar(a,b,r,mat,name){const m=add(new THREE.CylinderGeometry(r,r,a.distanceTo(b),10),mat,name);m.position.copy(a).add(b).multiplyScalar(.5);m.quaternion.setFromUnitVectors(V(0,1,0),b.clone().sub(a).normalize());return m;}
  const handle=add(new THREE.CylinderGeometry(.0117,.0135,.17,8,12),mats.grip,'Octagonal tapered G5 grip');handle.position.y=.075;handle.rotation.y=Math.PI/8;

@@ -1,6 +1,7 @@
 // Metre-scale closed hand sculpt. Smooth unions keep the wrist and thumb web
 // continuous; separate tapered finger paths preserve the interdigital gaps.
-import {boundedAsset,handBufferLayout} from './asset-loading.mjs?v=6.9.1';
+import {boundedAsset,handBufferLayout} from './asset-loading.mjs?v=7.0.0';
+import {handTint,handUV,createHandSkin} from './hand-surface.mjs?v=7.0.0';
 let cachedGrip=null,cachedOpen=null,runtimeFallback=false;
 const bakedGeometries=new Map();
 export async function prepareHands(THREE,{safe=false,onWarning=()=>{}}={}){
@@ -8,7 +9,7 @@ export async function prepareHands(THREE,{safe=false,onWarning=()=>{}}={}){
  if(safe)return;
  await Promise.all(['grip','open'].map(async name=>{
   const data=await boundedAsset(async signal=>{
-   const response=await fetch(new URL(`./assets/hand-${name}.bin?v=6.9.1`,import.meta.url),{signal});if(!response.ok)throw new Error(`手部模型 HTTP ${response.status}`);
+   const response=await fetch(new URL(`./assets/hand-${name}.bin?v=7.0.0`,import.meta.url),{signal});if(!response.ok)throw new Error(`手部模型 HTTP ${response.status}`);
    const bytes=await response.arrayBuffer();handBufferLayout(bytes);return bytes;
   },{timeout:10000,label:`${name}手部模型`,onWarning});
   if(!data)return;
@@ -17,7 +18,7 @@ export async function prepareHands(THREE,{safe=false,onWarning=()=>{}}={}){
   const packedNormals=new Int16Array(data,offset,n*3);offset+=n*6;
   const packedColors=new Uint8Array(data,offset,n*3);offset+=n*3;offset=Math.ceil(offset/4)*4;
   const indices=new Uint32Array(data,offset,count),normals=Float32Array.from(packedNormals,v=>v/32767),colors=Float32Array.from(packedColors,v=>v/255),uv=new Float32Array(n*2);
-  for(let i=0;i<n;i++){uv[i*2]=positions[i*3]*9;uv[i*2+1]=positions[i*3+1]*9;}
+  for(let i=0;i<n;i++){const pair=handUV(positions[i*3],positions[i*3+1]);uv[i*2]=pair[0];uv[i*2+1]=pair[1];}
   const geo=new THREE.BufferGeometry();for(const [key,values,size] of [['position',positions,3],['normal',normals,3],['color',colors,3],['uv',uv,2]])geo.setAttribute(key,new THREE.BufferAttribute(values,size));geo.setIndex(new THREE.BufferAttribute(indices,1));geo.computeBoundingSphere();bakedGeometries.set(name,geo);
  }));
 }
@@ -26,10 +27,10 @@ export function sculptGrip(THREE,{open=false}={}){
  const V=(...p)=>new THREE.Vector3(...p),parts=[],fingerPaths=[];
  const ell=(c,r)=>parts.push({c,r,kind:'ell',pad:.004});
  const bone=(a,b,r0,r1,pad=.0025)=>{const d=b.map((v,i)=>v-a[i]);parts.push({a,b,d,l2:d.reduce((s,v)=>s+v*v,0),r0,r1,kind:'bone',pad});};
- ell([.066,.073,.001],[.045,.041,.022]);
- ell([.095,.047,.003],[.030,.027,.021]);
- ell([.052,.097,.012],[.025,.025,.012]);
- bone([.112,.039,.004],[.17,-.025,.022],.022,.028,.007);
+ ell([.064,.073,.000],[.041,.039,.0185]);
+ ell([.092,.046,.002],[.026,.024,.017]);
+ ell([.052,.095,.010],[.022,.021,.0085]);
+ bone([.110,.038,.003],[.17,-.025,.022],.020,.027,.006);
  bone([.17,-.025,.022],[.286,-.169,.071],.028,.036,.008);
  bone([.286,-.169,.071],[.343,-.239,.084],.036,.039,.008);
  for(let f=0;f<4;f++){
@@ -40,9 +41,9 @@ export function sculptGrip(THREE,{open=false}={}){
   for(let i=0;i<path.length-1;i++)bone(path[i],path[i+1],r*(1-i*.065),r*(.94-i*.07),.0021);
   ell([.032,y,-.019],[.012,r*.98,r*.85]);
  }
- const thumb=open?[[.064,.095,.016],[.044,.133,.019],[.012,.154,.023],[-.012,.16,.027]]:
-  [[.066,.088,.017],[.039,.112,.024],[.013,.116,.027],[-.006,.106,.027]];
- for(let i=0;i<3;i++)bone(thumb[i],thumb[i+1],[.0128,.0105,.0088][i],[.011,.0088,.0078][i],.004);
+ const thumb=open?[[.062,.092,.014],[.043,.132,.018],[.012,.154,.023],[-.012,.16,.027]]:
+  [[.064,.086,.015],[.038,.111,.023],[.012,.115,.026],[-.007,.106,.027]];
+ for(let i=0;i<3;i++)bone(thumb[i],thumb[i+1],[.0114,.0096,.0082][i],[.0101,.0082,.0073][i],.003);
  for(const p of parts){const r=p.kind==='ell'?p.r:[Math.max(p.r0,p.r1),Math.max(p.r0,p.r1),Math.max(p.r0,p.r1)];p.lo=r.map((v,i)=>(p.c?p.c[i]:Math.min(p.a[i],p.b[i]))-v-.014);p.hi=r.map((v,i)=>(p.c?p.c[i]:Math.max(p.a[i],p.b[i]))+v+.014);}
  const smooth=(a,b,k)=>{const h=Math.max(k-Math.abs(a-b),0)/k;return Math.min(a,b)-h*h*k*.25;};
  function field(x,y,z){
@@ -80,17 +81,20 @@ export function sculptGrip(THREE,{open=false}={}){
   }
  }
  const colors=[],uv=[];
- for(let i=0;i<ps.length;i+=3){const [x,y,z]=ps.slice(i,i+3),warm=Math.max(0,1-Math.abs(x+.018)/.025)*Math.max(0,1-Math.abs(y-.08)/.07),noise=Math.sin(x*2311+y*1777+z*2999)*.006;
-  colors.push(.59+warm*.025+noise,.365-warm*.012+noise,.245-warm*.012+noise);uv.push(x*9,y*9);
+ for(let i=0;i<ps.length;i+=3){const [x,y,z]=ps.slice(i,i+3);
+  colors.push(...handTint(x,y,z));uv.push(...handUV(x,y));
  }
  const normals=[],epsilon=.0003;
- for(let i=0;i<ps.length;i+=3){const [x,y,z]=ps.slice(i,i+3),n=V(field(x+epsilon,y,z)-field(x-epsilon,y,z),field(x,y+epsilon,z)-field(x,y-epsilon,z),field(x,y,z+epsilon)-field(x,y,z-epsilon)).normalize();normals.push(n.x,n.y,n.z);}
+ for(let i=0;i<ps.length;i+=3){const [x,y,z]=ps.slice(i,i+3),n=V(field(x+epsilon,y,z)-field(x-epsilon,y,z),field(x,y+epsilon,z)-field(x,y-epsilon,z),field(x,y,z+epsilon)-field(x,y,z-epsilon)).normalize();normals.push(n.x,n.y,n.z);
+  // Baked local occlusion gives finger webs and the wrapped grip depth even
+  // on the low-load profile, which intentionally has no realtime shadow map.
+  let occlusion=0;for(const distance of [.002,.005,.011])occlusion+=Math.max(0,Math.min(1,(distance-field(x+n.x*distance,y+n.y*distance,z+n.z*distance))/distance));
+  const shade=1-Math.min(.22,occlusion*.095);for(let j=0;j<3;j++)colors[i+j]*=shade;
+ }
  geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.Float32BufferAttribute(ps,3));geo.setAttribute('normal',new THREE.Float32BufferAttribute(normals,3));geo.setAttribute('color',new THREE.Float32BufferAttribute(colors,3));geo.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));geo.setIndex(ids);geo.computeBoundingSphere();
  }
- const texels=new Uint8Array(128*128);for(let i=0;i<texels.length;i++)texels[i]=Math.round(127+Math.sin(i*12.9898)*Math.cos(i*4.14)*30);
- const grain=new THREE.DataTexture(texels,128,128,THREE.RedFormat);grain.wrapS=grain.wrapT=THREE.RepeatWrapping;grain.needsUpdate=true;
- const skin=new THREE.MeshPhysicalMaterial({vertexColors:true,roughness:.62,bumpMap:grain,bumpScale:.00012,clearcoat:.018,sheen:.12,sheenColor:'#c59378'}),mesh=new THREE.Mesh(geo,skin);mesh.name='Continuous forearm';mesh.userData={handSurface:'Closed five-finger anatomical sculpt',closedSurface:true,fingerCount:5,minimumSkinRadius:open?0:.0133};
- const details=[],nailMat=new THREE.MeshPhysicalMaterial({color:'#cca48f',roughness:.43,clearcoat:.12,clearcoatRoughness:.4});
+ const mesh=new THREE.Mesh(geo,createHandSkin(THREE));mesh.name='Continuous forearm';mesh.userData={handSurface:'Closed five-finger anatomical sculpt',closedSurface:true,fingerCount:5,minimumSkinRadius:open?0:.0133};
+ const details=[],nailMat=new THREE.MeshPhysicalMaterial({color:'#bb9584',roughness:.48,clearcoat:.12,clearcoatRoughness:.6});
  for(const [i,path] of [...fingerPaths,thumb].entries()){
   const end=V(...path.at(-1)),previous=V(...path.at(-2)),direction=end.clone().sub(previous).normalize();
   const nail=new THREE.Mesh(new THREE.SphereGeometry(1,20,12),nailMat);nail.name=['Index','Middle','Ring','Little','Thumb'][i]+' nail';
