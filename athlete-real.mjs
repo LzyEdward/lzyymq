@@ -1,6 +1,7 @@
-import * as data from './assets/athlete-data.mjs?v=7.6.0';
-import {FootPlant} from './footwork.mjs?v=7.6.0';
-import {createCourtShoe} from './court-shoe.mjs?v=7.6.0';
+import * as data from './assets/athlete-data.mjs?v=7.7.0';
+import {FootPlant} from './footwork.mjs?v=7.7.0';
+import {createCourtShoe} from './court-shoe.mjs?v=7.7.0';
+import {necklineDistances} from './garment-surfaces.mjs?v=7.7.0';
 
 // A continuous CC0 anatomical mesh, 48-bone skin, and two-bone limb IK.
 export function createAthlete(THREE, createRacket,{skinMap=null,mergeGeometries=null}={}) {
@@ -17,8 +18,9 @@ export function createAthlete(THREE, createRacket,{skinMap=null,mergeGeometries=
  const weave=grain(32,true),skin=new THREE.MeshPhysicalMaterial({vertexColors:!skinMap,map:skinMap,roughness:.66,bumpMap:grain(64),bumpScale:.00022,clearcoat:.008,clearcoatRoughness:.8,sheen:.055,sheenColor:'#c39882'});
  const jersey=new THREE.MeshPhysicalMaterial({color:'#e3e9df',roughness:.9,bumpMap:weave,bumpScale:.00034,sheen:.42,sheenRoughness:.9,sheenColor:'#ffffff'});
  jersey.onBeforeCompile=shader=>{
-  shader.vertexShader=shader.vertexShader.replace('#include <common>','#include <common>\nvarying vec3 vCloth;').replace('#include <begin_vertex>','#include <begin_vertex>\nvCloth=position;');
-  shader.fragmentShader=shader.fragmentShader.replace('#include <common>','#include <common>\nvarying vec3 vCloth;').replace('#include <color_fragment>',`#include <color_fragment>
+  shader.uniforms.uCollarColor={value:trim.color};
+  shader.vertexShader=shader.vertexShader.replace('#include <common>','#include <common>\nvarying vec3 vCloth;\nattribute float necklineDistance;\nvarying float vNeckline;').replace('#include <begin_vertex>','#include <begin_vertex>\nvCloth=position;\nvNeckline=necklineDistance;');
+  shader.fragmentShader=shader.fragmentShader.replace('#include <common>','#include <common>\nvarying vec3 vCloth;\nvarying float vNeckline;\nuniform vec3 uCollarColor;').replace('#include <color_fragment>',`#include <color_fragment>
    float panel=smoothstep(.163,.195,abs(vCloth.x))*(1.-smoothstep(1.25,1.34,vCloth.y))*smoothstep(.99,1.045,vCloth.y);
    float hem=1.-smoothstep(.003,.010,abs(vCloth.y-.992));
    float cuff=smoothstep(.22,.25,abs(vCloth.x))*(1.-smoothstep(.002,.008,abs(vCloth.y-1.316)));
@@ -30,9 +32,12 @@ export function createAthlete(THREE, createRacket,{skinMap=null,mergeGeometries=
    diffuseColor.rgb*=1.+sideFold*.023*foldMask;
    float stitch=1.-smoothstep(.0006,.0016,abs(abs(vCloth.x)-.176));
    diffuseColor.rgb*=1.-stitch*.07*smoothstep(1.03,1.12,vCloth.y)*(1.-smoothstep(1.32,1.39,vCloth.y));
+   float collar=1.-smoothstep(.0052,.0065,vNeckline);
+   float rib=sin(atan(vCloth.x,vCloth.z+.005)*310.);
+   diffuseColor.rgb=mix(diffuseColor.rgb,uCollarColor*(.94+rib*.035),collar);
   `);
  };
- jersey.customProgramCacheKey=()=> 'court-performance-jersey-v4';
+ jersey.customProgramCacheKey=()=> 'court-performance-jersey-mesh-collar-v5';
  const shorts=new THREE.MeshPhysicalMaterial({color:'#1c343c',roughness:.9,bumpMap:weave,bumpScale:.001,sheen:.4});
  const hairGrain=grain(64);hairGrain.repeat.set(70,70);
  const sock=new THREE.MeshStandardMaterial({color:'#dedfd4',roughness:.95,bumpMap:weave,bumpScale:.0006}),hair=new THREE.MeshPhysicalMaterial({color:'#1b1d1a',roughness:.74,bumpMap:hairGrain,bumpScale:.00018,sheen:.22});
@@ -55,6 +60,7 @@ export function createAthlete(THREE, createRacket,{skinMap=null,mergeGeometries=
  const allNormals=new THREE.Float32BufferAttribute(data.normals,3);
  function skinMesh(indices,material){const g=geometry(indices);g.setAttribute('normal',allNormals.clone());const m=new THREE.SkinnedMesh(g,material);m.castShadow=m.receiveShadow=true;m.frustumCulled=false;body.add(m);m.bind(skeleton);meshes.push(m);return m;}
  const torso=skinMesh(data.indices1,jersey),anatomySkin=skinMesh(data.indices0,skin);skinMesh(data.indices2,shorts);skinMesh(data.indices3,sock);
+ torso.geometry.setAttribute('necklineDistance',new THREE.Float32BufferAttribute(necklineDistances(data.positions,data.indices1).distances,1));
  // Cloth bridges the small anatomical hollows instead of painting a shirt
  // directly on the chest. Keep shoulder and sleeve seams in the original rig.
  const cloth=torso.geometry.attributes.position;
@@ -66,9 +72,16 @@ export function createAthlete(THREE, createRacket,{skinMap=null,mergeGeometries=
   const folds=(Math.sin(y*95+x*16)*.0017+Math.sin(x*82+y*22)*.0011)*(1-THREE.MathUtils.smoothstep(y,1.24,1.41));
   cloth.setZ(i,z+(envelope-z)*middle+folds*middle*(z>0?1:-1));
  }
+ // Average normals across coincident UV vertices. Recomputing each UV island
+ // separately produced a comb-like rim along the neckline under grazing light.
  const smoothCloth=torso.geometry.clone();smoothCloth.computeVertexNormals();
- const clothNormals=torso.geometry.attributes.normal;
- for(const i of new Set(data.indices1))clothNormals.setXYZ(i,smoothCloth.attributes.normal.getX(i),smoothCloth.attributes.normal.getY(i),smoothCloth.attributes.normal.getZ(i));
+ const clothNormals=torso.geometry.attributes.normal,normalGroups=new Map(),clothKeys=new Map();
+ for(const i of new Set(data.indices1)){
+  const key=[cloth.getX(i),cloth.getY(i),cloth.getZ(i)].map(n=>n.toFixed(5)).join(',');clothKeys.set(i,key);
+  if(!normalGroups.has(key))normalGroups.set(key,vec());normalGroups.get(key).add(vec().fromBufferAttribute(smoothCloth.attributes.normal,i));
+ }
+ for(const normal of normalGroups.values())normal.normalize();
+ for(const [i,key] of clothKeys){const normal=normalGroups.get(key);clothNormals.setXYZ(i,normal.x,normal.y,normal.z);}
  smoothCloth.dispose();
  const scalp=[];
  for(let i=0;i<data.indices0.length;i+=3){const vs=data.indices0.slice(i,i+3),y=vs.reduce((s,v)=>s+data.positions[v*3+1]/3,0);if(y>1.66)scalp.push(...vs);}
@@ -143,7 +156,6 @@ export function createAthlete(THREE, createRacket,{skinMap=null,mergeGeometries=
  const crestCanvas=document.createElement('canvas');crestCanvas.width=256;crestCanvas.height=128;const ctx=crestCanvas.getContext('2d');ctx.fillStyle='#285e63';ctx.textAlign='center';ctx.font='700 42px sans-serif';ctx.fillText?.('FEATHER',128,56);ctx.font='22px sans-serif';ctx.fillText?.('PERFORMANCE / 07',128,94);
  const crestTex=new THREE.CanvasTexture(crestCanvas);crestTex.colorSpace=THREE.SRGBColorSpace;
  const crest=add(new THREE.PlaneGeometry(.13,.065),new THREE.MeshStandardMaterial({map:crestTex,transparent:true,roughness:.9,depthWrite:false}),bones.spine01);crest.position.copy(vec(-.064,1.366,.172).sub(bind.spine01));crest.rotation.y=-.12;
- tube(bones.spine01,trim,Array.from({length:19},(_,i)=>{const angle=i/18*Math.PI*2;return vec(Math.cos(angle)*.079,1.507+Math.sin(angle)*.008,Math.sin(angle)*.064-.005).sub(bind.spine01);}),.0035);
  const shadowCanvas=document.createElement('canvas');shadowCanvas.width=shadowCanvas.height=64;const sc=shadowCanvas.getContext('2d');
  if(sc.createRadialGradient){const gradient=sc.createRadialGradient(32,32,1,32,32,32);gradient.addColorStop(0,'#0009');gradient.addColorStop(1,'#0000');sc.fillStyle=gradient;sc.fillRect(0,0,64,64);}
  const shadowMap=new THREE.CanvasTexture(shadowCanvas),shadow=add(new THREE.PlaneGeometry(.95,.75),new THREE.MeshBasicMaterial({map:shadowMap,transparent:true,opacity:.4,depthWrite:false}),root);shadow.rotation.x=-Math.PI/2;shadow.position.y=.009;shadow.castShadow=false;
