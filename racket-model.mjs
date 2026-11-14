@@ -1,9 +1,10 @@
 // ASTROX 100ZZ Dark Navy (554). Shape and asymmetric paint reference:
 // https://badmintonworldbalcatta.com/products/astrox-100zz-dark-navy-4ug5
 import {createWovenStrings} from './woven-strings.mjs?v=0a67d8f314b8c856';
-import {createFrameFinish} from './racket-finish.mjs?v=3b4b8f4602232099';
+import {createFrameFinish} from './racket-finish.mjs?v=64131ee4a5624476';
 import {racketHeadPoint,createRacketFrame} from './racket-frame.mjs?v=ea843caa7bf9dc17';
-export const RACKET_PALETTES={astrox100zz:{rim:'#2866ac',carbon:'#111e30',grip:'#202328',accent:'#eef4fa',gold:'#fa6524'},'control-original':{rim:'#c4ec78',carbon:'#22302e',grip:'#eeeadd',accent:'#edf4d9',gold:'#c4ec78'},'aero-blue':{rim:'#82d6e1',carbon:'#20323a',grip:'#dce7e2',accent:'#b4f2ee',gold:'#dce7e2'}};
+import {RACKET_PALETTES,racketSkin} from './racket-catalog.mjs?v=99e3093fcfbf9bed';
+export {RACKET_PALETTES} from './racket-catalog.mjs?v=99e3093fcfbf9bed';
 export function disposeRacketModel(root){
  const resources=new Set();root.traverse(o=>{
   if(o.geometry)resources.add(o.geometry);
@@ -14,7 +15,7 @@ export function disposeRacketModel(root){
  for(const resource of resources)resource.dispose();
 }
 export function createRacketModel(THREE,{skin='astrox100zz',player=false}={}){
- const root=new THREE.Group(),V=(...p)=>new THREE.Vector3(...p),colors=RACKET_PALETTES[skin]||RACKET_PALETTES.astrox100zz;
+ const root=new THREE.Group(),V=(...p)=>new THREE.Vector3(...p),spec=racketSkin(skin),colors=spec.palette;
  const mats=Object.fromEntries(Object.entries(colors).map(([name,color])=>[name,new THREE.MeshPhysicalMaterial({color,roughness:name==='grip'?.91:.32,metalness:name==='grip'?0:.25,clearcoat:name==='grip'?0:.4})]));root.userData.styleMaterials=mats;
  const grainBytes=new Uint8Array(64*256);for(let y=0;y<256;y++)for(let x=0;x<64;x++){const weave=Math.sin((x+y*.55)*Math.PI)*Math.sin((y-x*.35)*Math.PI*.7),pore=Math.sin(x*123.7+y*47.3);grainBytes[y*64+x]=Math.round(127+weave*32+pore*12);}
  const gripGrain=new THREE.DataTexture(grainBytes,64,256,THREE.RedFormat);gripGrain.wrapS=gripGrain.wrapT=THREE.RepeatWrapping;gripGrain.repeat.set(1,1);gripGrain.generateMipmaps=true;gripGrain.minFilter=THREE.LinearMipmapLinearFilter;gripGrain.magFilter=THREE.LinearFilter;gripGrain.needsUpdate=true;mats.grip.bumpMap=gripGrain;mats.grip.bumpScale=.00012;mats.grip.roughness=.86;
@@ -29,19 +30,9 @@ export function createRacketModel(THREE,{skin='astrox100zz',player=false}={}){
  // A 6.3 mm shaft, never a wide rectangular branding plane.
  bar(V(0,.184,0),V(0,.369,0),.00315,mats.carbon,'Hyper Slim solid shaft');
  const head=(a,inset=0)=>V(...racketHeadPoint(a,inset));
- const frameGeo=createRacketFrame(THREE),paint=[];
- for(let i=0;i<=192;i++){
-  const a=i/192*Math.PI*2,p=head(a);let color=colors.carbon;
-  // Photograph: blue/white slash band across the left and lower hoop;
-  // orange panel on the opposing shoulder, dark navy crown and T-joint.
-  if(skin==='astrox100zz'){
-   if(p.x<-.045||p.y<.405&&Math.abs(p.x)>.03){const stripe=((a*15)%1+1)%1;color=stripe<.24?'#edf5fa':stripe<.42?'#8bb9dd':stripe<.79?'#2468ac':'#101f3d';}
-   if(a>.13&&a<.64)color='#f2642b';
-  }
-  const col=new THREE.Color(skin==='astrox100zz'?'#ffffff':color);for(let j=0;j<=16;j++)paint.push(col.r,col.g,col.b);
- }
+ const frameGeo=createRacketFrame(THREE),paint=new Float32Array(frameGeo.attributes.position.count*3).fill(1);
  frameGeo.setAttribute('color',new THREE.Float32BufferAttribute(paint,3));
- const finish=skin==='astrox100zz'?createFrameFinish(THREE):{};
+ const finish=createFrameFinish(THREE,skin);
  add(frameGeo,new THREE.MeshPhysicalMaterial({vertexColors:true,...finish,roughness:finish.roughnessMap?1:.32,metalness:.13,clearcoat:.65,clearcoatRoughness:.23}),'Compact isometric painted frame');
  const socket=add(new THREE.CylinderGeometry(.0033,.0058,.018,18),mats.carbon,'Built-in T-joint');socket.position.y=.368;
  // Every grommet is a small physical eyelet, not a painted dot.
@@ -58,9 +49,9 @@ export function createRacketModel(THREE,{skin='astrox100zz',player=false}={}){
  // Wrap printing around the slim cylinder; no opaque billboard across shaft.
  if(typeof document!=='undefined'){
   const canvas=document.createElement('canvas');canvas.width=256;canvas.height=1024;const ctx=canvas.getContext('2d');
-  if(ctx?.save){ctx.fillStyle=colors.carbon;ctx.fillRect(0,0,256,1024);for(let i=0;i<9;i++){ctx.fillStyle=i%2?'#edf5fa':'#367cbd';ctx.beginPath();ctx.moveTo(0,440+i*43);ctx.lineTo(256,520+i*43);ctx.lineTo(256,535+i*43);ctx.lineTo(0,455+i*43);ctx.fill();}ctx.save();ctx.translate(150,235);ctx.rotate(-Math.PI/2);ctx.fillStyle='#f6f4ee';ctx.font='bold 31px Arial';ctx.textAlign='center';ctx.fillText('ASTROX 100 ZZ',0,0);ctx.restore();
-   const tex=new THREE.CanvasTexture(canvas);tex.colorSpace=THREE.SRGBColorSpace;const label=add(new THREE.CylinderGeometry(.00318,.00318,.174,24,1,true),new THREE.MeshPhysicalMaterial({map:tex,roughness:.3,clearcoat:.5}),'Cylindrical shaft graphics');label.position.y=.276;
+  if(ctx?.save){ctx.fillStyle=spec.shaft;ctx.fillRect(0,0,256,1024);for(let i=0;i<9;i++){ctx.fillStyle=i%2?colors.accent:colors.rim;ctx.beginPath();ctx.moveTo(0,440+i*43);ctx.lineTo(256,520+i*43);ctx.lineTo(256,535+i*43);ctx.lineTo(0,455+i*43);ctx.fill();}ctx.save();ctx.translate(150,235);ctx.rotate(-Math.PI/2);ctx.fillStyle=spec.pattern==='lightning'?'#20251d':colors.accent;ctx.font='bold 27px Arial';ctx.textAlign='center';ctx.fillText(spec.model,0,0);ctx.restore();
+   const tex=new THREE.CanvasTexture(canvas);tex.colorSpace=THREE.SRGBColorSpace;const label=add(new THREE.CylinderGeometry(.00318,.00318,.174,24,1,true),new THREE.MeshPhysicalMaterial({map:tex,roughness:.3,clearcoat:.5}),'Cylindrical shaft graphics');label.position.y=.276;label.userData.printedModel=spec.model;
   }
  }
- root.name=player?'ASTROX 100ZZ Dark Navy · 554':'Opponent racket';root.userData.sweetSpot=[0,.51,0];return root;
+ root.name=player?spec.model+' · '+spec.edition:'Opponent racket';root.userData.skin=RACKET_PALETTES[skin]?skin:'astrox100zz';root.userData.printedModel=spec.model;root.userData.sweetSpot=[0,.51,0];return root;
 }

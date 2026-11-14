@@ -10,11 +10,6 @@ export function hallSurfaces(T){
   for(let x=0;x<w;x+=128){c.fillStyle='#151f1622';c.fillRect(x,0,1,h);c.fillStyle='#f7fff42a';c.fillRect(x+1,0,1,h);}
   for(let y=0;y<h;y+=256){c.fillStyle='#1520181e';c.fillRect(0,y,w,1);}
  });wall.wrapS=wall.wrapT=T.RepeatWrapping;wall.repeat.set(4,2);
- const glass=draw(128,256,(c,w,h)=>{
-  const sky=c.createLinearGradient(0,0,0,h);sky.addColorStop(0,'#a6c3d0');sky.addColorStop(.55,'#dae1da');sky.addColorStop(1,'#768f82');c.fillStyle=sky;c.fillRect(0,0,w,h);
-  c.fillStyle='#4f68544d';for(let i=0;i<14;i++){const x=rand()*w,y=h*(.64+rand()*.3);c.beginPath();c.ellipse(x,y,10+rand()*14,15+rand()*25,0,0,Math.PI*2);c.fill();}
-  c.fillStyle='#ffffff20';c.beginPath();c.moveTo(w*.2,0);c.lineTo(w*.55,0);c.lineTo(w,h*.7);c.lineTo(w,h);c.fill();
- });
  const court=draw(512,1024,(c,w,h)=>{
   c.fillStyle='#34786c';c.fillRect(0,0,w,h);
   // One atlas spans one court: seams and foot marks no longer repeat in a grid.
@@ -36,5 +31,5 @@ export function hallSurfaces(T){
   const glow=c.createLinearGradient(0,0,w,0);glow.addColorStop(0,'#899b8b');glow.addColorStop(.16,'#eaf0df');glow.addColorStop(.5,'#f5f4e8');glow.addColorStop(.84,'#eaf0df');glow.addColorStop(1,'#899b8b');c.fillStyle=glow;c.fillRect(0,0,w,h);
   c.fillStyle='#6e847518';for(let y=3;y<h;y+=6)c.fillRect(0,y,w,1);
  });
- return {wall,glass,court,roof,diffuser,courtNormal:createCourtRelief(T)};
+ return {wall,court,roof,diffuser,courtNormal:createCourtRelief(T)};
 }

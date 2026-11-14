@@ -16,10 +16,13 @@ import { prepareHands } from './hand-sculpt.mjs?v=2ff2bafddd7dc52f';
 import {preparePlayerArm} from './player-arm.mjs?v=534b92310284e328';
 import { RenderBudget, AdaptiveResolution, renderProfile } from './render-budget.mjs?v=661910472f512423';
 import {RenderLoop} from './render-loop.mjs?v=28e2db7090a5188b';
-import { createRacketModel, disposeRacketModel, RACKET_PALETTES } from './racket-model.mjs?v=6e1c32ff15aa289f';
+import { createRacketModel, disposeRacketModel, RACKET_PALETTES } from './racket-model.mjs?v=bb93980d9d4d9ea1';
 import { swingPose, moveVelocity, groundedCameraOffset, serveSupportPose, supportHandPose } from './motion.mjs?v=1d9ac67dad6783c3';
 import { dressHall } from './hall-details.mjs?v=c6f9ed4d4d8b5a00';
-import { hallSurfaces } from './hall-surfaces.mjs?v=69b556d780a6feef';
+import { hallSurfaces } from './hall-surfaces.mjs?v=213d8bdc1ef06651';
+import {createHallContext} from './hall-context.mjs?v=81628bc16d55e942';
+import {RACKET_SKINS,racketSkin} from './racket-catalog.mjs?v=99e3093fcfbf9bed';
+import {createRacketGallery} from './racket-gallery.mjs?v=6b9907b4a5428e5a';
 import { roofGeometry } from './roof-structure.mjs?v=ae5f49678bee1115';
 import { createShuttleModel } from './shuttle-model.mjs?v=d8c5b7c03d2e5919';
 import { createCourtNet, NET_HALF_WIDTH } from './court-net.mjs?v=13d5c621732cf41f';
@@ -63,7 +66,7 @@ const ball = { pos: V(.4, 1.12, 3.7), vel: V(), active: false, trail: [], flash:
 const flightRecorder = new FlightRecorder();
 let eagleEye, lastLineReview = null, reviewReturnScreen = 'play', reviewPending = -1;
 let groundMotion = null;
-let techniquePanel;
+let techniquePanel,racketGallery,galleryReturnScreen;
 
 function openLineReview(automatic = false) {
   if (!lastLineReview || !['play', 'pause'].includes(state.screen) || (state.screen === 'play' && !['point', 'serve', 'opponentServe'].includes(state.phase))) return;
@@ -169,18 +172,25 @@ function createHall() {
   const wall = material('#91a69b'), lower = material('#557a68'), black = material('#253732'), steel = material('#667b75', .4, .6);
   wall.map=architecture.wall;wall.roughness=.95;lower.map=architecture.wall;lower.roughness=.91;
   box(31, 11, .3, wall, 0, 5.3, -18); box(31, 11, .3, wall, 0, 5.3, 18);
-  box(.3, 11, 36, wall, -15, 5.3, 0); box(.3, 11, 36, wall, 15, 5.3, 0);
+  // Open apertures expose real exterior depth instead of wallpaper on the wall.
+  for(const side of [-1,1]){
+    box(.3,4.4,36,wall,side*15,2.2,0);box(.3,2.15,36,wall,side*15,9.725,0);
+    for(const z of [-16.5,16.5])box(.3,4.25,3,wall,side*15,6.525,z);
+    for(const z of [-15,-10,-5,0,5,10,15])box(.3,4.25,.5,wall,side*15,6.525,z);
+  }
   box(30, 2.8, .2, lower, 0, 1.4, -17.78); box(30, 2.8, .2, lower, 0, 1.4, 17.78);
   const panelWood = material('#907a58');
-  const windowMaterial=new THREE.MeshStandardMaterial({map:architecture.glass,color:'#d5e2df',emissiveMap:architecture.glass,emissive:'#c9d7d0',emissiveIntensity:.3,roughness:.4,metalness:.08});
+  const windowMaterial=new THREE.MeshStandardMaterial({color:'#b7c9c4',transparent:true,opacity:.08,depthWrite:false,roughness:.3,metalness:.12,side:THREE.DoubleSide});
   for (const side of [-1, 1]) {
     box(.3, 3.1, 36, panelWood, side * 14.7, 1.5, 0);
     for (let z = -17.5; z < 18; z += .32) box(.04, 3.1, .038, black, side * 14.5, 1.5, z);
     for (let z = -15; z <= 15; z += 5) {
       box(.38, 10.6, .38, black, side * 14.4, 5.2, z);
-      box(.02, 4.2, 4.5, windowMaterial, side * 14.52, 6.5, z + 2.5);
-      for (let yy = 4.4; yy <= 8.7; yy += 1.4) box(.04, .055, 4.6, black, side * 14.47, yy, z + 2.5);
-      for (let zz = 0; zz <= 4.6; zz += 1.15) box(.04, 4.3, .045, black, side * 14.46, 6.5, z + .2 + zz);
+      if(z<15){
+        const pane=mesh(new THREE.PlaneGeometry(4.5,4.2),windowMaterial,side*14.6,6.5,z+2.5);pane.rotation.y=-side*Math.PI/2;
+        for(let yy=4.4;yy<=8.7;yy+=1.4)box(.08,.055,4.6,black,side*14.47,yy,z+2.5);
+        for(let zz=0;zz<=4.6;zz+=1.15)box(.08,4.3,.045,black,side*14.46,6.5,z+.2+zz);
+      }
     }
   }
   const roof = new THREE.MeshStandardMaterial({map:architecture.roof,color:'#a7b8ad',roughness:.86,metalness:.06,emissive:'#52675b',emissiveIntensity:.18});
@@ -227,9 +237,27 @@ function createHall() {
   const faint = new THREE.MeshBasicMaterial({ color: '#bbc5a0' });
   for (const x of [-12.5, -7.5]) box(.025, .0002, 12, faint, x, -.0009, 0);
   for (const z of [-6, 0, 6]) box(5, .0002, .025, faint, -10, -.0009, z);
-  createNet();dressHall(THREE,scene);
+  createNet();dressHall(THREE,scene);createHallContext(THREE,scene);
   courtScore = textPanel('YOU   00  :  00   LIN', 4.2, .9, { bg: '#102823', color: '#def6a3', size: 70 });
   courtScore.position.set(2.5, 4, -17.5); scene.add(courtScore);
+}
+
+function initRacketGallery(){
+ racketGallery=createRacketGallery(THREE,{camera,getSkin:()=>state.racketSkin,
+  applySkin:skin=>{if(skin!==state.racketSkin){applyRacketSkin(skin);savePreferences();}},invalidate:()=>renderBudget.invalidate(),
+  onOpen:()=>{
+   galleryReturnScreen=state.screen;state.screen='racket-inspect';document.exitPointerLock?.();
+   racket.visible=false;racket.userData.support.visible=false;shuttle.visible=false;
+   for(const id of ['menu','pause-overlay','hud','masthead','test-panel'])$('#'+id)?.classList.add('hidden');
+   landingMarker.visible=targetMarker.visible=aimMarker.visible=shuttleShadow.visible=false;
+  },onClose:()=>{
+   state.screen=galleryReturnScreen;$('#masthead').classList.remove('hidden');
+   if(state.screen==='pause'){$('#pause-overlay').classList.remove('hidden');$('#hud').classList.remove('hidden');racket.visible=true;}
+   else {state.screen='menu';$('#menu').classList.remove('hidden');}
+   if(testing)$('#test-panel').classList.remove('hidden');
+   clock.getDelta();renderBudget.invalidate();
+  }
+ });
 }
 
 function createNet() {
@@ -270,6 +298,9 @@ function applyRacketSkin(skin=state.racketSkin){
   disposeRacketModel(old);
  }
  const select=$('#racket-skin');if(select&&select.value!==skin)select.value=skin;
+ const spec=racketSkin(skin);$('#racket-skin-detail').textContent=spec.model+' · '+spec.edition;
+ for(const label of document.querySelectorAll('[data-current-racket]'))label.textContent=spec.label+' · '+spec.edition;
+ renderBudget.invalidate();
 }
 
 function createOpponent() {
@@ -1188,7 +1219,7 @@ function animate() {
     }
   }
   const dt = Math.min(rawFrameMs/1000, .06); state.elapsed += dt; fps = damp(fps, 1 / Math.max(dt, .001), 1, dt);
-  if(state.screen!=='hand-inspect')shuttle.visible=!['inspect','equipment-inspect'].includes(state.screen);
+  if(state.screen!=='hand-inspect')shuttle.visible=!['inspect','equipment-inspect','racket-inspect'].includes(state.screen);
   if (state.screen === 'menu') {
     menuTime += dt; camera.position.set(10.4 + Math.sin(menuTime * .1) * .5, 5.1 + Math.sin(menuTime * .13) * .1, 11.8); camera.lookAt(-.4, .85, -.8); camera.fov = 51; camera.updateProjectionMatrix();
     bot.root.position.set(-.6,0,-4.3);bot.root.rotation.y=0;bot.label.visible=true;bot.update({time:menuTime,dt});
@@ -1316,6 +1347,7 @@ function bindEvents() {
   $('#advanced-btn').addEventListener('click',()=>{setAdvanced(!state.advanced);canvas.focus({preventScroll:true});});
   $('#jump-btn').addEventListener('pointerdown',e=>{e.preventDefault();requestJump();canvas.focus({preventScroll:true});});
   $('#jump-btn').addEventListener('click',e=>{if(e.detail===0)requestJump();});
+  for(const button of document.querySelectorAll('[data-open-rackets]'))button.addEventListener('click',()=>racketGallery.open());
   $('#showroom-btn').addEventListener('click',showPlayer);$('#showroom-close').addEventListener('click',exitGame);
   $('#photo-btn').addEventListener('click',()=>{presentation.render(scene,camera);const link=document.createElement('a');link.download='feather-court-5-photo.jpg';link.href=canvas.toDataURL('image/jpeg',.94);link.click();});
   for(const pose of ['idle','run','swing'])$('#pose-'+pose).addEventListener('click',()=>{state.inspectPose=pose;state.inspectTime=0;for(const name of ['idle','run','swing'])$('#pose-'+name).classList.toggle('active',name===pose);});
@@ -1347,7 +1379,7 @@ function bindEvents() {
   window.addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();applyRenderProfile();});
   window.addEventListener('contextmenu', e => { if (state.screen === 'play') e.preventDefault(); });
   window.addEventListener('keydown', e => {
-    if(techniquePanel?.dialog.open)return;
+    if(techniquePanel?.dialog.open||racketGallery?.dialog.open)return;
     if (state.screen === 'review') {
       if (e.code === 'Escape' || e.code === 'KeyB') { e.preventDefault(); eagleEye.close(); }
       return;
@@ -1433,7 +1465,7 @@ async function init() {
     presentation=new CourtPresentation(THREE,renderer);presentation.setSize(innerWidth,innerHeight);
     eagleEye = new EagleEyeReview(closeLineReview);
     bootStage='scene';boot({stage:'布置球场与校准操作',percent:75});
-    createHall(); batchHall(); createPlayerRacket(); bot = createOpponent(); createEffects();initTechniquePanel();bindEvents();restorePreferences();if(safeBoot){$('#quality').value='balanced';applyQuality('balanced');}updateDifficultyUI();
+    createHall(); batchHall(); createPlayerRacket(); bot = createOpponent(); createEffects();initTechniquePanel();bindEvents();restorePreferences();initRacketGallery();if(safeBoot){$('#quality').value='balanced';applyQuality('balanced');}updateDifficultyUI();
     canvas.addEventListener('webglcontextlost',event=>{
       event.preventDefault();graphicsLost=true;renderLoop.stop();pauseGame();
       if(state.screen==='review'){reviewReturnScreen='play';eagleEye.close();pauseGame();}
@@ -1503,6 +1535,14 @@ async function init() {
           camera.updateProjectionMatrix();
         };
       }
+      const hallProof=document.createElement('button');hallProof.id='inspect-hall-context';hallProof.textContent='检查侧窗纵深与球馆细节 · Esc返回';panel.prepend(hallProof);
+      hallProof.onclick=()=>{
+       state.screen='equipment-inspect';renderBudget.invalidate();document.exitPointerLock?.();
+       for(const id of ['menu','hud','pause-overlay','masthead','test-panel'])$('#'+id).classList.add('hidden');
+       racket.visible=false;racket.userData.support.visible=false;shuttle.visible=false;bot.label.visible=false;
+       landingMarker.visible=targetMarker.visible=aimMarker.visible=shuttleShadow.visible=false;
+       camera.position.set(5.5,3.1,7);camera.fov=56;camera.lookAt(15,5.4,-4);camera.updateProjectionMatrix();
+      };
       const equipmentProof=document.createElement('button');equipmentProof.id='inspect-equipment';equipmentProof.textContent='检查球包与场边器材 · Esc返回';panel.prepend(equipmentProof);
       equipmentProof.onclick=()=>{
         state.screen='equipment-inspect';renderBudget.invalidate();document.exitPointerLock?.();
@@ -1518,6 +1558,7 @@ async function init() {
         camera.position.set(.04,1.33,4.24);camera.fov=42;camera.lookAt(0,1.32,3.95);camera.updateProjectionMatrix();
         landingMarker.visible=targetMarker.visible=aimMarker.visible=shuttleShadow.visible=false;
       };
+      const skinPreview=document.createElement('select');skinPreview.id='inspect-racket-skin';skinPreview.setAttribute('aria-label','检查球拍涂装');for(const [id,spec] of Object.entries(RACKET_SKINS))skinPreview.add(new Option(spec.label,id));skinPreview.onchange=()=>applyRacketSkin(skinPreview.value);panel.prepend(skinPreview);
       const handViews=document.createElement('select');handViews.id='hand-inspect-view';handViews.setAttribute('aria-label','手部检查视角');
       handViews.add(new Option('左手捏羽近景','support-pinch'));handViews.add(new Option('左手自然张开近景','support-ready'));
       for(const [value,label] of [['grip','握拍近景'],['palm','掌侧近景'],['back','手背近景'],['racket','整拍与握拍'],['idle','实战待机'],['prep','高远准备'],['contact','高远触球'],['high','高位伸展触球'],['backhand','反手伸展触球'],['follow','杀球收拍'],['net','网前搓球'],['serve','发球准备'],['serve-hold','左手捏球'],['serve-release','松手送球'],['serve-follow','发球收手']])handViews.add(new Option(label,value));
