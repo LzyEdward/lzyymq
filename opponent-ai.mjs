@@ -1,5 +1,32 @@
 const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
 
+// Weaknesses are deliberately expressed as readable tactical lanes.  They
+// are stable for a match, but the caller can reduce them after the opponent
+// has seen the same pattern repeatedly.  This gives the player something to
+// discover and exploit instead of a hidden random miss roll.
+const STYLE_WEAKNESS = Object.freeze({
+ allround:{backhand:1.12,rear:.94,net:1.08,body:.90,recovery:1.02},
+ linDan08:{backhand:.82,rear:.72,net:.94,body:.88,recovery:.78},
+ leeChongWei:{backhand:.88,rear:.90,net:.72,body:.86,recovery:.68},
+ chenLong:{backhand:.90,rear:.82,net:.78,body:.84,recovery:.72},
+ taufik:{backhand:.86,rear:.95,net:.62,body:.92,recovery:.88},
+});
+
+export function opponentWeaknessProfile({level,style='allround',profile='balanced'}={}){
+ const tier=clamp(Number(level?.tier)||1,1,10);
+ const base=clamp(.52-(tier-1)*.038,.16,.52), factor=STYLE_WEAKNESS[style]||STYLE_WEAKNESS.allround;
+ const technique={backhand:1-(level?.accuracy??.7)*.26,rear:1-(level?.anticipation??.4)*.22,net:1-(level?.netSkill??.4)*.28,body:1-(level?.anticipation??.4)*.25,recovery:1-(level?.anticipation??.4)*.30};
+ const styleRisk=profile==='attack'?{net:1.16,recovery:1.16,rear:.9}:profile==='defend'?{net:.86,rear:1.14,body:1.12}:{};
+ return Object.fromEntries(Object.entries(factor).map(([key,mult])=>[key,clamp(base*mult*technique[key]*(styleRisk[key]||1),.045,.58)]));
+}
+
+export function opponentWeaknessKey({position={x:0,y:1.5,z:-3},shot='clear'}={}){
+ if (position.z>-2.35 || ['net','netcross','netkill','drop','slicedrop'].includes(shot)) return 'net';
+ if (position.z<-5.05) return 'rear';
+ if (Math.abs(position.x)<.52 || ['drive','push'].includes(shot)) return 'body';
+ return position.x<0?'backhand':'recovery';
+}
+
 export function opponentReceiveBase({serverX=.45,high=false}={}){
  return {x:-Math.sign(serverX||1)*.75,z:high?-4.4:-2.4};
 }
@@ -22,7 +49,7 @@ export function opponentServeTarget({level,random=Math.random}={}){
 
 // Opportunity is sampled once per incoming rally by the caller, so a miss is
 // an actual skill outcome rather than a per-frame lottery that always resolves.
-export function opponentReceiveMissChance({level,shot='clear',position,distance,reach,energy=100}){
+export function opponentReceiveMissChance({level,shot='clear',position,distance,reach,energy=100,weaknesses=null,weaknessKey=null,adaptation=0}){
  const ratio=distance/Math.max(.1,reach);
  const stretch=clamp((ratio-.58)/.48,0,1);
  const netShot=['drop','slicedrop','net','netcross'].includes(shot)&&position.z>-3.8;
@@ -35,11 +62,16 @@ export function opponentReceiveMissChance({level,shot='clear',position,distance,
  chance+=stretch*(.04+.12*(1-level.anticipation));
  if(netShot)chance+=(.035+.29*(1-level.netSkill))*(.72+low*.45);
  chance+=fatigue*.075;
+ const lane=weaknessKey||opponentWeaknessKey({position,shot});
+ const weakness=Number(weaknesses?.[lane])||0;
+ // A discovered weakness matters, while repeated identical attacks let the
+ // opponent partially close it.  Adaptation is supplied per lane by game.js.
+ chance+=weakness*(.08+.18*clamp(stretch+.35*low,0,1))*(1-clamp(adaptation,0,.82));
  return clamp(chance,0,.72);
 }
 
 // Low grades can mishit under pressure and fall short on clears more often.
-export function opponentStrokeExecution({level,type,target,quality=1,energy=100,random=Math.random}){
+export function opponentStrokeExecution({level,type,target,quality=1,energy=100,pressure=0,random=Math.random}){
  const fatigue=1-clamp(energy/100,0,1);
  const netShot=['drop','slicedrop','net','netcross','lift'].includes(type);
  const faultChance=clamp((1-level.accuracy)*.17+(1-quality)*.08+fatigue*.07+(netShot?(1-level.netSkill)*.045:0),0,.24);
@@ -50,12 +82,12 @@ export function opponentStrokeExecution({level,type,target,quality=1,energy=100,
  const imprecision=1-level.accuracy;
  const xError=(random()*2-1)*imprecision*1.35;
  const zError=(random()*2-1)*imprecision*1.25;
- const shortfall=type==='clear'?imprecision*3.4:0;
+ const shortfall=['clear','lift'].includes(type)?imprecision*3.4+clamp(pressure,0,1)*(1-level.accuracy*.6)*1.5:0;
  return {target:{x:target.x+xError,z:target.z+zError-shortfall},fault:null};
 }
 
 // All choices use observed court positions, never the player's pending input.
-export function planOpponentStroke({level,position,player,playerVelocity={x:0,z:0},energy=100,profile='balanced',tactic='balanced',history=[],random=Math.random}){
+export function planOpponentStroke({level,position,player,playerVelocity={x:0,z:0},energy=100,profile='balanced',tactic='balanced',history=[],pressure=0,random=Math.random}){
  const net=position.z>-2.6,low=position.y<.83,skill=level.netSkill,tier=level.tier;
  const anticipatedX=clamp(player.x+playerVelocity.x*(.12+level.anticipation*.24),-2.4,2.4);
  const anticipatedZ=clamp(player.z+playerVelocity.z*(.12+level.anticipation*.24),1.2,6.15);
@@ -105,10 +137,20 @@ export function planOpponentStroke({level,position,player,playerVelocity={x:0,z:
   if(tactic==='rally'&&['clear','drive'].includes(candidate.type))candidate.weight*=1.28;
   if(tactic==='touch'&&['net','drop','push'].includes(candidate.type))candidate.weight*=1.58;
   if(energy<28&&['smash','slicesmash'].includes(candidate.type))candidate.weight*=.25;
+  // Build a point over successive strokes: clear to the back then change
+  // pace, or show the net then push behind a player who has committed.
+  if(last?.target?.z>4.8&&anticipatedZ>3.9&&candidate.target.z<2.2)candidate.weight*=1.35+level.anticipation*.8;
+  if(last?.target?.z<2.3&&anticipatedZ<3.6&&candidate.target.z>4.8)candidate.weight*=1.35+level.anticipation*.8;
+  if(pressure>.38){
+   if(['smash','slicesmash','netkill'].includes(candidate.type))candidate.weight*=.12;
+   if(['lift','clear'].includes(candidate.type))candidate.weight*=1+pressure*3.2;
+   if(['net','netcross'].includes(candidate.type)&&position.y<1.1)candidate.weight*=.4;
+  }
  }
  const total=candidates.reduce((sum,c)=>sum+c.weight,0);let pick=clamp(random(),0,.999999)*total;
  let selected=candidates.at(-1);for(const c of candidates){pick-=c.weight;if(pick<=0){selected=c;break;}}
- return {...selected,target:{...selected.target},backhand:position.x<-.25,spin:selected.action==='搓网'?skill:0};
+ const action=pressure>.38&&['lift','clear'].includes(selected.type)?`被动${selected.type==='lift'?'挑球':'过渡高球'}`:selected.action;
+ return {...selected,action,target:{...selected.target},backhand:position.x<-.25,spin:selected.action==='搓网'?skill:0};
 }
 
 export function recoveryBase({lastContact,lastTarget,level}){

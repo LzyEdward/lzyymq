@@ -17,3 +17,6 @@
 @media(max-width:800px){#opponent-action{display:block;top:78px;max-width:68vw;text-align:center;font-size:9px;white-space:nowrap;text-overflow:ellipsis;overflow:hidden;color:#e8f0d5d9;text-shadow:0 1px 8px #051d18}}
 @media(max-width:480px){#landing-control{right:10px;top:121px;width:126px;padding:8px}#landing-map{height:129px}#landing-control small{line-height:1.7}#landing-result{line-height:1.6}#aim-edit{font-size:8px}#lesson-card{width:222px}.hero h1{font-size:46px}.menu-screen .hero{margin-top:135px}#difficulty-detail{max-width:320px}.grade-note{max-width:320px}}
 @media(max-height:600px){#landing-control{top:111px;width:126px;padding:8px}#landing-map{height:91px;margin:7px 0}.landing-presets button{padding:5px 0}#landing-control small{display:none}#landing-result{margin-top:4px}}
+
+#tactic-readout{position:absolute;left:50%;top:99px;transform:translateX(-50%);font-size:10px;letter-spacing:1px;color:#e0efb8d9;text-shadow:0 1px 9px #061d18;pointer-events:none;transition:opacity .2s}
+@media(max-width:800px){#tactic-readout{top:95px;font-size:9px;max-width:72vw;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}}

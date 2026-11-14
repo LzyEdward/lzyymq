@@ -1,0 +1,16 @@
+#tactical-report{padding:0 0 18px;border-bottom:1px solid #eef5dc20;margin-bottom:22px}
+#tactical-report h3{font-size:15px;font-weight:600;margin:0 0 10px;letter-spacing:.5px}
+#tactical-report>p{font-size:12px;line-height:1.8;color:#d8e4cebf;margin:7px 0 13px}
+.tactical-objective{display:grid;grid-template-columns:1fr auto;gap:4px 12px;border:1px solid #cde3b71c;padding:10px 12px;margin:7px 0;border-radius:6px;background:#d6e9bb05;font-size:12px}
+.tactical-objective b{font-size:12px;font-weight:500;color:#cad6c0;font-variant-numeric:tabular-nums}
+.tactical-objective small{grid-column:1/-1;color:#d7e3c994;font-size:10px;line-height:1.7}
+.tactical-objective[data-complete=true]{border-color:#dcf49a70;background:#dcf49a0a;color:#dcf49a}
+/* Detailed cues are opt-in. Active rallies retain the clean score-only view. */
+body.playing.advanced-controls #tactic-readout{display:block!important;top:124px;margin:0;max-width:70vw;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+body.playing.advanced-controls #opponent-action{display:block!important;top:100px;margin:0;max-width:70vw;text-align:center}
+body.playing #point-toast:not(.hidden){display:block!important;top:32%;width:min(90vw,670px);white-space:normal;pointer-events:none}
+body.playing #point-toast>span{font-size:12px;letter-spacing:1px;line-height:1.8}
+body.playing #point-toast strong{font-size:clamp(23px,3.5vw,42px);letter-spacing:1px;line-height:1.4}
+body.playing #point-toast small{font-size:12px;letter-spacing:.5px;line-height:1.8}
+body.playing #point-toast button{pointer-events:auto}
+@media(max-width:600px){body.playing.advanced-controls #tactic-readout{top:106px;font-size:10px}body.playing.advanced-controls #opponent-action{top:85px;font-size:10px}}
