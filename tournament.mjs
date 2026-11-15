@@ -52,31 +52,73 @@ export const TOUR_EVENTS = freeze([
 export function star(id){return TOUR_STARS[id]||TOUR_STARS.peterGade;}
 export function event(id){return TOUR_EVENTS.find(item=>item.id===id)||TOUR_EVENTS[0];}
 
-export function freshTour(eventId='allEngland'){
-  const current=event(eventId);
-  return {eventId:current.id,roundIndex:0,opponentId:opponentForRound(current,0),wins:0,losses:0,completed:false,eliminated:false,startedAt:new Date().toISOString()};
+const SEED_ORDER=[1,32,16,17,8,25,9,24,4,29,13,20,5,28,12,21,2,31,15,18,7,26,10,23,3,30,14,19,6,27,11,22];
+const hashSeed=text=>{let h=2166136261;for(const c of text)h=Math.imul(h^c.charCodeAt(0),16777619);return h>>>0||1;};
+const seededRandom=seed=>{let x=seed>>>0;return()=>{x^=x<<13;x^=x>>>17;x^=x<<5;return(x>>>0)/4294967296;};};
+const seedOf=id=>id==='player'?1:star(id).seed;
+
+function simulateMatch(match,random){
+  if(match.player||match.winner||!match.a||!match.b)return;
+  const sa=seedOf(match.a),sb=seedOf(match.b),favorite=sa<=sb?match.a:match.b;
+  const gap=Math.min(24,Math.abs(sa-sb)),favoriteChance=.56+gap*.011;
+  match.winner=random()<favoriteChance?favorite:(favorite===match.a?match.b:match.a);
 }
 
-const opponentSeedForRound=[24,12,6,3,1];
+// A complete seeded 32-slot knockout draw. The player takes seed 1 and all
+// other 31 historic/current athletes occupy their published seed positions.
+export function buildBracket(current,seed=hashSeed(current.id)){
+  const bySeed=new Map(current.draw.map(id=>[star(id).seed,id]));bySeed.set(1,'player');
+  const random=seededRandom(seed),rounds=[],opening=[];
+  for(let i=0;i<SEED_ORDER.length;i+=2){
+    const a=bySeed.get(SEED_ORDER[i]),b=bySeed.get(SEED_ORDER[i+1]);
+    opening.push({a,b,winner:null,player:a==='player'||b==='player'});
+  }
+  rounds.push(opening);
+  for(let r=1;r<current.rounds.length;r++){
+    const previous=rounds[r-1],matches=[];
+    for(let i=0;i<previous.length;i+=2)matches.push({a:null,b:null,winner:null,player:i===0});
+    rounds.push(matches);
+  }
+  for(let r=0;r<rounds.length;r++){
+    for(const match of rounds[r])simulateMatch(match,random);
+    if(r<rounds.length-1){
+      const prev=rounds[r],next=rounds[r+1];
+      for(let i=0;i<next.length;i++){
+        const left=prev[i*2],right=prev[i*2+1];
+        if(i===0){next[i].a='player';next[i].b=right.winner;}
+        else{next[i].a=left.winner;next[i].b=right.winner;}
+      }
+    }
+  }
+  return rounds;
+}
+
+export function freshTour(eventId='allEngland'){
+  const current=event(eventId),startedAt=new Date().toISOString();
+  const bracket=buildBracket(current,hashSeed(`${current.id}:${startedAt}`));
+  return {eventId:current.id,roundIndex:0,opponentId:bracket[0][0].b,wins:0,losses:0,completed:false,eliminated:false,startedAt,bracket};
+}
+
 export function opponentForRound(current,roundIndex){
-  const seed=opponentSeedForRound[Math.min(roundIndex,opponentSeedForRound.length-1)];
-  const id=current.draw.find(key=>star(key).seed===seed)||current.draw[(roundIndex*7+11)%current.draw.length];
-  return id;
+  const seed=[32,16,8,4,2][Math.min(roundIndex,4)];
+  return current.draw.find(id=>star(id).seed===seed)||current.draw[0];
 }
 
 export function currentTourMatch(tour){
   if(!tour||tour.completed||tour.eliminated)return null;
-  const e=event(tour.eventId),opponentId=tour.opponentId||opponentForRound(e,tour.roundIndex);
+  const e=event(tour.eventId),opponentId=tour.bracket?.[tour.roundIndex]?.[0]?.b||tour.opponentId||opponentForRound(e,tour.roundIndex);
   return {event:e,roundIndex:tour.roundIndex,round:e.rounds[tour.roundIndex]||e.rounds.at(-1),opponent:star(opponentId)};
 }
 
 export function advanceTour(tour,won){
-  const next={...tour};
+  const next={...tour,bracket:(tour.bracket||buildBracket(event(tour.eventId))).map(round=>round.map(match=>({...match})))};
+  const active=next.bracket[next.roundIndex]?.[0];
+  if(active)active.winner=won?'player':active.b;
   if(!won){next.losses=(next.losses||0)+1;next.eliminated=true;return next;}
   next.wins=(next.wins||0)+1;
   if(next.roundIndex>=event(next.eventId).rounds.length-1){next.completed=true;return next;}
   next.roundIndex++;
-  next.opponentId=opponentForRound(event(next.eventId),next.roundIndex);
+  next.opponentId=next.bracket[next.roundIndex]?.[0]?.b||opponentForRound(event(next.eventId),next.roundIndex);
   return next;
 }
 

@@ -4,20 +4,20 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
   <meta name="theme-color" content="#152f2d">
-  <title>lzyymq · 羽境 FEATHER COURT 7.23</title>
+  <title>lzyymq · 羽境 FEATHER COURT 7.24</title>
   <link rel="icon" type="image/svg+xml" href="./favicon.svg">
   <link rel="modulepreload" href="./vendor/three/build/three.core.js?v=f50b12965a53a185">
   <link rel="modulepreload" href="./vendor/three/build/three.module.js?v=429a98fc9b5c1650">
   <link rel="modulepreload" href="./assets/athlete-data.mjs?v=7f28ea9b22f91323">
   <link rel="modulepreload" href="./athlete-real.mjs?v=fb79a83c971e2404">
   <link rel="modulepreload" href="./viewmodel.mjs?v=120c19a684ab9d79">
-  <link rel="modulepreload" href="./game.js?v=177f2e3e4ac2e59f">
+  <link rel="modulepreload" href="./game.js?v=532baf2cdd79f590">
   <link rel="stylesheet" href="./style.css?v=6fd1d68489f1dace">
   <link rel="stylesheet" href="./competition.css?v=4a3bbfa01f23006a">
   <link rel="stylesheet" href="./interaction.css?v=28efae8fc30f7516">
   <link rel="stylesheet" href="./aiming.css?v=decae14b3d9fb1a9">
   <link rel="stylesheet" href="./eagle-eye.css?v=5594aa63108657d9">
-  <link rel="stylesheet" href="./home.css?v=903da065b514d8fe">
+  <link rel="stylesheet" href="./home.css?v=3410612c9c9e7b51">
   <link rel="stylesheet" href="./racket-gallery.css?v=808a9ef6076610b8">
   <link rel="stylesheet" href="./technique.css?v=419849e404fa522e">
   <link rel="stylesheet" href="./tactics.css?v=d9248a329fc9d828">
@@ -77,7 +77,7 @@
         </details>
       </section>
     </div>
-    <footer class="menu-footer"><span>真实球路 · 自由视角 · 鹰眼回放</span><span>LZYYMQ / FEATHER COURT 7.23</span></footer>
+    <footer class="menu-footer"><span>真实球路 · 自由视角 · 鹰眼回放</span><span>LZYYMQ / FEATHER COURT 7.24</span></footer>
   </main>
   <div id="tournament-hub" class="overlay hidden"><section class="modal tournament-modal" aria-labelledby="tour-title">
     <button type="button" class="close-btn" id="tour-close" aria-label="关闭赛事生涯">×</button>
@@ -85,7 +85,7 @@
     <p class="tour-lead">从 32 强开始，一路打进决赛。每一轮都是完整比赛；签表囊括近三十年的男单名将。</p>
     <div id="tour-event-list" class="tour-event-list" role="listbox" aria-label="选择国际赛事"></div>
     <div id="tour-selected-info" class="tour-selected-info"></div>
-    <div class="tour-roster-summary"><b>32 位跨时代对手</b><span>盖德 · 林丹 · 李宗伟 · 陶菲克 · 谌龙 · 桃田贤斗 · 石宇奇 · 安赛龙 · 周天成 · 金廷 · 李梓嘉 · 昆拉武特 · 乔纳坦 · 安东森……</span></div>
+    <div class="tour-roster-summary"><b>32 位跨时代对手</b><span>盖德 · 林丹 · 李宗伟 · 陶菲克 · 谌龙 · 桃田贤斗 · 石宇奇 · 安赛龙 · 周天成 · 金廷 · 李梓嘉 · 昆拉武特 · 乔纳坦 · 安东森……</span></div><section id="tour-bracket" class="tour-bracket" aria-label="赛事淘汰签表"></section>
     <div class="tour-footer"><button type="button" class="btn-secondary" id="tour-cancel">返回首页</button><button type="button" class="btn-primary" id="tour-enter">报名并查看签表 <span>→</span></button></div>
     <div id="tour-career-record" class="tour-career-record"></div>
   </section></div>
@@ -153,6 +153,6 @@ window.addEventListener('error',event=>{if(!ready&&event.message)fail(`启动出
 window.addEventListener('unhandledrejection',event=>{if(!ready)fail(`启动未完成：${event.reason?.message||'资源加载失败'}。请重试或选择低负载启动。`);});
 progress('连接游戏文件',6);
 detail.textContent=query.has('safe')?'低负载启动：先进入球场，减少初次加载。':'第一次进入需要加载球馆与人物，请稍候。';
-import('./game.js?v=177f2e3e4ac2e59f').catch(error=>fail(`游戏文件未加载完成：${error.message}。请检查网络后重试，或选择低负载启动。`));
+import('./game.js?v=532baf2cdd79f590').catch(error=>fail(`游戏文件未加载完成：${error.message}。请检查网络后重试，或选择低负载启动。`));
 </script>
 </body></html>
