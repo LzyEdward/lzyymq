@@ -241,7 +241,7 @@ export function createAthlete(THREE, createRacket,{skinMap=null,mergeGeometries=
   skeleton.update();
  }
  const kits={allround:['#e3e9df','#1c343c','#378683'],linDan08:['#c63b38','#1b2630','#d9bb68'],leeChongWei:['#e6c550','#172738','#d8e7ee'],chenLong:['#dfe8ed','#203344','#607e9d'],taufik:['#dce6d2','#243c31','#b48c56']};
- function setKit(key='allround'){const [shirt,pants,accent]=kits[key]||kits.allround;jersey.color.set(shirt);shorts.color.set(pants);trim.color.set(accent);root.userData.kit=key;}
+ function setKit(key='allround'){const spec=key&&typeof key==='object'?key:null,[shirt,pants,accent]=kits[spec?.key||key]||kits.allround;jersey.color.set(spec?.shirt||shirt);shorts.color.set(spec?.pants||pants);trim.color.set(spec?.accent||accent);root.userData.kit=spec?.key||key;}
  update();return {root,body,torso,head,legs:[bones['upperleg01.L'],bones['upperleg01.R']],knees:[bones['lowerleg01.L'],bones['lowerleg01.R']],arms:[bones['upperarm01.L'],bones['upperarm01.R']],elbows:[bones['lowerarm01.L'],bones['lowerarm01.R']],wrists:[bones['wrist.L'],bones['wrist.R']],skeleton,meshes,bones,bind,shoes,racket,update,setKit};
 }
 

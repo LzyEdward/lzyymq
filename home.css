@@ -182,3 +182,29 @@ body:has(#menu:not(.hidden)) .icon-btn { width: 36px; height: 36px; line-height:
 @media (prefers-reduced-motion: reduce) {
   #menu *, #menu *::before, #menu *::after { transition: none !important; animation: none !important; }
 }
+
+/* 7.23 · championship ladder and a broadcast-style walk-on screen */
+.tour-launch{margin-top:12px!important;border-color:#d8bf7448!important}
+.tour-launch b{font-size:18px;color:#e4cc80}
+.tournament-modal{width:min(760px,100%);padding:38px;max-height:min(90dvh,920px);background:linear-gradient(145deg,#142d2a,#1b3530 52%,#172a28);border-color:#d8bf7452}
+.tournament-modal h2{margin:12px 0 8px;font-size:31px}.tour-lead{margin:0 0 20px;font-size:12px!important;line-height:1.8!important;color:#c7d2c4!important}
+.tour-event-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;max-height:36dvh;overflow:auto;padding:2px}
+.tour-event{display:grid;grid-template-columns:4px minmax(0,1fr) auto;align-items:center;gap:12px;min-height:68px;text-align:left;padding:10px 12px;background:#e8eddf06;border:1px solid #e8eddf20;border-radius:7px;color:#edf0e4}
+.tour-event i{width:4px;height:40px;border-radius:5px;background:var(--event-accent);box-shadow:0 0 14px color-mix(in srgb,var(--event-accent),transparent 50%)}
+.tour-event strong,.tour-event small{display:block}.tour-event strong{font-size:13px;font-weight:600}.tour-event small{margin-top:4px;color:#c4d0c0a6;font-size:10px}.tour-event em{font-size:9px;color:#d8bf74;font-style:normal}
+.tour-event[aria-selected=true]{background:color-mix(in srgb,var(--event-accent),transparent 86%);border-color:var(--event-accent)}
+.tour-selected-info{margin-top:14px;padding:14px 16px;border-left:2px solid var(--event-accent,#d8bf74);background:linear-gradient(90deg,#e1d09312,transparent);font-size:11px;line-height:1.8;color:#e8eddf}
+.tour-selected-info b{display:block;font-size:14px}.tour-selected-info span{display:block;color:#bdc9ba;margin-top:3px}
+.tour-roster-summary{display:flex;flex-direction:column;gap:5px;margin-top:13px;padding-top:13px;border-top:1px solid #eff2df20;color:#d8bf74;font-size:10px}.tour-roster-summary span{color:#bcc8ba;line-height:1.8}
+.tour-footer{display:flex;justify-content:space-between;gap:12px;margin-top:18px}.tour-footer button{min-width:170px}.tour-career-record{margin-top:14px;font-size:10px;color:#c2cfbe;min-height:18px}
+.match-intro{position:relative;isolation:isolate;overflow:hidden;width:min(820px,100%);padding:44px 48px 38px;border:1px solid #e2ca7c62;border-radius:14px;background:radial-gradient(ellipse at 50% 0,#d5b85b1e,transparent 52%),linear-gradient(140deg,#111f20f5,#15332ef5 55%,#111e20f7);box-shadow:0 32px 100px #000a;color:#eef1e7}
+.intro-backdrop{position:absolute;inset:0;z-index:-1;opacity:.16;background:linear-gradient(110deg,transparent 20%,#e4c96b 20.2%,transparent 20.5%,transparent 79%,#e4c96b 79.2%,transparent 79.5%);pointer-events:none}
+.match-intro .close-btn{z-index:2}.intro-kicker{font-size:10px;letter-spacing:3px;color:#e3c76f}.match-intro h2{font-size:clamp(28px,4vw,44px);letter-spacing:1px;margin:13px 0 3px;font-weight:600}.intro-venue{font-size:12px;letter-spacing:1px;color:#c0cdc2;margin:0}
+.intro-versus-row{display:grid;grid-template-columns:1fr 90px 1fr;gap:15px;align-items:center;margin:34px 0 23px}.intro-athlete{position:relative;min-height:190px;padding:20px;border:1px solid #dce8d725;border-radius:9px;background:linear-gradient(155deg,#e5e8d909,#e5e8d902);display:flex;flex-direction:column;justify-content:flex-end;overflow:hidden}
+.intro-athlete:before{content:"";position:absolute;right:14%;top:11%;width:108px;height:108px;border-radius:50%;background:radial-gradient(circle at 38% 32%,#d9bda18c 0 20%,#172a28 22% 47%,transparent 49%);border:1px solid #e2ca7c3b;opacity:.75}
+.intro-player:before{background:radial-gradient(circle at 38% 32%,#d4b79a 0 18%,#202a29 20% 43%,#a93935 45% 59%,transparent 61%)}
+.intro-rival:before{background:radial-gradient(circle at 38% 32%,#c89978 0 18%,#17221e 20% 43%,var(--rival-accent,#d4c078) 45% 59%,transparent 61%)}
+.intro-athlete-mark{position:absolute;right:18%;top:23%;z-index:1;font-size:42px;color:#f2d887;text-shadow:0 0 30px #e7c75b66}.intro-athlete small{font-size:9px;letter-spacing:2px;color:#cfbd75}.intro-athlete strong{font-size:22px;margin-top:7px;position:relative}.intro-athlete>span:not(.intro-athlete-mark){font-size:11px;color:#bdc9bf;margin-top:4px;position:relative}.intro-athlete p{position:relative;font-size:10px;color:#d4c78c;margin:9px 0 0;line-height:1.6}.intro-vs{font-size:22px;font-weight:700;letter-spacing:3px;text-align:center;color:#d9bf72;text-shadow:0 0 24px #e2c77955}
+.intro-match-meta{display:flex;justify-content:center;flex-wrap:wrap;gap:8px}.intro-match-meta span{padding:7px 11px;border:1px solid #dce8d729;border-radius:30px;font-size:10px;color:#dbe2d6}.intro-match-meta span:first-child{border-color:#e0c97780;color:#e5cf7f}.intro-story{text-align:center;margin:17px 0;color:#bfcabd;font-size:11px;letter-spacing:.3px}.intro-enter{display:block;margin:20px auto 0;width:min(300px,100%);height:50px!important;border-radius:8px!important}
+#tour-next{display:none;width:100%;margin-top:12px}body.tournament-finished #tour-next{display:block}
+@media(max-width:620px){.tournament-modal{padding:28px 20px}.tour-event-list{grid-template-columns:1fr;max-height:34dvh}.tour-footer button{min-width:0;flex:1}.match-intro{padding:38px 20px 28px}.intro-versus-row{grid-template-columns:1fr 40px 1fr;gap:7px;margin:25px 0 18px}.intro-athlete{min-height:170px;padding:12px}.intro-athlete:before{width:78px;height:78px;right:10%;top:9%}.intro-athlete-mark{right:13%;top:19%;font-size:31px}.intro-athlete strong{font-size:17px}.intro-athlete p{font-size:9px}.intro-vs{font-size:15px;letter-spacing:1px}}
