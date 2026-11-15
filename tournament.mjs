@@ -41,12 +41,12 @@ export const TOUR_STARS = freeze({
 export const TOUR_ROSTER = freeze(Object.values(TOUR_STARS).sort((a,b)=>a.seed-b.seed).map(p=>p.id));
 
 export const TOUR_EVENTS = freeze([
-  freeze({id:'allEngland',name:'全英公开赛',english:'YONEX All England Open',city:'伯明翰',venue:'Utilita Arena Birmingham',surface:'传统木地板',crowd:'经典满场',accent:'#d8bf74',rounds:['32强','16强','8强','半决赛','决赛'],draw:TOUR_ROSTER}),
-  freeze({id:'indonesia',name:'印度尼西亚公开赛',english:'Indonesia Open',city:'雅加达',venue:'Istora Senayan',surface:'高速蓝地胶',crowd:'鼓点看台',accent:'#e66b4d',rounds:['32强','16强','8强','半决赛','决赛'],draw:TOUR_ROSTER}),
-  freeze({id:'china',name:'中国公开赛',english:'China Open',city:'常州',venue:'常州奥体中心',surface:'中速地胶',crowd:'红色主场',accent:'#d64545',rounds:['32强','16强','8强','半决赛','决赛'],draw:TOUR_ROSTER}),
-  freeze({id:'malaysia',name:'马来西亚公开赛',english:'Malaysia Open',city:'吉隆坡',venue:'Axiata Arena',surface:'快节奏地胶',crowd:'蓝金看台',accent:'#65b8d9',rounds:['32强','16强','8强','半决赛','决赛'],draw:TOUR_ROSTER}),
-  freeze({id:'worlds',name:'世界羽联世锦赛',english:'BWF World Championships',city:'巴黎',venue:'Arena Paris Sud',surface:'中性比赛地胶',crowd:'世界聚光灯',accent:'#b88de0',rounds:['32强','16强','8强','半决赛','决赛'],draw:TOUR_ROSTER}),
-  freeze({id:'olympics',name:'奥运会羽毛球赛',english:'Olympic Games Badminton',city:'洛杉矶',venue:'LA Olympic Arena',surface:'奥运专用地胶',crowd:'奥运全场',accent:'#e7c55d',rounds:['32强','16强','8强','半决赛','决赛'],draw:TOUR_ROSTER}),
+  freeze({id:'allEngland',name:'全英公开赛',english:'YONEX All England Open',city:'伯明翰',venue:'Utilita Arena Birmingham',surface:'传统木地板',crowd:'经典满场',accent:'#d8bf74',courtTone:'#2b6658',runoffTone:'#214b43',rounds:['32强','16强','8强','半决赛','决赛'],draw:TOUR_ROSTER}),
+  freeze({id:'indonesia',name:'印度尼西亚公开赛',english:'Indonesia Open',city:'雅加达',venue:'Istora Senayan',surface:'高速蓝地胶',crowd:'鼓点看台',accent:'#e66b4d',courtTone:'#1d5264',runoffTone:'#173d52',rounds:['32强','16强','8强','半决赛','决赛'],draw:TOUR_ROSTER}),
+  freeze({id:'china',name:'中国公开赛',english:'China Open',city:'常州',venue:'常州奥体中心',surface:'中速地胶',crowd:'红色主场',accent:'#d64545',courtTone:'#2b5d55',runoffTone:'#4a302f',rounds:['32强','16强','8强','半决赛','决赛'],draw:TOUR_ROSTER}),
+  freeze({id:'malaysia',name:'马来西亚公开赛',english:'Malaysia Open',city:'吉隆坡',venue:'Axiata Arena',surface:'快节奏地胶',crowd:'蓝金看台',accent:'#65b8d9',courtTone:'#205b70',runoffTone:'#204559',rounds:['32强','16强','8强','半决赛','决赛'],draw:TOUR_ROSTER}),
+  freeze({id:'worlds',name:'世界羽联世锦赛',english:'BWF World Championships',city:'巴黎',venue:'Arena Paris Sud',surface:'中性比赛地胶',crowd:'世界聚光灯',accent:'#b88de0',courtTone:'#3b4b69',runoffTone:'#2d3555',rounds:['32强','16强','8强','半决赛','决赛'],draw:TOUR_ROSTER}),
+  freeze({id:'olympics',name:'奥运会羽毛球赛',english:'Olympic Games Badminton',city:'洛杉矶',venue:'LA Olympic Arena',surface:'奥运专用地胶',crowd:'奥运全场',accent:'#e7c55d',courtTone:'#286355',runoffTone:'#315644',rounds:['32强','16强','8强','半决赛','决赛'],draw:TOUR_ROSTER}),
 ]);
 
 export function star(id){return TOUR_STARS[id]||TOUR_STARS.peterGade;}

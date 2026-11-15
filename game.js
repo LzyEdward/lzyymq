@@ -30,7 +30,7 @@ import { createTechniquePanel } from './technique-panel.mjs?v=a4291311a3118074';
 import { PLAYER_STYLES, OPPONENT_STYLES, effectiveOpponentLevel, playerStatsFromInputs, playerStatsForStyle, normalizeSkills } from './player-styles.mjs?v=7fb39014dc2510da';
 import {OPPONENT_CHARACTERS,matchIntent,characterRecovery,resolveCharacter,strokeSoundProfile} from './match-mind.mjs?v=e5b4c578b264237a';
 import {OpponentMemory,MatchTactics,MATCH_OBJECTIVES,TACTICAL_LABELS,movementEnergyRate,directionalTarget,contactPressure} from './tactics.mjs?v=17f6cd2d095185a5';
-import {TOUR_EVENTS,TOUR_STARS,event as tourEvent,star as tourStar,freshTour,buildBracket,currentTourMatch,advanceTour,tourStatus} from './tournament.mjs?v=54886ffc2f1caa6b';
+import {TOUR_EVENTS,TOUR_STARS,event as tourEvent,star as tourStar,freshTour,buildBracket,currentTourMatch,advanceTour,tourStatus} from './tournament.mjs?v=c32b1448a705dbe4';
 
 const $ = (s) => document.querySelector(s);
 const canvas = $('#court');
@@ -65,7 +65,8 @@ const TOUR_KEY='feather-court-tour-v1';
 let tour=null;
 let tourCareer={titles:0,completed:0,active:null};
 function saveTour(){try{if(!testing)localStorage.setItem(TOUR_KEY,JSON.stringify({tour,tourCareer}));}catch{}}
-function loadTour(){try{const raw=JSON.parse(localStorage.getItem(TOUR_KEY)||'null');if(raw&&('tour'in raw||'tourCareer'in raw)){tour=raw.tour||null;tourCareer={titles:0,completed:0,active:null,...raw.tourCareer};}else{tour=raw;tourCareer={titles:0,completed:0,active:null};}}catch{tour=null;tourCareer={titles:0,completed:0,active:null};}}
+function loadTour(){try{const raw=JSON.parse(localStorage.getItem(TOUR_KEY)||'null');if(raw&&('tour'in raw||'tourCareer'in raw)){tour=raw.tour||null;tourCareer={titles:0,completed:0,active:null,...raw.tourCareer};}else{tour=raw;tourCareer={titles:0,completed:0,active:null};}if(tour){const expected=eventRounds(tour.eventId);if(!tour.bracket||tour.bracket.map(round=>round.length).join(',')!==expected.join(',')){tour.bracket=buildBracket(tourEvent(tour.eventId),Date.parse(tour.startedAt)||2026);tour.opponentId=tour.bracket[tour.roundIndex]?.[0]?.b||tour.opponentId;saveTour();}}}catch{tour=null;tourCareer={titles:0,completed:0,active:null};}}
+function eventRounds(eventId){return [16,8,4,2,1];}
 const keys = new Set();
 const hitIntent = new HitIntent();
 const dash = new Dash();
@@ -97,7 +98,7 @@ function closeLineReview() {
 }
 for(const entity of [player,opponent,ball]){entity.previous=entity.pos.clone();entity.renderPos=entity.pos.clone();}
 let renderer, scene, camera, racket, shuttle, bot, landingMarker, targetMarker, aimMarker, shuttleShadow, net, courtScore, presentation, surfaceMaps;
-let audienceGroup=null, venueSign=null, venueAccent='#d8bf74';
+let audienceGroup=null, venueSign=null, venueAccent='#d8bf74',mainCourtMaterial=null,runoffMaterial=null;
 let audio, master, trailLine, shuttleNoise, shuttleFilter, shuttleGain, shuttlePan, lastShuttleSoundUpdate=-1, menuTime = 0, accumulator = 0, fps = 60;
 let lastHud = 0, previousCameraPos = V(), pointerDown = false, touchMove = { x: 0, y: 0 };
 let previousManual = false;
@@ -168,6 +169,8 @@ function createAudience(){
 
 function applyTournamentVenue(spec){
   if(!spec)return;venueAccent=spec.accent||venueAccent;audienceGroup?.userData.applyVenue?.(spec);
+  if(mainCourtMaterial&&spec.courtTone)mainCourtMaterial.color.set(spec.courtTone);
+  if(runoffMaterial&&spec.runoffTone)runoffMaterial.color.set(spec.runoffTone);
   if(venueSign){venueSign.material.map?.dispose?.();venueSign.material.map=texture(1024,256,(c,w,h)=>{c.fillStyle='#203e3c';c.fillRect(0,0,w,h);c.fillStyle=venueAccent;c.font='700 64px "Segoe UI","Microsoft YaHei"';c.textAlign='center';c.textBaseline='middle';c.fillText(spec.name+'  ·  '+spec.city,w/2,h/2);});venueSign.material.needsUpdate=true;}
 }
 
@@ -198,8 +201,8 @@ function createHall() {
   const floor = box(31, .2, 39, new THREE.MeshPhysicalMaterial({ map: surfaceMaps.wood||floorTex, normalMap:surfaceMaps.woodNormal||null,normalScale:new THREE.Vector2(.22,.22),roughnessMap:surfaceMaps.woodRough||null,roughness:.78,clearcoat:.12,clearcoatRoughness:.55 }), 0, -.104, 0); floor.receiveShadow = true;
   if(surfaceMaps.wood)floorTex.dispose();
   const courtTex=architecture.court;
-  const mat = box(7.9, .004, 16.2, new THREE.MeshPhysicalMaterial({ map: courtTex, normalMap:architecture.courtNormal,normalScale:new THREE.Vector2(.16,.16),roughness:.88,clearcoat:.04,clearcoatRoughness:.88 }), 0, -.002, 0); mat.receiveShadow = true;
-  const runoff = material('#224f48');
+  const mat = box(7.9, .004, 16.2, new THREE.MeshPhysicalMaterial({ map: courtTex, normalMap:architecture.courtNormal,normalScale:new THREE.Vector2(.16,.16),roughness:.88,clearcoat:.04,clearcoatRoughness:.88 }), 0, -.002, 0); mat.receiveShadow = true;mainCourtMaterial=mat.material;
+  const runoff = material('#224f48');runoffMaterial=runoff;
   box(.12, .004, 16.2, runoff, -3.97, -.002, 0); box(.12, .004, 16.2, runoff, 3.97, -.002, 0);
   const line = new THREE.MeshStandardMaterial({ color: '#e5e9dc',roughness:.78 });
   const lineAt = (x1, z1, x2, z2, width = .04) => {
