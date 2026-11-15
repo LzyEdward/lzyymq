@@ -1525,7 +1525,7 @@ function bindEvents() {
   $('#open-tour-hub').addEventListener('click',openTourHub);$('#tour-close').addEventListener('click',closeTourHub);$('#tour-cancel').addEventListener('click',closeTourHub);$('#tour-enter').addEventListener('click',enterTournament);
   $('#intro-close').addEventListener('click',()=>{$('#match-intro-overlay').classList.add('hidden');if(pendingMatchMode==='tournament')openTourHub();});
   $('#intro-enter').addEventListener('click',()=>{$('#match-intro-overlay').classList.add('hidden');startGame(pendingMatchMode==='tournament'?'match':'match');});
-  $('#tour-next').addEventListener('click',()=>{if(tour?.completed||tour?.eliminated){openTourHub();return;}$('#pause-overlay').classList.add('hidden');launchMatch('tournament');});
+  $('#tour-next').addEventListener('click',()=>{if(tour?.completed||tour?.eliminated){exitGame();openTourHub();return;}$('#pause-overlay').classList.add('hidden');launchMatch('tournament');});
   $('#pause-btn').addEventListener('click', () => pauseGame()); $('#resume-btn').addEventListener('click', resumeGame);
   $('#restart-btn').addEventListener('click', () => state.tournamentId?launchMatch('tournament'):launchMatch('match')); $('#exit-btn').addEventListener('click', exitGame);
   $('#brand-home').addEventListener('click',e=>{e.preventDefault();if(state.screen==='inspect')exitGame();else if(state.screen!=='menu')pauseGame();});
