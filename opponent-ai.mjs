@@ -1,3 +1,4 @@
+import {matchIntent,characterWeight} from './match-mind.mjs?v=e5b4c578b264237a';
 const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
 
 // Weaknesses are deliberately expressed as readable tactical lanes.  They
@@ -58,7 +59,8 @@ export function opponentReceiveMissChance({level,shot='clear',position,distance,
  // Beginners should visibly struggle with tight net play. Scale the base
  // error by their technical level, then add a meaningful penalty for a
  // short, low ball; elite players still occasionally misjudge a brush shot.
- let chance=.018+(1-level.accuracy)*.23;
+ const routine=clamp((position.y-1.05)/.9,0,1)*(1-stretch);
+ let chance=(.018+(1-level.accuracy)*.23)*(1-routine*.65);
  chance+=stretch*(.04+.12*(1-level.anticipation));
  if(netShot)chance+=(.035+.29*(1-level.netSkill))*(.72+low*.45);
  chance+=fatigue*.075;
@@ -87,7 +89,8 @@ export function opponentStrokeExecution({level,type,target,quality=1,energy=100,
 }
 
 // All choices use observed court positions, never the player's pending input.
-export function planOpponentStroke({level,position,player,playerVelocity={x:0,z:0},energy=100,profile='balanced',tactic='balanced',history=[],pressure=0,random=Math.random}){
+export function planOpponentStroke({level,position,player,playerVelocity={x:0,z:0},energy=100,profile='balanced',tactic='balanced',history=[],pressure=0,match={},random=Math.random}){
+ const intent=matchIntent({...match,profile,energy});
  const net=position.z>-2.6,low=position.y<.83,skill=level.netSkill,tier=level.tier;
  const anticipatedX=clamp(player.x+playerVelocity.x*(.12+level.anticipation*.24),-2.4,2.4);
  const anticipatedZ=clamp(player.z+playerVelocity.z*(.12+level.anticipation*.24),1.2,6.15);
@@ -129,9 +132,7 @@ export function planOpponentStroke({level,position,player,playerVelocity={x:0,z:
   if(candidate.action===last?.action)candidate.weight*=.42;
   if(repeatedLane)candidate.weight*=.56;
   if(same.length===2&&same.every(p=>p.type===candidate.type)&&candidates.some(p=>p.type!==candidate.type))candidate.weight*=.12;
-  if(profile==='attack'&&['smash','slicesmash','netkill','push','drive'].includes(candidate.type))candidate.weight*=1.55;
-  if(profile==='defend'&&['clear','lift','net','netcross','drop','slicedrop'].includes(candidate.type))candidate.weight*=1.5;
-  if(profile==='balanced'&&['drop','net','push','drive'].includes(candidate.type))candidate.weight*=1.08;
+  candidate.weight*=characterWeight(candidate,{intent,pressure,position,player:{x:anticipatedX,z:anticipatedZ},last,level});
   if(tactic==='power'&&['smash','netkill','drive'].includes(candidate.type))candidate.weight*=1.62;
   if(tactic==='angle'&&['slicesmash','slicedrop','netcross','drop','net'].includes(candidate.type)&&Math.abs(candidate.target.x-position.x)>1.1)candidate.weight*=1.8;
   if(tactic==='rally'&&['clear','drive'].includes(candidate.type))candidate.weight*=1.28;
@@ -150,7 +151,7 @@ export function planOpponentStroke({level,position,player,playerVelocity={x:0,z:
  const total=candidates.reduce((sum,c)=>sum+c.weight,0);let pick=clamp(random(),0,.999999)*total;
  let selected=candidates.at(-1);for(const c of candidates){pick-=c.weight;if(pick<=0){selected=c;break;}}
  const action=pressure>.38&&['lift','clear'].includes(selected.type)?`被动${selected.type==='lift'?'挑球':'过渡高球'}`:selected.action;
- return {...selected,action,target:{...selected.target},backhand:position.x<-.25,spin:selected.action==='搓网'?skill:0};
+ return {...selected,action,character:intent.character,intent:intent.phase,target:{...selected.target},backhand:position.x<-.25,spin:selected.action==='搓网'?skill:0};
 }
 
 export function recoveryBase({lastContact,lastTarget,level}){

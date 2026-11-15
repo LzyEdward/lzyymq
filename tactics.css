@@ -1,5 +1,9 @@
 #tactical-report{padding:0 0 18px;border-bottom:1px solid #eef5dc20;margin-bottom:22px}
 #tactical-report h3{font-size:15px;font-weight:600;margin:0 0 10px;letter-spacing:.5px}
+.character-preview{font-size:11px!important;line-height:1.7!important;color:#d8e4ceba;margin:10px 0 0!important}
+.point-analysis{border-left:2px solid #dcf49a80;padding:8px 12px;margin:14px 0;background:#dcf49a08;font-size:12px;line-height:1.8}
+.point-analysis p{margin:4px 0 0;color:#d8e4ceba}
+#placement-cue{position:fixed;z-index:7;left:50%;bottom:28px;transform:translateX(-50%);border:1px solid #dcf49a36;background:#102d29d9;color:#e6f0d7;border-radius:4px;padding:9px 15px;font:12px/1.6 "Segoe UI","Microsoft YaHei",sans-serif;pointer-events:none;white-space:nowrap}
 #tactical-report>p{font-size:12px;line-height:1.8;color:#d8e4cebf;margin:7px 0 13px}
 .tactical-objective{display:grid;grid-template-columns:1fr auto;gap:4px 12px;border:1px solid #cde3b71c;padding:10px 12px;margin:7px 0;border-radius:6px;background:#d6e9bb05;font-size:12px}
 .tactical-objective b{font-size:12px;font-weight:500;color:#cad6c0;font-variant-numeric:tabular-nums}

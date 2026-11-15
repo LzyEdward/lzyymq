@@ -8,7 +8,7 @@ import { freeLook, landingFromMap, moveLanding, normalizeLanding, landingName, L
 import { createAthlete } from './athlete.mjs?v=3f0e7f04c078091e';
 import { movementVector, gradeContact, strokeOutcome, shotTarget, SHOT_DEPTHS, Dash, targetDistance, DRILL_TARGETS, practiceFeed, smartStroke, racketPowerBoost, techniqueTarget } from './gameplay.mjs?v=775353f068baad1d';
 import { OPPONENT_LEVELS, LEVEL_DESCRIPTIONS, LEVEL_REFERENCES, opponentLevel, placementSpread, matchFinished, rankName, freshCareer, parseCareer, settleMatch } from './competition.mjs?v=0bfdf807188e5da2';
-import {planOpponentStroke,recoveryBase,opponentFootwork,opponentReceiveMissChance,opponentStrokeExecution,opponentServeTarget,opponentContactWindow,opponentReceiveBase,opponentWeaknessProfile,opponentWeaknessKey} from './opponent-ai.mjs?v=a26e84894ef4845d';
+import {planOpponentStroke,recoveryBase,opponentFootwork,opponentReceiveMissChance,opponentStrokeExecution,opponentServeTarget,opponentContactWindow,opponentReceiveBase,opponentWeaknessProfile,opponentWeaknessKey} from './opponent-ai.mjs?v=7056d022922f1472';
 import { trackAngles, stepTracking, highBallOffset, stepHighBallOffset } from './tracking.mjs?v=06dbfbbf1f80a4e0';
 import { loadSurfaceMaps, createEnvironment, CourtPresentation } from './presentation.mjs?v=afa66340e634822d';
 import { createViewmodel } from './viewmodel.mjs?v=120c19a684ab9d79';
@@ -28,7 +28,8 @@ import { createShuttleModel } from './shuttle-model.mjs?v=d8c5b7c03d2e5919';
 import { createCourtNet, NET_HALF_WIDTH } from './court-net.mjs?v=13d5c621732cf41f';
 import { createTechniquePanel } from './technique-panel.mjs?v=a4291311a3118074';
 import { PLAYER_STYLES, OPPONENT_STYLES, effectiveOpponentLevel, playerStatsFromInputs, playerStatsForStyle, normalizeSkills } from './player-styles.mjs?v=7fb39014dc2510da';
-import {OpponentMemory,MatchTactics,MATCH_OBJECTIVES,TACTICAL_LABELS,movementEnergyRate,directionalTarget,contactPressure} from './tactics.mjs?v=c6008ba5e6051e0a';
+import {OPPONENT_CHARACTERS,matchIntent,characterRecovery,resolveCharacter,strokeSoundProfile} from './match-mind.mjs?v=e5b4c578b264237a';
+import {OpponentMemory,MatchTactics,MATCH_OBJECTIVES,TACTICAL_LABELS,movementEnergyRate,directionalTarget,contactPressure} from './tactics.mjs?v=17f6cd2d095185a5';
 
 const $ = (s) => document.querySelector(s);
 const canvas = $('#court');
@@ -393,18 +394,20 @@ function tone(freq, duration, volume, end = freq) {
   const o = audio.createOscillator(), g = audio.createGain(); o.type = 'sine'; o.frequency.setValueAtTime(freq, audio.currentTime); o.frequency.exponentialRampToValueAtTime(end, audio.currentTime + duration);
   g.gain.setValueAtTime(volume, audio.currentTime); g.gain.exponentialRampToValueAtTime(.001, audio.currentTime + duration); o.connect(g); g.connect(master); g.connect(audio.reverb); o.start(); o.stop(audio.currentTime + duration);
 }
+function currentMatchIntent(){return matchIntent({profile:state.profile,style:state.opponentStyle,score:state.score,points:state.matchPoints,energy:opponent.energy,recent:matchTactics.points});}
+function updateCharacterPreview(){const p=OPPONENT_CHARACTERS[resolveCharacter($('#opponent-profile').value,$('#opponent-style').value)];$('#character-preview').textContent=`${p.name} · ${p.description}`;}
 function hitSound(type, isOpponent = false) {
   if(!audio||!state.sound)return;
-  const strength=['smash','slicesmash'].includes(type)?1:['drop','slicedrop','net','netcross'].includes(type)?.4:.7,dist=isOpponent?.38:1;
+  const sound=strokeSoundProfile(type),strength=sound.volume,dist=isOpponent?.38:1;
   const pan=isOpponent?clamp((opponent.pos.x-player.pos.x)/7,-.8,.8):.2;
   // A string-bed snap and rapidly damped frame modes, with no pitch sweep.
   noise(.018,3300,.58*strength*dist,'highpass',pan);
-  noise(.045,1250,.20*strength*dist,'bandpass',pan);
+  noise(.045*sound.tail,1250*sound.brightness,.20*strength*dist,'bandpass',pan);
   for(const [frequency,volume,decay] of [[950,.12,.037],[1870,.055,.018],[420,.035,.05]]){
     const source=audio.createOscillator(),gain=audio.createGain(),stereo=audio.createStereoPanner();
-    source.frequency.value=frequency*(type==='smash'?1.04:1);source.type='sine';
-    gain.gain.setValueAtTime(volume*strength*dist,audio.currentTime);gain.gain.exponentialRampToValueAtTime(.0001,audio.currentTime+decay);
-    stereo.pan.value=pan;source.connect(gain);gain.connect(stereo);stereo.connect(master);gain.connect(audio.reverb);source.start();source.stop(audio.currentTime+decay);
+    source.frequency.value=frequency*sound.brightness;source.type='sine';
+    gain.gain.setValueAtTime(volume*strength*dist,audio.currentTime);gain.gain.exponentialRampToValueAtTime(.0001,audio.currentTime+decay*sound.tail);
+    stereo.pan.value=pan;source.connect(gain);gain.connect(stereo);stereo.connect(master);gain.connect(audio.reverb);source.start();source.stop(audio.currentTime+decay*sound.tail);
   }
 }
 
@@ -746,7 +749,7 @@ function tryPlayerHit() {
   const pressure=opponentMemory.observe({type,target:shot.target,position:opponent.pos,velocity:opponent.vel,quality:shot.quality,fault:shot.fault,energy:opponent.energy,level:currentOpponentLevel()});
   opponent.pressure=pressure;
   state.tacticMessage=pressure.key&&pressure.strength>.28?TACTICAL_LABELS[pressure.key]:'';
-  matchTactics.stroke({hitter:'player',type,target:shot.target,quality:shot.quality,fault:shot.fault,pressure});
+  matchTactics.stroke({hitter:'player',type,target:shot.target,quality:shot.quality,fault:shot.fault,pressure,position:{x:ball.pos.x,y:ball.pos.y,z:ball.pos.z},contactReason:shot.reason});
   state.lastLanding=predict(ball.pos,ball.vel,-1).landing;state.lastPlacement={intended:{...target},landing:state.lastLanding,fault:shot.fault,reason:shot.reason};ball.spin=['net','netcross','slicedrop','slicesmash'].includes(type)?state.playerStats.net*(type==='netcross'?1.8:1):0;ball.spinAt=state.timer;
   if(['smash','slicesmash'].includes(type))state.smashes++;
   opponent.splitAt=state.timer;
@@ -768,7 +771,7 @@ function opponentHit() {
   const level=currentOpponentLevel(),training=state.mode==='targets'||state.tutorial;
   const feed=practiceFeed(opponent.returns);
   const pressure=contactPressure({initial:opponent.pressure?.strength||0,distance:Math.hypot(ball.pos.x-opponent.pos.x,ball.pos.z-opponent.pos.z),reach:level.reach,height:ball.pos.y,speed:Math.hypot(opponent.vel.x,opponent.vel.z),energy:opponent.energy});
-  const plan=training?{type:feed.type,target:{x:feed.x,z:feed.z},action:'练习喂球',spin:0}:planOpponentStroke({level,position:ball.pos,player:player.pos,playerVelocity:player.vel,energy:opponent.energy,profile:state.profile,tactic:OPPONENT_STYLES[state.opponentStyle]?.tactic||'balanced',history:opponent.history,pressure,random});
+  const plan=training?{type:feed.type,target:{x:feed.x,z:feed.z},action:'练习喂球',spin:0}:planOpponentStroke({level,position:ball.pos,player:player.pos,playerVelocity:player.vel,energy:opponent.energy,profile:currentMatchIntent().character,match:{style:state.opponentStyle,score:state.score,points:state.matchPoints,recent:matchTactics.points},tactic:OPPONENT_STYLES[state.opponentStyle]?.tactic||'balanced',history:opponent.history,pressure,random});
   const type=plan.type,shot=training?null:strokeOutcome({position:ball.pos,player:opponent.pos,kind:type,target:plan.target,side:-1,speed:Math.hypot(opponent.vel.x,opponent.vel.z),stamina:opponent.energy,qualityBonus:(level.accuracy-.7)*.18});
   if(shot){
     shot.quality=Math.max(.2,shot.quality-pressure*(1-level.anticipation*.68)*.24);
@@ -780,7 +783,7 @@ function opponentHit() {
   // Do not rescale a solved trajectory: it changes the called landing and net clearance.
   if(shot?.fault==='net')ball.vel.y-=5.8;
   state.lastShot=null;state.lastFault=null;state.lastHitter='opponent';state.rally++;
-  matchTactics.stroke({hitter:'opponent',type,target:shot?.target||plan.target,quality:shot?.quality??1,fault:shot?.fault||null,pressureStrength:pressure});
+  matchTactics.stroke({hitter:'opponent',type,target:shot?.target||plan.target,quality:shot?.quality??1,fault:shot?.fault||null,pressureStrength:pressure,action:plan.action,position:{x:ball.pos.x,y:ball.pos.y,z:ball.pos.z}});
   opponent.returns++;opponent.swing=.135;opponent.shot=type;opponent.contactPoint=ball.pos.clone();
   opponent.lastContact={x:ball.pos.x,z:ball.pos.z};opponent.lastTarget={...plan.target};
   opponent.action=(plan.backhand&&['net','netcross','push','netkill'].includes(type)?'反手 · ':'')+plan.action;opponent.actionAt=state.timer;
@@ -804,7 +807,7 @@ function scorePoint(winner, reason) {
   const finished = state.mode === 'match' && matchFinished(state.score,state.matchPoints);
   state.finished = finished;
   if(finished)commitMatch();
-  const result=matchTactics.finish({playerWon,lastHitter:state.lastHitter,reason,opponentEnergy:opponent.energy});
+  const result=matchTactics.finish({playerWon,lastHitter:state.lastHitter,reason,opponentEnergy:opponent.energy,playerPosition:{x:player.pos.x,z:player.pos.z}});
   $('#point-toast').classList.remove('hidden'); $('#point-reason').textContent = `${result.label} · ${result.detail}`;
   $('#point-title').textContent = state.mode === 'practice' ? `${state.rally} 拍，继续保持。` : finished ? (playerWon ? '拿下比赛。' : '下一场，再来。') : playerWon ? '漂亮，拿下一分。' : '调整一下，再来。';
   $('#point-subtitle').textContent = state.mode === 'practice' ? '自动开始下一轮练习' : `${String(state.score[0]).padStart(2, '0')}  :  ${String(state.score[1]).padStart(2, '0')}  /  ${state.rally} 拍回合${finished?` · 积分 ${state.ratingDelta>=0?'+':''}${state.ratingDelta}`:''}`;
@@ -914,7 +917,7 @@ function updatePlayer(dt, pad = null) {
 function updateOpponent(dt) {
   const level=currentOpponentLevel(),training=state.mode==='targets'||state.tutorial;
   const incoming=state.lastHitter==='player'&&state.phase==='rally',intercept=state.prediction?.intercept;
-  const base=opponentMemory.base(recoveryBase({lastContact:opponent.lastContact,lastTarget:opponent.lastTarget,level}),level);
+  const base=opponentMemory.base(characterRecovery(recoveryBase({lastContact:opponent.lastContact,lastTarget:opponent.lastTarget,level}),currentMatchIntent()),level);
   const moveStart=state.returnDelay;
   let target={...base};
   if(state.phase==='serve'||state.phase==='serving')target={x:opponent.pos.x,z:opponent.pos.z};
@@ -1162,7 +1165,7 @@ function updateTactics() {
   const weakValue=opponent.weaknesses[opponent.lastWeakness]||0;
   const weakThreshold=Math.max(...Object.values(opponent.weaknesses))*.85;
   const observation=observed?(adjusted?` · 已加强${weaknessLabel}`:weakValue>=weakThreshold?` · 可尝试${weaknessLabel}`:` · ${weaknessLabel}防守较稳`):'';
-  $('#opponent-action').textContent=currentOpponentLevel().name+' · '+activity+observation;
+  $('#opponent-action').textContent=currentOpponentLevel().name+' · '+currentMatchIntent().name+' · '+activity+observation;
   const tacticReadout=$('#tactic-readout');if(tacticReadout)tacticReadout.textContent=state.tacticMessage||'观察对手回位，下一拍换线';
   const last=state.lastPlacement?.landing;$('#landing-last').classList.toggle('hidden',!last);
   if(last){$('#landing-last').style.left=`${clamp((last.x/5.18+.5)*100,1,99)}%`;$('#landing-last').style.top=`${clamp((last.z+6.7)/6.7*100,1,99)}%`;}
@@ -1174,6 +1177,8 @@ function updateTactics() {
 function updateHud() {
   document.body.classList.toggle('serving',state.screen==='play'&&['serve','serving','opponentServe'].includes(state.phase));
   $('#shot-cue').classList.toggle('visible',state.screen==='play'&&state.timer<state.shotCueUntil);
+  const cue=$('#placement-cue');cue.classList.toggle('hidden',state.screen!=='play'||!$('#placement-hint').checked||state.phase!=='rally');
+  if(!cue.classList.contains('hidden')){const locked=state.swing>0&&!state.swingContact&&state.swingTarget,target=locked||selectedLanding();cue.textContent=`${locked?'起拍已锁定':'下一拍'} · ${landingName(target)} · ${Math.abs(target.x).toFixed(1)}m / ${Math.abs(target.z).toFixed(1)}m`;}
   if(state.phase==='serving')$('#serve-copy').textContent='轻抛后向前送拍 · 发球中';
   else if(state.phase==='serve')$('#serve-copy').textContent=state.serveStyle==='high'?'高远发球已选 · G 切回低发球，左键发球':'左键发球 · G 切换高远发球';
   if (state.mode === 'targets') {
@@ -1251,12 +1256,12 @@ function animate() {
   lastFrameTime=frameNow;
   if(state.screen==='play'&&qualityMode==='auto'&&adaptiveResolution.sample(rawFrameMs,frameNow))applyRenderProfile();
   if(frameProbe){
-    if(frameProbe.warmup-->0){}else {frameProbe.started??=frameNow;frameProbe.samples.push(rawFrameMs);}
+    if(frameProbe.warmup-->0){}else {frameProbe.started??=frameNow;frameProbe.memoryStart??={...renderer.info.memory};frameProbe.samples.push(rawFrameMs);}
     const duration=frameNow-(frameProbe.started??frameNow),done=frameProbe.durationMs?duration>=frameProbe.durationMs:frameProbe.samples.length>=180;
     if(done){
       const raw=frameProbe.samples,times=[...raw].sort((a,b)=>a-b),mean=raw.reduce((a,b)=>a+b,0)/raw.length;
       const segmentFps=a=>Math.round(10000/(a.reduce((x,y)=>x+y,0)/a.length))/10;
-      $('#test-result').textContent=JSON.stringify({type:'real animation frames',frames:times.length,durationSeconds:Math.round(duration/100)/10,averageFps:Math.round(10000/mean)/10,medianMs:Math.round(times[Math.floor(times.length*.5)]*10)/10,p95Ms:Math.round(times[Math.floor(times.length*.95)]*10)/10,first300Fps:segmentFps(raw.slice(0,300)),last300Fps:segmentFps(raw.slice(-300)),viewport:[innerWidth,innerHeight],pixelRatio:renderer.getPixelRatio(),quality:presentation.quality,drawCalls:presentation.sceneInfo.calls,triangles:presentation.sceneInfo.triangles,hits:state.hits,points:state.score},null,2);
+      $('#test-result').textContent=JSON.stringify({type:'real animation frames',frames:times.length,durationSeconds:Math.round(duration/100)/10,averageFps:Math.round(10000/mean)/10,medianMs:Math.round(times[Math.floor(times.length*.5)]*10)/10,p95Ms:Math.round(times[Math.floor(times.length*.95)]*10)/10,first300Fps:segmentFps(raw.slice(0,300)),last300Fps:segmentFps(raw.slice(-300)),memoryStart:frameProbe.memoryStart,memoryEnd:{...renderer.info.memory},viewport:[innerWidth,innerHeight],pixelRatio:renderer.getPixelRatio(),quality:presentation.quality,drawCalls:presentation.sceneInfo.calls,triangles:presentation.sceneInfo.triangles,hits:state.hits,points:state.score},null,2);
       frameProbe=null;pauseGame();
     }
   }
@@ -1330,10 +1335,12 @@ function updateTacticalReport(){
   const names={clear:'高远',drop:'吊球',slicedrop:'劈吊',net:'搓球',netcross:'勾对角',push:'推后场',drive:'平抽',lift:'挑球',smash:'杀球',slicesmash:'劈杀',netkill:'扑球'};
   panel.replaceChildren();
   const heading=document.createElement('h3');heading.textContent='本场战术';panel.append(heading);
+  const intent=currentMatchIntent(),identity=document.createElement('p');identity.textContent=`对手：${intent.name} · ${intent.label}`;panel.append(identity);
   const methods=document.createElement('p');methods.textContent=Object.entries(matchTactics.methods).map(([key,count])=>`${names[key]||key} ${count} 分`).join(' · ')||'还没有制胜球。试试先拉后场，再吊网前。';panel.append(methods);
   const weak=document.createElement('p');const labels={backhand:'反手位',rear:'后退',net:'网前',body:'追身',recovery:'回位'};
   const entries=Object.entries(opponent.weaknesses).sort((a,b)=>b[1]-a[1]).slice(0,2);
   weak.textContent=`对手观察：${entries.map(([key])=>`${labels[key]}${(opponent.adaptation[key]||0)>.35?'已加强防守':'可尝试调动'}`).join(' · ')}。连续打同一区域后，突然变线。`;panel.append(weak);
+  const latest=matchTactics.lastResult;if(latest){const review=document.createElement('div');review.className='point-analysis';const title=document.createElement('b');title.textContent=`上一分 · ${latest.detail}`;const tip=document.createElement('p');tip.textContent=latest.tip;review.append(title,tip);panel.append(review);}
   for(const objective of MATCH_OBJECTIVES){
     const progress=Math.min(objective.goal,matchTactics.counts[objective.key]),row=document.createElement('div');row.className='tactical-objective';row.dataset.complete=String(progress>=objective.goal);
     const label=document.createElement('span');label.textContent=`${progress>=objective.goal?'✓ ':''}${objective.name}`;
@@ -1348,6 +1355,7 @@ function resumeGame() {
 }
 function exitGame() {
   state.screen = 'menu'; ball.active = false; keys.clear(); pointerDown = false;hitIntent.clear();
+  $('#placement-cue').classList.add('hidden');$('#shot-cue').classList.remove('visible');
   document.exitPointerLock?.(); document.body.classList.remove('playing'); $('#pause-overlay').classList.add('hidden'); $('#help-overlay').classList.add('hidden'); $('#hud').classList.add('hidden'); $('#menu').classList.remove('hidden');
   $('#showroom').classList.add('hidden');shuttleShadow.visible=true;
 }
@@ -1369,7 +1377,7 @@ function applyRenderProfile(){
  presentation.setQuality(profile.quality);renderBudget.invalidate();
 }
 function applyQuality(quality){qualityMode=['auto','balanced','high','ultra'].includes(quality)?quality:'auto';adaptiveResolution.reset(performance.now());applyRenderProfile();}
-function savePreferences(){if(testing)return;try{localStorage.setItem('feather-court-3-settings',JSON.stringify({difficulty:$('#difficulty').value,scheme:$('#control-scheme').value,profile:$('#opponent-profile').value,points:$('#match-points').value,quality:$('#quality').value,performanceVersion:1,focus:state.focus,motion:state.motion,sensitivity:state.sensitivity,lookSyncVersion:2,pace:state.pace,sound:state.sound,racketStyle:state.racketStyle,racketSkin:state.racketSkin,playerStyle:$('#player-style').value,opponentStyle:$('#opponent-style').value,playerStats:playerStatsFromInputs(),opponentStats:state.opponentStats,highBallAssist:$('#high-ball-toggle').checked,eagleAuto:$('#eagle-auto').checked}));}catch{}}
+function savePreferences(){if(testing)return;try{localStorage.setItem('feather-court-3-settings',JSON.stringify({difficulty:$('#difficulty').value,scheme:$('#control-scheme').value,profile:$('#opponent-profile').value,points:$('#match-points').value,quality:$('#quality').value,performanceVersion:1,focus:state.focus,motion:state.motion,sensitivity:state.sensitivity,lookSyncVersion:2,pace:state.pace,sound:state.sound,racketStyle:state.racketStyle,racketSkin:state.racketSkin,playerStyle:$('#player-style').value,opponentStyle:$('#opponent-style').value,playerStats:playerStatsFromInputs(),opponentStats:state.opponentStats,highBallAssist:$('#high-ball-toggle').checked,placementHint:$('#placement-hint').checked,eagleAuto:$('#eagle-auto').checked}));}catch{}}
 function restorePreferences(){
   try { const settings=JSON.parse(localStorage.getItem('feather-court-3-settings')||'{}');$('#eagle-auto').checked=settings.eagleAuto!==false; } catch {}
   $('#eagle-auto').addEventListener('change',savePreferences);
@@ -1385,13 +1393,17 @@ function restorePreferences(){
   if(prefs.playerStats&&prefs.playerStyle==='custom')for(const key of ['attack','speed','defense','net','control','stamina']){const n=Number(prefs.playerStats[key]);if(Number.isFinite(n))$('#player-'+key).value=Math.round(clamp(n*100,40,160));}
   const restoredCustom=playerStatsFromInputs();applyPlayerStyle($('#player-style').value);if(prefs.playerStyle==='custom'){techniquePanel.write('player',restoredCustom);refreshPlayerStats();}
   state.opponentStats=normalizeSkills(prefs.opponentStats);techniquePanel.write('opponent',state.opponentStats);
+  $('#placement-hint').checked=prefs.placementHint===true;
   if(typeof prefs.highBallAssist==='boolean')state.highBallAssist=$('#high-ball-toggle').checked=prefs.highBallAssist;
   else state.highBallAssist=$('#high-ball-toggle').checked;
-  applyQuality($('#quality').value);updateDifficultyUI();
+  applyQuality($('#quality').value);updateDifficultyUI();updateCharacterPreview();
 }
 function showPlayer(){state.screen='inspect';state.inspectYaw=.30;state.inspectDistance=3.1;state.inspectPitch=.12;state.inspectPose='idle';state.inspectTime=0;keys.clear();hitIntent.clear();document.exitPointerLock?.();$('#menu').classList.add('hidden');$('#hud').classList.add('hidden');$('#showroom').classList.remove('hidden');$('#pause-overlay').classList.add('hidden');document.body.classList.remove('playing');}
 
 function bindEvents() {
+  $('#placement-hint').addEventListener('change',savePreferences);
+  for(const id of ['opponent-profile','opponent-style'])$('#'+id).addEventListener('change',updateCharacterPreview);
+  updateCharacterPreview();
   $('#eagle-point-review').addEventListener('click', () => openLineReview());
   $('#last-line-review').addEventListener('click', () => openLineReview());
   $('#aim-edit').addEventListener('click',()=>setAimEditor(!state.aiming));
@@ -1576,7 +1588,11 @@ async function init() {
               for(let n=0;n<600&&state.phase==='rally'&&state.lastHitter==='player';n++)fixedUpdate(1/120);
               if(state.score[0]===1)won++;if(state.lastHitter==='opponent')returned++;
             }
-            checks.push({name:`physical-winner-${scenario.type}`,pass:contacts===12&&legal>=10&&won>=5,wins:won,returns:returned,contacts,legal,meanQuality:qualitySum/12});
+            // A high clear gives the receiver recovery time. Verify that it can
+            // punish displacement and can also be returned, rather than
+            // requiring random receiver errors in a majority of the seeds.
+            const outcome=scenario.type==='clear'?won>0&&returned>0&&won+returned===12:won>=5;
+            checks.push({name:`physical-winner-${scenario.type}`,pass:contacts===12&&legal>=10&&outcome,wins:won,returns:returned,contacts,legal,meanQuality:qualitySum/12});
           }
           startGame('practice');state.sound=false;setAssist(false);performControl(pointerCommand(0),'pointer');
           checks.push({name:'left-mouse-preserves-manual-movement',pass:!state.assists});
@@ -1589,6 +1605,24 @@ async function init() {
         $('#test-result').textContent=JSON.stringify({type:'tactical flight integration',pass:checks.every(c=>c.pass),checks},null,2);pauseGame();
       };
       const tacticsMatch=document.createElement('button');tacticsMatch.id='run-tactics-matches';tacticsMatch.textContent='验证五档完整比赛与多种制胜球';panel.prepend(tacticsMatch);
+      const characterProof=document.createElement('button');characterProof.id='run-character-matches';characterProof.textContent='验证五种对手打法整局比赛';panel.prepend(characterProof);
+      characterProof.onclick=()=>{
+        const saved={level:$('#difficulty').value,profile:$('#opponent-profile').value,points:$('#match-points').value,eagle:$('#eagle-auto').checked},results=[],careerBefore=career;
+        try{
+          $('#difficulty').value='master';$('#match-points').value='11';$('#eagle-auto').checked=false;
+          for(const profile of ['balanced','attack','netpress','defend','counter']){
+            $('#opponent-profile').value=profile;startGame('match');state.sound=false;rng=8291;hitIntent.press(state.timer,null,'character-proof');
+            let incomingBefore=false;
+            for(let n=0;n<86400&&!state.finished;n++){
+              const incoming=state.lastHitter==='opponent'&&state.phase==='rally';
+              if(incoming&&!incomingBefore){const kind=opponent.pos.z<-3.9?'drop':opponent.pos.z>-2.7?'push':'clear';setShot(kind);chooseLanding({x:opponent.pos.x>.1?-2.02:2.02,z:SHOT_DEPTHS[kind]});}
+              incomingBefore=incoming;fixedUpdate(1/120);
+            }
+            results.push({profile,finished:state.finished,score:[...state.score],hits:state.hits,actions:{...opponent.actionCounts},methods:{...matchTactics.methods},intent:currentMatchIntent().phase,review:matchTactics.lastResult,geometry:renderer.info.memory.geometries});
+          }
+        }finally{$('#difficulty').value=saved.level;$('#opponent-profile').value=saved.profile;$('#match-points').value=saved.points;$('#eagle-auto').checked=saved.eagle;career=careerBefore;updateCareerUI();updateCharacterPreview();}
+        $('#test-result').textContent=JSON.stringify({pass:results.every(r=>r.finished&&Object.keys(r.actions).length>=4&&r.review?.tip),results},null,2);pauseGame();
+      };
       tacticsMatch.onclick=()=>{
         const savedLevel=$('#difficulty').value,savedPoints=$('#match-points').value,savedAuto=$('#eagle-auto').checked,careerBefore=career,results=[];
         try{
@@ -2000,6 +2034,8 @@ async function init() {
       $('#run-perf-test').addEventListener('click',()=>{startGame('practice');state.sound=false;hitIntent.press(0,null,'selftest');frameProbe={warmup:30,samples:[]};$('#test-result').textContent='正在采样真实动画帧，完成后自动暂停…';});
       const endurance=document.createElement('button');endurance.id='run-endurance-test';endurance.textContent='实际连续对打 120 秒 · 完成自动暂停';panel.prepend(endurance);
       endurance.onclick=()=>{startGame('practice');state.sound=false;hitIntent.press(0,null,'selftest');frameProbe={warmup:120,samples:[],durationMs:120000};$('#test-result').textContent='正在连续对打采样 120 秒，完成自动暂停…';};
+      const sustained=document.createElement('button');sustained.id='run-sustained-test';sustained.textContent='实际对打 10 分钟 · 检查首尾帧率';panel.prepend(sustained);
+      sustained.onclick=()=>{startGame('practice');state.sound=false;hitIntent.press(0,null,'selftest');frameProbe={warmup:120,samples:[],durationMs:600000};$('#test-result').textContent='正在连续对打采样 10 分钟，完成自动暂停…';};
       $('#inspect-model').addEventListener('click',()=>{
         state.screen='inspect';$('#menu').classList.add('hidden');$('#hud').classList.add('hidden');$('#pause-overlay').classList.add('hidden');
         bot.root.position.set(0,0,0);bot.root.rotation.set(0,0,0);bot.update({time:0});bot.label.visible=false;racket.visible=false;shuttle.visible=false;

@@ -2,7 +2,35 @@ const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
 const distance=(a,b)=>Math.hypot(a.x-b.x,a.z-b.z);
 const shortShots=new Set(['drop','slicedrop','net','netcross']);
 const attacks=new Set(['smash','slicesmash','netkill']);
-export const TACTICAL_LABELS=Object.freeze({pullDrop:'拉后吊前',netPush:'放网推后',change:'左右调动',body:'追身压制',backhand:'压反手',fatigue:'消耗体能'});
+export const TACTICAL_LABELS=Object.freeze({pullDrop:'拉后吊前',netPush:'放网推后',change:'左右调动',body:'追身压制',backhand:'压反手',fatigue:'消耗体能',shortAttack:'逼出短球后抢攻',backhandChange:'连续压反手后变线'});
+
+export function rallyConstruction(rally){
+ const last=rally.at(-1),reply=rally.at(-2),setup=rally.at(-3);
+ if(last?.hitter!=='player'||last.fault||setup?.hitter!=='player'||setup.fault||reply?.hitter!=='opponent'||reply.fault)return null;
+ const shortReply=['clear','lift','push','drive'].includes(reply.type)&&reply.target?.z>0&&reply.target.z<4.45;
+ const pressed=(reply.pressureStrength??0)>.3;
+ if(shortReply&&pressed&&attacks.has(last.type)&&last.quality>=.73&&last.position?.y>=1.9)return 'shortAttack';
+ const mine=rally.filter(s=>s.hitter==='player'&&!s.fault).slice(-3);
+ if(mine.length===3&&mine.slice(0,2).every(s=>s.target?.x< -1.35&&s.target.z<-3.6)&&last.target?.x>1.35&&(last.pressure?.strength??0)>.3)return 'backhandChange';
+ return null;
+}
+
+export function pointAdvice({playerWon,lastHitter,last,reply,playerPosition,reason}){
+ if(playerWon)return {cause:null,tip:'保持准备，观察对手是否改变回位。'};
+ if(lastHitter==='player'&&last?.fault){
+  const why=last.contactReason||'出手位置不合适';
+  return {cause:why,tip:why.includes('太低')?'低点先挑球或放网，等高点再杀。':why.includes('身后')?'先退到球后，再向前触球。':why.includes('太远')?'先向落点靠近；勉强救球优先高远或挑球。':why.includes('失衡')?'变向后稍稳住身体，再打细腻落点。':'先用智能回球过渡，再争取主动。'};
+ }
+ if(lastHitter==='player')return {cause:reason||'回球未能过网或出界',tip:'先保证过网；站位稳住后再压边线。'};
+ if(reply?.target&&playerPosition){
+  const gap=Math.hypot(reply.target.x-playerPosition.x,reply.target.z-playerPosition.z);
+  if(reply.target.z<2.3&&playerPosition.z>3.7)return {cause:'网前启动偏晚',tip:'对手在高点准备轻吊时，别一直守在底线。'};
+  if(reply.target.z>4.7&&playerPosition.z<2.8)return {cause:'上网后身后被推空',tip:'放网后准备后退，别持续冲向球网。'};
+  if(gap>2.3)return {cause:'回位留下空当',tip:'出球后向中间回动，预留反向启动空间。'};
+ }
+ if((last?.quality??1)<.65)return {cause:'上一拍勉强回球，主动权丢失',tip:'被动时先打高、打深，争取回位时间。'};
+ return {cause:reply?.action?`对手${reply.action}得分`:'这一拍未能接回',tip:'稍早准备击球；按住左键可提前等待来球。'};
+}
 
 // Memory contains observed shuttle placements only, never pending controls.
 // Repeating a corner shifts the base towards it; changing direction then
@@ -78,25 +106,28 @@ export class MatchTactics {
   this.rally.push({...event,target:event.target?{...event.target}:null});
   if(this.rally.length>40)this.rally.shift();
  }
- finish({playerWon,lastHitter,reason='落地',opponentEnergy=100}){
+ finish({playerWon,lastHitter,reason='落地',opponentEnergy=100,playerPosition=null}){
   const mine=this.rally.filter(s=>s.hitter==='player'),last=mine.at(-1);
   const pressure=last?.pressure,valid=last&&!last.fault&&last.type!=='serve';
   const reply=this.rally.at(-1);
+  const construction=rallyConstruction(this.rally);
   const forced=valid&&lastHitter==='opponent'&&(reply?.pressureStrength??pressure?.strength??0)>.30;
   let method='opponentError',label='对手失误',detail=reason;
   if(playerWon&&valid&&(lastHitter==='player'||forced)){
    method=last.type;
    label=forced?'逼迫失误':shortShots.has(last.type)?'网前制胜':attacks.has(last.type)?'进攻制胜':'落点制胜';
-   detail=pressure?.key&&pressure.strength>.28?TACTICAL_LABELS[pressure.key]:opponentEnergy<30?'持续调动耗尽对手体能':forced?'压出被动回球':shortShots.has(last.type)?'球贴网下坠，对手未能到位':'击中防守空当';
+   detail=construction?TACTICAL_LABELS[construction]:pressure?.key&&pressure.strength>.28?TACTICAL_LABELS[pressure.key]:opponentEnergy<30?'持续调动耗尽对手体能':forced?'压出被动回球':shortShots.has(last.type)?'短球落入网前空当':'击中防守空当';
    this.methods[method]=(this.methods[method]||0)+1;
    if(!attacks.has(last.type))this.counts.nonSmash++;
-   if(['pullDrop','netPush','change'].includes(pressure?.key)&&pressure.strength>.28)this.counts.combination++;
+   if(construction||['pullDrop','netPush','change'].includes(pressure?.key)&&pressure.strength>.28)this.counts.combination++;
    this.counts.variety=Object.keys(this.methods).length;
   }else if(!playerWon){method='lost';label=last?.fault&&lastHitter==='player'?'我方击球失误':'对手得分';}
   const before=this.points.length?this.points.at(-1).completed:[];
   const completed=MATCH_OBJECTIVES.filter(o=>this.counts[o.key]>=o.goal).map(o=>o.key);
   const unlocked=completed.filter(key=>!before.includes(key));
-  const result={playerWon,method,label,detail,forced,completed,unlocked,shot:last?.type||null};
-  this.points.push(result);this.lastResult=result;return result;
+  const advice=pointAdvice({playerWon,lastHitter,last,reply,playerPosition,reason});
+  if(!playerWon&&advice.cause)detail=advice.cause;
+  const result={playerWon,method,label,detail,tip:advice.tip,construction,forced,completed,unlocked,shot:last?.type||null};
+  this.points.push(result);if(this.points.length>120)this.points.shift();this.lastResult=result;return result;
  }
 }
