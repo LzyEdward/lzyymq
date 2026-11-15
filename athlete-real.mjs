@@ -147,6 +147,16 @@ export function createAthlete(THREE, createRacket,{skinMap=null,mergeGeometries=
   const lidMaterial=new THREE.MeshStandardMaterial({color:'#b58a74',roughness:.67});
   for(const lower of [false,true])tube(head,lidMaterial,Array.from({length:7},(_,i)=>center.clone().add(vec((i/6-.5)*.025,Math.sin(i/6*Math.PI)*(lower?-.0048:.0058),.007+Math.sin(i/6*Math.PI)*.0047))),.0012);
  }
+ // Small facial planes break the game-like sphere silhouette at match distance:
+ // ears sit on the head seam and the nose bridge catches a soft highlight.
+ const earMat=new THREE.MeshPhysicalMaterial({color:'#b98572',roughness:.74,sheen:.12}),noseMat=new THREE.MeshPhysicalMaterial({color:'#bd8b76',roughness:.7,sheen:.12});
+ for(const side of [-1,1]){
+  oval(head,earMat,vec(side*.061,1.688,.109).sub(bind.head),[.008,.018,.007]);
+  oval(head,earMat,vec(side*.061,1.688,.116).sub(bind.head),[.004,.010,.003]);
+ }
+ oval(head,noseMat,vec(0,1.675,.147).sub(bind.head),[.009,.014,.014]);
+ const nostrilMat=new THREE.MeshBasicMaterial({color:'#6e4038'});
+ for(const side of [-1,1])oval(head,nostrilMat,vec(side*.0038,1.671,.158).sub(bind.head),[.0018,.0014,.001]);
  const shoes=[];
  for(const suffix of ['L','R']){
   const foot=bones['foot.'+suffix],g=createCourtShoe(THREE,{upper:new THREE.MeshPhysicalMaterial({color:'#e7ebe4',roughness:.84,bumpMap:weave,bumpScale:.00042}),sole:new THREE.MeshStandardMaterial({color:'#c6bda2',roughness:.9}),trim,lace:sock,mergeGeometries});foot.add(g);shoes.push(g);

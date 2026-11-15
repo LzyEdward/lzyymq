@@ -50,7 +50,7 @@ export function opponentServeTarget({level,random=Math.random}={}){
 
 // Opportunity is sampled once per incoming rally by the caller, so a miss is
 // an actual skill outcome rather than a per-frame lottery that always resolves.
-export function opponentReceiveMissChance({level,shot='clear',position,distance,reach,energy=100,weaknesses=null,weaknessKey=null,adaptation=0}){
+export function opponentReceiveMissChance({level,shot='clear',position,distance,reach,energy=100,weaknesses=null,weaknessKey=null,adaptation=0,attackPressure=0,incomingSpeed=0}){
  const ratio=distance/Math.max(.1,reach);
  const stretch=clamp((ratio-.58)/.48,0,1);
  const netShot=['drop','slicedrop','net','netcross'].includes(shot)&&position.z>-3.8;
@@ -69,6 +69,10 @@ export function opponentReceiveMissChance({level,shot='clear',position,distance,
  // A discovered weakness matters, while repeated identical attacks let the
  // opponent partially close it.  Adaptation is supplied per lane by game.js.
  chance+=weakness*(.08+.18*clamp(stretch+.35*low,0,1))*(1-clamp(adaptation,0,.82));
+ // A steep, fast, well-positioned attack creates a real defensive problem.
+ // The pressure is bounded so low contact or a poor line never becomes a free point.
+ const attack=clamp(Number(attackPressure)||0,0,1);
+ chance+=attack*(.055+.12*(1-level.reaction))*(.72+clamp(incomingSpeed/80,0,1)*.28);
  return clamp(chance,0,.72);
 }
 

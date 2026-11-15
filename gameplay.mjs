@@ -52,7 +52,7 @@ export function smartStroke({position,player,assisted=true,speed=0,jump=0,stamin
  return 'clear';
 }
 
-export function strokeOutcome({position,player,kind='clear',target,side=1,speed=0,jump=0,stamina=100,assisted=true,qualityBonus=0}){
+export function strokeOutcome({position,player,kind='clear',target,side=1,speed=0,jump=0,stamina=100,assisted=true,qualityBonus=0,attackBonus=0}){
  const grade=gradeContact({position,player,kind,side,speed,jump,stamina,assisted});
  const effectiveQuality=clamp(grade.quality+qualityBonus,0,1),effectiveRating=effectiveQuality>=.9?'perfect':effectiveQuality>=.73?'clean':'scramble';
  let fault=null;
@@ -66,7 +66,8 @@ export function strokeOutcome({position,player,kind='clear',target,side=1,speed=
  // A badly positioned smash remains a smash: it can hit the tape or fly out.
  // The caller simulates the entire faulty trajectory and scores on collision.
  const speedMps=smash?(grade.heavy?65+grade.quality*12:26+grade.quality*18)*(kind==='slicesmash'?.73:1):kind==='netkill'?(grade.heavy?52+grade.quality*8:28+grade.quality*12):null;
- return {...grade,quality:effectiveQuality,rating:effectiveRating,target:intended,fault,speedMps};
+ const attackPressure=smash?clamp((effectiveQuality-.55)*.95+(grade.heavy?.16:0)+clamp(attackBonus,0,.35)*.55,0,1):kind==='netkill'?clamp((effectiveQuality-.55)*.9,0,.35):0;
+ return {...grade,quality:effectiveQuality,rating:effectiveRating,target:intended,fault,speedMps,attackPressure};
 }
 
 export function targetDistance(landing, target) {

@@ -28,14 +28,15 @@ export function matchFinished(score,points=11){
 export function rankName(rating){
  return rating<900?'青铜':rating<1100?'白银':rating<1300?'黄金':rating<1500?'铂金':rating<1700?'钻石':rating<1900?'大师':'传奇';
 }
-export function freshCareer(){return {rating:1000,played:0,wins:0,streak:0,bestStreak:0,history:[]};}
+export function freshCareer(){return {rating:1000,played:0,wins:0,streak:0,bestStreak:0,history:[],trophies:{}};}
 export function parseCareer(raw){
  try{
   const p=typeof raw==='string'?JSON.parse(raw):raw;
   if(!p||!Number.isFinite(p.rating))return freshCareer();
   const integer=(v,max=1000000)=>Number.isFinite(v)?clamp(Math.floor(v),0,max):0;
   const played=integer(p.played),wins=Math.min(played,integer(p.wins));
-  return {rating:clamp(Math.round(p.rating),100,3000),played,wins,streak:Math.min(wins,integer(p.streak)),bestStreak:Math.min(wins,integer(p.bestStreak)),history:Array.isArray(p.history)?p.history.filter(h=>typeof h.id==='string'&&Array.isArray(h.score)&&h.score.length===2&&h.score.every(n=>Number.isInteger(n)&&n>=0&&n<=30)&&Number.isFinite(h.delta)&&Number.isFinite(h.rating)&&OPPONENT_LEVELS[h.level]).slice(0,8):[]};
+  const trophies=Object.fromEntries(Object.entries(p.trophies&&typeof p.trophies==='object'?p.trophies:{}).filter(([id,n])=>typeof id==='string'&&Number.isFinite(n)).map(([id,n])=>[id,integer(n,999)]));
+  return {rating:clamp(Math.round(p.rating),100,3000),played,wins,streak:Math.min(wins,integer(p.streak)),bestStreak:Math.min(wins,integer(p.bestStreak)),history:Array.isArray(p.history)?p.history.filter(h=>typeof h.id==='string'&&Array.isArray(h.score)&&h.score.length===2&&h.score.every(n=>Number.isInteger(n)&&n>=0&&n<=30)&&Number.isFinite(h.delta)&&Number.isFinite(h.rating)&&OPPONENT_LEVELS[h.level]).slice(0,8):[],trophies};
  }catch{return freshCareer();}
 }
 // Local-only Elo. Completed IDs make remounting a result idempotent.
@@ -44,5 +45,5 @@ export function settleMatch(career,{id,level='normal',score,points=11,mode='matc
  const won=score[0]>score[1],expected=1/(1+10**((opponentLevel(level).rating-career.rating)/400));
  const delta=Math.round(32*(Number(won)-expected)),rating=clamp(career.rating+delta,100,3000),streak=won?career.streak+1:0;
  const history=[{id,level,score:[...score],delta:rating-career.rating,rating,date},...career.history].slice(0,8);
- return {career:{rating,played:career.played+1,wins:career.wins+Number(won),streak,bestStreak:Math.max(streak,career.bestStreak),history},delta:rating-career.rating,applied:true};
+ return {career:{rating,played:career.played+1,wins:career.wins+Number(won),streak,bestStreak:Math.max(streak,career.bestStreak),history,trophies:{...(career.trophies||{})}},delta:rating-career.rating,applied:true};
 }
