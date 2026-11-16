@@ -1,5 +1,5 @@
 import {ARENA} from './arena-layout.mjs';
-// Six recessed window bays per side. The end walls stay solid.
+// High clerestory bays above the spectator bowl.
 export const WINDOW_BAYS=Object.freeze(Array.from({length:11},(_,i)=>-27.5+i*5));
 
 export function createHallContext(T,scene){
@@ -49,10 +49,10 @@ export function createHallContext(T,scene){
   }
   // Deep sills, reveals, mullion seals and small hardware at believable scale.
   for(const z of WINDOW_BAYS){
-   box(.44,.10,4.62,metal,side*14.7,4.35,z);box(.40,.09,4.62,metal,side*14.7,8.67,z);
-   for(const dz of [-2.29,2.29])box(.40,4.32,.065,metal,side*14.7,6.5,z+dz);
-   for(const dz of [-1.15,0,1.15])box(.07,4.20,.022,dark,side*14.425,6.5,z+dz);
-   for(const dz of [-1.73,.57])box(.035,.14,.028,metal,side*14.39,5.12,z+dz);
+   box(.44,.10,4.62,metal,side*24.8,12.0,z);box(.40,.09,4.62,metal,side*24.8,15.2,z);
+   for(const dz of [-2.29,2.29])box(.40,3.2,.065,metal,side*24.8,13.6,z+dz);
+   for(const dz of [-1.15,0,1.15])box(.07,3.15,.022,dark,side*24.7,13.6,z+dz);
+   for(const dz of [-1.73,.57])box(.035,.14,.028,metal,side*24.68,12.4,z+dz);
   }
   for(const z of WINDOW_BAYS){
    box(.08,.32,.50,metal,side*23.9,16.25,z);

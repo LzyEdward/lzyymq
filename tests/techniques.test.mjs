@@ -118,7 +118,7 @@ test('sliced swings have distinct brushing poses while their sweet spot still me
   assert.ok(head.distanceTo(new THREE.Vector3(...contact))<1e-6);
  }
  assert.notDeepEqual(swingPose({elapsed:.30,kind:'slicesmash'}),swingPose({elapsed:.30,kind:'smash'}));
- assert.notDeepEqual(swingPose({elapsed:.30,kind:'netcross'}),swingPose({elapsed:.30,kind:'net'}));
+ assert.notDeepEqual(swingPose({elapsed:.22,kind:'netcross'}),swingPose({elapsed:.22,kind:'net'}));
 });
 
 test('8 and 9 work on both number rows without changing existing mouse controls',()=>{

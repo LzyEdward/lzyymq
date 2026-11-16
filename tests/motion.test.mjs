@@ -41,7 +41,7 @@ test('different strokes have separate preparation and follow through, and return
  for(const kind of ['clear','lift','drive'])for(let t=0;t<.5;t+=.001){const p=swingPose({elapsed:t,kind});assert.ok([...p.position,...p.rotation].every(Number.isFinite));}
 });
 test('net brush, push and net kill each use distinguishable compact swing arcs',()=>{
- const arcs=['net','push','netkill'].map(kind=>[swingPose({elapsed:.048,kind}),swingPose({elapsed:.31,kind})]);
+ const arcs=['net','push','netkill'].map(kind=>[swingPose({elapsed:.048,kind}),swingPose({elapsed:.22,kind})]);
  assert.notDeepEqual(arcs[0][0].rotation,arcs[1][0].rotation);
  assert.notDeepEqual(arcs[1][1].rotation,arcs[2][1].rotation);
 });

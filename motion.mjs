@@ -1,3 +1,4 @@
+import {strokeTiming} from './controls.mjs';
 // Seconds and camera-local metres. Motion never slows the simulation.
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 const smooth=t=>t*t*(3-2*t);
@@ -76,7 +77,8 @@ export function swingPose({elapsed=0,kind='clear',contact=null,contactTime=.095,
  if(power>.8){follow.position[1]-=.055;follow.rotation[0]+=.14;}
  const prepTime=contactTime<.07?Math.max(.012,contactTime*.48):.048;
  const hitTime=Math.max(prepTime+.01,contactTime);
- const followTime=Math.max(hitTime+.065,.255-power*.015),recoverTime=Math.max(followTime+.15,.46);
+ const recovery=strokeTiming(kind).recovery;
+ const followTime=Math.max(hitTime+.065,recovery*.56-power*.012),recoverTime=Math.max(followTime+.12,recovery);
  const keys=[[0,idle],[prepTime,prep],[hitTime,hit],[followTime,follow],[recoverTime,idle]];
  const momentum=kind==='smash'||kind==='slicesmash'||kind==='netkill'?.9:kind==='drop'||kind==='slicedrop'?.48:netPlay?.56:.72;
  for(let i=1;i<keys.length;i++)if(elapsed<=keys[i][0])return {position:keyCurve(keys,i,elapsed,'position',momentum),rotation:keyCurve(keys,i,elapsed,'rotation',momentum)};

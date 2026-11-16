@@ -1,3 +1,4 @@
+import {ARENA} from './arena-layout.mjs';
 import {createSportsTowel} from './sports-towel.mjs';
 export function dressHall(T,scene){
  const v=(x,y,z)=>new T.Vector3(x,y,z),dark=new T.MeshStandardMaterial({color:'#304744',roughness:.48,metalness:.52}),wood=new T.MeshStandardMaterial({color:'#9d7853',roughness:.63}),white=new T.MeshStandardMaterial({color:'#e0e2d5',roughness:.84}),rubber=new T.MeshStandardMaterial({color:'#25413c',roughness:.95});
@@ -27,8 +28,8 @@ export function dressHall(T,scene){
  for(let i=0;i<60;i++){const a=i/60*Math.PI*2,r=i%5?108:100;c.lineWidth=i%5?1:4;c.beginPath();c.moveTo(Math.sin(a)*r,-Math.cos(a)*r);c.lineTo(Math.sin(a)*115,-Math.cos(a)*115);c.stroke();}
  for(const [a,len,width] of [[Math.PI*.4,63,7],[Math.PI*1.18,90,4]]){c.lineWidth=width;c.beginPath();c.moveTo(0,0);c.lineTo(Math.sin(a)*len,-Math.cos(a)*len);c.stroke();}
  const tex=new T.CanvasTexture(canvas);tex.colorSpace=T.SRGBColorSpace;
- const clock=mesh(new T.CircleGeometry(.36,48),new T.MeshStandardMaterial({map:tex,roughness:.55}),8,3.45,-17.55);clock.castShadow=false;
- const frame=mesh(new T.TorusGeometry(.37,.018,8,48),dark,8,3.45,-17.57);
+ const clock=mesh(new T.CircleGeometry(.36,48),new T.MeshStandardMaterial({map:tex,roughness:.55}),10,11.65,-31.55);clock.castShadow=false;
+ const frame=mesh(new T.TorusGeometry(.37,.018,8,48),dark,10,11.65,-31.57);
  const towel=new T.MeshStandardMaterial({color:'#b5c5b7',roughness:1,side:T.DoubleSide});
  towel.onBeforeCompile=shader=>{
   shader.vertexShader=shader.vertexShader.replace('#include <common>','#include <common>\nvarying vec2 vTerry;').replace('#include <begin_vertex>','#include <begin_vertex>\nvTerry=uv;');
@@ -40,7 +41,7 @@ export function dressHall(T,scene){
    diffuseColor.rgb*=1.-border*.11-endStripe*.24+loop*.026;
   `);
  };towel.customProgramCacheKey=()=> 'draped-terry-stripes-v1';
- const drape=createSportsTowel(T,towel);drape.position.set(8.1,0,-10.5);scene.add(drape);
+ const drape=createSportsTowel(T,towel);drape.position.set(5.4,0,-10.5);scene.add(drape);
  // Soft sports luggage, piping, webbing handles, zippers and capped bottles.
  // Shared materials are merged with the static hall after construction.
  const canvasGrain=new Uint8Array(64*64);for(let j=0;j<64;j++)for(let i=0;i<64;i++)canvasGrain[j*64+i]=120+((i+j)%2?15:-15)+Math.round(Math.sin(i*17+j*41)*8);
@@ -51,7 +52,7 @@ export function dressHall(T,scene){
  function rounded(w,h,d,r){const g=new T.BoxGeometry(w,h,d,10,6,6),p=g.attributes.position,n=g.attributes.normal;
   for(let i=0;i<p.count;i++){const a=v(p.getX(i),p.getY(i),p.getZ(i)),b=v(T.MathUtils.clamp(a.x,-w/2+r,w/2-r),T.MathUtils.clamp(a.y,-h/2+r,h/2-r),T.MathUtils.clamp(a.z,-d/2+r,d/2-r)),direction=a.clone().sub(b).normalize();a.copy(b).addScaledVector(direction,r);p.setXYZ(i,a.x,a.y,a.z);n.setXYZ(i,direction.x,direction.y,direction.z);}return g;}
  function curve(points,r,mat){const g=new T.TubeGeometry(new T.CatmullRomCurve3(points),Math.max(12,points.length*5),r,5,false);return mesh(g,mat,0,0,0);}
- for(const [xx,zz] of [[-8.8,-10.4],[8.7,-10.4],[10.4,9]]){
+ for(const [xx,zz] of [[-6.1,-10.4],[6.0,-10.4],[6.0,10.5]]){
   const center=v(xx,.685,zz),turn=new T.Quaternion().setFromAxisAngle(v(0,1,0),.18),place=p=>p.applyQuaternion(turn).add(center);
   const bag=mesh(rounded(.95,.35,.43,.065),luggage,...center.toArray());bag.quaternion.copy(turn);
   for(const side of [-1,1]){
@@ -73,12 +74,12 @@ export function dressHall(T,scene){
  }
  // Wall skirting, acoustic-panel joints and grounded practical equipment.
  for(const side of [-1,1]){
-  box(29.3,.13,.07,dark,0,.065,side*17.59);
-  for(let xx=-13.5;xx<=13.5;xx+=2.7){box(.018,2.67,.025,dark,xx,1.43,side*17.64);}
+  box(ARENA.width-1,.13,.07,dark,0,.065,side*(ARENA.halfLength-.41));
+  for(let xx=-13.5;xx<=13.5;xx+=2.7){box(.018,2.67,.025,dark,xx,1.43,side*(ARENA.halfLength-.36));}
   for(const xx of [-11.4,11.4]){
-   box(.64,.7,.035,rubber,xx,1.45,side*17.5);
-   const extinguisher=mesh(new T.CylinderGeometry(.09,.09,.38,14),new T.MeshStandardMaterial({color:'#a64132',roughness:.52}),xx,1.39,side*17.42);
-   box(.15,.045,.08,dark,xx,1.6,side*17.42);bar(v(xx+.08,1.58,side*17.42),v(xx+.13,1.3,side*17.4),.012);
+   box(.64,.7,.035,rubber,xx,1.45,side*(ARENA.halfLength-.5));
+   const extinguisher=mesh(new T.CylinderGeometry(.09,.09,.38,14),new T.MeshStandardMaterial({color:'#a64132',roughness:.52}),xx,1.39,side*(ARENA.halfLength-.58));
+   box(.15,.045,.08,dark,xx,1.6,side*(ARENA.halfLength-.58));bar(v(xx+.08,1.58,side*(ARENA.halfLength-.58)),v(xx+.13,1.3,side*(ARENA.halfLength-.6)),.012);
   }
  }
  // Mat joins stay subtle and outside the playing lines.
@@ -87,6 +88,6 @@ export function dressHall(T,scene){
  // Baked soft contact shadows for furniture that doesn't need another shadow light.
  const shadowCanvas=document.createElement('canvas');shadowCanvas.width=shadowCanvas.height=128;const s=shadowCanvas.getContext('2d'),gradient=s.createRadialGradient(64,64,4,64,64,64);gradient.addColorStop(0,'#071b174f');gradient.addColorStop(.5,'#071b1724');gradient.addColorStop(1,'#071b1700');s.fillStyle=gradient;s.fillRect(0,0,128,128);
  const shadowMat=new T.MeshBasicMaterial({map:new T.CanvasTexture(shadowCanvas),transparent:true,depthWrite:false});
- for(const [x,z,w,d] of [[-8.5,-10.5,5,1.2],[8.5,-10.5,5,1.2],[9.8,9,5,1.2],[4.8,-.15,1.1,1.1],[-5,1.25,.9,.8]]){const p=mesh(new T.PlaneGeometry(w,d),shadowMat,x,-.0034,z);p.rotation.x=-Math.PI/2;p.castShadow=p.receiveShadow=false;}
- for(const [x,z]of [[-8.8,-10.4],[8.7,-10.4],[10.4,9]])for(const [xx,w,d]of [[x,1.08,.50],[x+.78,.17,.17]]){const p=mesh(new T.PlaneGeometry(w,d),shadowMat,xx,.5104,z);p.rotation.x=-Math.PI/2;p.castShadow=p.receiveShadow=false;}
+ for(const [x,z,w,d] of [[-5.8,-10.5,5,1.2],[5.8,-10.5,5,1.2],[5.8,10.5,5,1.2],[4.8,-.15,1.1,1.1],[-5,1.25,.9,.8]]){const p=mesh(new T.PlaneGeometry(w,d),shadowMat,x,-.0034,z);p.rotation.x=-Math.PI/2;p.castShadow=p.receiveShadow=false;}
+ for(const [x,z]of [[-6.1,-10.4],[6.0,-10.4],[6.0,10.5]])for(const [xx,w,d]of [[x,1.08,.50],[x+.78,.17,.17]]){const p=mesh(new T.PlaneGeometry(w,d),shadowMat,xx,.5104,z);p.rotation.x=-Math.PI/2;p.castShadow=p.receiveShadow=false;}
 }

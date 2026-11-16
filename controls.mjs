@@ -1,4 +1,9 @@
 import {advance} from './physics.mjs';
+// Small wrist actions recover sooner than a full overhead stroke.
+export function strokeTiming(kind='clear',serveReceive=false){
+ const net=['net','netcross','push','netkill','drive','lift'].includes(kind);
+ return {contact:serveReceive?.04:net?.045:.07,recovery:kind==='serve'?.46:net?.29:['smash','slicesmash'].includes(kind)?.40:.36};
+}
 // Input intent is independent of the racket animation. A click may be early;
 // holding a button keeps the next return armed without repeated clicks.
 export class HitIntent {

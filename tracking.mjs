@@ -1,4 +1,8 @@
 const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
+export function manualLookTakeover(view,dy,now){
+ return Math.abs(dy)>.01?{manualPitch:view.pitch,autoPitchOffset:0,manualLookUntil:now+.65}:
+  {manualPitch:view.manualPitch,autoPitchOffset:view.autoPitchOffset,manualLookUntil:view.manualLookUntil||0};
+}
 export function angleDelta(from,to){return Math.atan2(Math.sin(to-from),Math.cos(to-from));}
 export function trackAngles(eye,ball,velocity={x:0,y:0,z:0},previousYaw=0){
  // Use the real horizontal distance, including near-vertical and behind-head
@@ -28,6 +32,6 @@ export function highBallOffset({eye,ball,yaw=0,manualPitch=0,fov=69,enabled=true
  return clamp(elevation-upperAngle-manualPitch,0,Math.max(0,1.545-manualPitch));
 }
 export function stepHighBallOffset(current,target,dt){
- const rate=target>current?11:3.2;
+ const rate=target>current?11:6;
  return current+(target-current)*(1-Math.exp(-rate*Math.max(0,dt)));
 }

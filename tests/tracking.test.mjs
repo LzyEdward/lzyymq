@@ -1,7 +1,19 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from 'three';
-import {trackAngles,stepTracking,angleDelta,highBallOffset} from '../tracking.mjs';
+import {trackAngles,stepTracking,angleDelta,highBallOffset,manualLookTakeover,stepHighBallOffset} from '../tracking.mjs';
+import {freeLook} from '../aiming.mjs';
+test('manual vertical input takes over the displayed lifted view without a jump or altered mouse scale',()=>{
+ const lifted={pitch:1.1,manualPitch:-.03,autoPitchOffset:1.13};
+ const manual=manualLookTakeover(lifted,40,10);
+ assert.equal(manual.manualPitch,1.1);assert.equal(manual.autoPitchOffset,0);assert.equal(manual.manualLookUntil,10.65);
+ const look=freeLook({yaw:.2,pitch:manual.manualPitch},0,40);
+ const ordinary=freeLook({yaw:.2,pitch:lifted.pitch},0,40);
+ assert.deepEqual(look,ordinary);assert.ok(look.pitch<lifted.pitch);
+ assert.equal(manualLookTakeover(lifted,0,10).autoPitchOffset,lifted.autoPitchOffset,'horizontal input keeps overhead visibility');
+ let offset=1;for(let i=0;i<60;i++)offset=stepHighBallOffset(offset,0,1/120);
+ assert.ok(offset<.06,'view relaxes promptly after hitting the high ball');
+});
 test('head tracking sees an overhead or behind-head shuttle instead of clamping at 37 degrees',()=>{
  const eye={x:0,y:1.69,z:4};
  for(const ball of [{x:0,y:8,z:3.8},{x:1,y:7,z:5.4},{x:-2,y:6,z:1}]){
