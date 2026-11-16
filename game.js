@@ -154,7 +154,7 @@ function createAudience(){
   const seatMat=material('#273d39',.92),railMat=material('#d8bf74',.55,.2),shirtPalette=['#d8e4d5','#b9d3c7','#e5c779','#d77c70','#7fa9c1','#d2b7db'];
   const seatGeo=new THREE.BoxGeometry(.42,.08,.28),bodyGeo=new THREE.CylinderGeometry(.09,.13,.34,7),headGeo=new THREE.SphereGeometry(.105,8,6),items=[];
   for(const side of [-1,1])for(let row=0;row<4;row++)for(let i=0;i<28;i++)items.push({x:side*(8.15+row*.72),z:-14.8+i*1.08+(row%2)*.2,y:.58+row*.3,color:shirtPalette[(i+row*2+(side>0?1:0))%shirtPalette.length],skin:['#b98568','#d3a07b','#8c5c4c'][i%3]});
-  for(let row=0;row<3;row++)for(let i=0;i<32;i++)items.push({x:-13.1+i*.84+(row%2)*.18,z:-14.1-row*.72,y:.56+row*.28,color:shirtPalette[(i+row*3)%shirtPalette.length],skin:i%2?'#b98568':'#d3a07b'});
+  for(let row=0;row<8;row++)for(let i=0;i<38;i++)items.push({x:-13.3+i*.72+(row%2)*.12,z:-12.05-row*.47,y:.56+row*.32,color:shirtPalette[(i+row*3)%shirtPalette.length],skin:i%2?'#b98568':'#d3a07b'});
   const seats=new THREE.InstancedMesh(seatGeo,seatMat,items.length),bodies=new THREE.InstancedMesh(bodyGeo,new THREE.MeshStandardMaterial({color:'#ffffff',roughness:.88}),items.length),heads=new THREE.InstancedMesh(headGeo,new THREE.MeshStandardMaterial({color:'#ffffff',roughness:.9}),items.length),dummy=new THREE.Object3D();
   const hairGeo=new THREE.SphereGeometry(.105,8,5,0,Math.PI*2,0,Math.PI/2),hairMat=new THREE.MeshStandardMaterial({color:'#ffffff',roughness:.92}),hair=new THREE.InstancedMesh(hairGeo,hairMat,items.length);
   const armGeo=new THREE.CylinderGeometry(.018,.026,.18,6),armMat=new THREE.MeshStandardMaterial({color:'#ffffff',roughness:.86}),arms=new THREE.InstancedMesh(armGeo,armMat,items.length*2);
@@ -167,6 +167,13 @@ function createAudience(){
   });
   seats.instanceMatrix.needsUpdate=bodies.instanceMatrix.needsUpdate=heads.instanceMatrix.needsUpdate=hair.instanceMatrix.needsUpdate=arms.instanceMatrix.needsUpdate=true;
   seats.castShadow=bodies.castShadow=heads.castShadow=hair.castShadow=arms.castShadow=false;audienceGroup.add(seats,bodies,heads,hair,arms);
+  // Stepped end-stand tiers anchor the crowd in the hall and frame the court.
+  const riser=material('#293632',.9),edge=material('#8c805f',.72,.08);
+  for(let row=0;row<8;row++){
+    const z=-12.05-row*.47,y=.33+row*.32;
+    box(27.6,.19,.48,riser,0,y,z,audienceGroup);
+    box(27.65,.025,.49,edge,0,y+.105,z,audienceGroup);
+  }
   for(const side of [-1,1])box(.05,.08,22,railMat,side*10.45,1.22,-12.8,audienceGroup);
   audienceGroup.userData.applyVenue=(spec={})=>{
     venueAccent=spec.accent||'#d8bf74';railMat.color.set(venueAccent);
@@ -187,14 +194,14 @@ function createHall() {
   const architecture=hallSurfaces(THREE);
   scene.background = new THREE.Color('#93a9b6');
   scene.fog = new THREE.FogExp2('#8296a0', .0045);
-  const hemi = new THREE.HemisphereLight('#eff7ff', '#8c7897', .9); scene.add(hemi);
-  const sun = new THREE.DirectionalLight('#fff5e5', 2.9); sun.position.set(-11, 16, -8); sun.castShadow = true;
+  const hemi = new THREE.HemisphereLight('#d9e0e2', '#504d58', .48); scene.add(hemi);
+  const sun = new THREE.DirectionalLight('#e8e0d3', 1.55); sun.position.set(-11, 16, -8); sun.castShadow = true;
   sun.shadow.mapSize.set(1024, 1024); sun.shadow.camera.left = -18; sun.shadow.camera.right = 18;
   sun.shadow.camera.top = 19; sun.shadow.camera.bottom = -19; sun.shadow.camera.near = .1; sun.shadow.camera.far = 65;
   sun.shadow.normalBias = .018; sun.shadow.bias = -.00012; sun.shadow.radius = 4; scene.add(sun);
-  const fill = new THREE.DirectionalLight('#e4e9ff', .9); fill.position.set(10, 10, 4); scene.add(fill);
-  const bounce=new THREE.DirectionalLight('#ffe1fa',.55);bounce.position.set(0,3,14);scene.add(bounce);
-  const overhead=new THREE.SpotLight('#fff6e7',135,27,Math.PI*.37,1,2);overhead.position.set(0,8,1);overhead.target.position.set(0,0,-2);overhead.castShadow=true;overhead.shadow.mapSize.set(512,512);overhead.shadow.normalBias=.018;overhead.shadow.bias=-.0001;scene.add(overhead,overhead.target);
+  const fill = new THREE.DirectionalLight('#d9deeb', .38); fill.position.set(10, 10, 4); scene.add(fill);
+  const bounce=new THREE.DirectionalLight('#d8c7ba',.18);bounce.position.set(0,3,14);scene.add(bounce);
+  const overhead=new THREE.SpotLight('#fff2d8',72,27,Math.PI*.34,.72,2);overhead.position.set(0,8,1);overhead.target.position.set(0,0,-2);overhead.castShadow=true;overhead.shadow.mapSize.set(512,512);overhead.shadow.normalBias=.018;overhead.shadow.bias=-.0001;scene.add(overhead,overhead.target);
   const floorTex = texture(1024, 1024, (c, w, h) => {
     c.fillStyle = '#a58b61'; c.fillRect(0, 0, w, h);
     for (let j = 0; j < 16; j++) for (let i = -1; i < 5; i++) {
@@ -266,12 +273,9 @@ function createHall() {
   // Long, soft window-shaped patches make the court read as an actual indoor space.
   const lightPatch = new THREE.MeshBasicMaterial({ color: '#fff5c6', transparent: true, opacity: .035, depthWrite: false });
   for (let z = -12; z < 15; z += 5) { const p = mesh(new THREE.PlaneGeometry(6, 2.5), lightPatch, -8, -.0035, z); p.rotation.x = -Math.PI / 2; p.rotation.z = .36; }
-  if(surfaceMaps.venuePhoto){
-    const ledFrame=material('#18152a',.32,.38);box(13.3,9.6,.24,ledFrame,0,5.55,-17.67);
-    const screenMaterial=new THREE.MeshBasicMaterial({map:surfaceMaps.venuePhoto,toneMapped:false});
-    const screen=new THREE.Mesh(new THREE.PlaneGeometry(12.8,9.35),screenMaterial);screen.position.set(0,5.55,-17.51);screen.name='Paris 2024 Olympic venue photo screen';scene.add(screen);
-  }
-  const banner = textPanel('PARIS 2024  ·  BADMINTON', 10, .82, { bg: '#251b43', color: '#f0ddff', size: 62, weight: 650 }); banner.position.set(0, 10.1, -17.54); scene.add(banner);venueSign=banner;
+  // A restrained event fascia sits above the modeled end stand; the arena has
+  // real depth and spectators instead of a flat billboard filling the wall.
+  const banner = textPanel('PARIS 2024  ·  BADMINTON', 6.2, .38, { bg: '#243330', color: '#d7c89d', size: 48, weight: 600 }); banner.position.set(0, 10.35, -17.54); scene.add(banner);venueSign=banner;
   const no = textPanel('01', 3, 3, { bg: '#203e3c', color: '#a6b5a2', size: 180, weight: 300 }); no.position.set(10.3, 4.2, -17.57); scene.add(no);
   const backBrand = textPanel('MOVE  WITH  THE  MOMENT.', 8, 1, { bg: '#24443e', color: '#93a796', size: 51 }); backBrand.position.set(0, 1.9, -17.6); scene.add(backBrand);
   const sideBrand = textPanel('羽 境  /  FEATHER COURT', 8.5, 1.2, { bg: '#24443e', color: '#9fb49e', size: 58 }); sideBrand.position.set(-14.45, 2.1, -3); sideBrand.rotation.y = Math.PI / 2; scene.add(sideBrand);
@@ -1047,9 +1051,9 @@ function updatePlayer(dt, pad = null) {
   if (state.comfortable) {
     const tracking = state.phase === 'rally';
     const goal=tracking?trackAngles({x:player.pos.x,y:1.69+state.jump,z:player.pos.z},ball.pos,ball.vel,state.yaw):{yaw:0,pitch:-.04};
-    // Keep the old vertical high-ball lift; comfortable tracking only follows
-    // horizontal direction, at a gentler rate to avoid camera sickness.
-    const angles=stepTracking(state,goal,dt,3.2);state.yaw=angles.yaw;
+    // Follow the shuttle in both axes. A damped response keeps head-high balls
+    // in frame while avoiding the old instant, nausea-inducing camera snap.
+    const angles=stepTracking(state,goal,dt,8,8);state.yaw=angles.yaw;state.pitch=angles.pitch;
   }
   const previousStep=player.step;player.step+=player.speed*dt;
   if(player.speed>.7&&state.jump===0&&Math.floor(player.step/.95)!==Math.floor(previousStep/.95)){noise(.055,210,.035+player.speed*.004,'lowpass',Math.sin(player.step*3)*.18);noise(.022,1200,.015,'bandpass');}
@@ -1179,9 +1183,9 @@ function updateCamera(dt) {
   const gait=groundedCameraOffset({speed:player.speed,lateral:player.vel.x,forward:player.vel.z,phase:player.step*6.6,intensity:state.motion});
   cameraGoal.set(player.renderPos.x+gait.x,1.69+state.jump-jumping.landing*.055+(state.jump>0?0:gait.y),player.renderPos.z+gait.z);
   camera.position.x=damp(camera.position.x,cameraGoal.x,27,dt);camera.position.y=damp(camera.position.y,cameraGoal.y,27,dt);camera.position.z=damp(camera.position.z,cameraGoal.z,27,dt);
-  const wantedAuto=highBallOffset({eye:camera.position,ball:ball.renderPos,yaw:state.yaw,manualPitch:state.manualPitch,fov:camera.fov,enabled:ballInFront});
+  const wantedAuto=highBallOffset({eye:camera.position,ball:ball.renderPos,yaw:state.yaw,manualPitch:state.manualPitch,fov:camera.fov,enabled:ballInFront&&!state.comfortable});
   state.autoPitchOffset=stepHighBallOffset(state.autoPitchOffset,wantedAuto,dt);
-  state.pitch=clamp(state.manualPitch+state.autoPitchOffset,-1.42,1.545);
+  if(!state.comfortable)state.pitch=clamp(state.manualPitch+state.autoPitchOffset,-1.42,1.545);
   state.impact*=Math.exp(-18*dt);camera.rotation.order='YXZ';camera.rotation.y=state.yaw;camera.rotation.x=state.pitch+Math.sin(state.timer*85)*state.impact;
   camera.rotation.z=damp(camera.rotation.z,gait.roll,16,dt);
   state.cameraPeak=Math.max(state.cameraPeak||0,camera.position.y);
@@ -1699,7 +1703,7 @@ async function init() {
     renderer = new THREE.WebGLRenderer({ canvas, antialias: !safeBoot, powerPreference: 'default' });
     renderer.setSize(innerWidth, innerHeight); renderer.setPixelRatio(renderProfile('auto',1,innerWidth,innerHeight,devicePixelRatio).ratio);
     renderer.shadowMap.enabled = false; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-    renderer.outputColorSpace = THREE.SRGBColorSpace; renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.02;
+    renderer.outputColorSpace = THREE.SRGBColorSpace; renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = .82;
     scene = new THREE.Scene(); camera = new THREE.PerspectiveCamera(68, innerWidth / innerHeight, .045, 100);
     bootStage='assets';boot({stage:'准备人物与球馆材质',percent:40});
     const onWarning=warning=>{console.warn('Optional court asset:',JSON.stringify(warning));boot({warning:true,label:warning.label,message:warning.message});};
