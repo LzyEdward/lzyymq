@@ -1,10 +1,11 @@
+import {ARENA} from './arena-layout.mjs';
 // Static, inward-facing insulated metal roof. Corrugation is actual geometry,
 // so overhead shots show a lit profile without a full-screen effects pass.
 export function roofGeometry(T){
- const width=30,depth=36,nx=480,nz=6,p=[],uv=[],index=[];
+ const width=ARENA.width,depth=ARENA.length,nx=300,nz=6,p=[],uv=[],index=[];
  for(let z=0;z<=nz;z++)for(let x=0;x<=nx;x++){
   const xx=-width/2+x/nx*width;
-  p.push(xx,10.48+Math.sin(xx*Math.PI*4)*.018,-depth/2+z/nz*depth);
+  p.push(xx,ARENA.roofY+Math.sin(xx*Math.PI*4)*.018,-depth/2+z/nz*depth);
   uv.push(x/nx,z/nz);
  }
  for(let z=0;z<nz;z++)for(let x=0;x<nx;x++){

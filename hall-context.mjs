@@ -1,5 +1,6 @@
+import {ARENA} from './arena-layout.mjs';
 // Six recessed window bays per side. The end walls stay solid.
-export const WINDOW_BAYS=Object.freeze([-12.5,-7.5,-2.5,2.5,7.5,12.5]);
+export const WINDOW_BAYS=Object.freeze(Array.from({length:11},(_,i)=>-27.5+i*5));
 
 export function createHallContext(T,scene){
  const metal=new T.MeshStandardMaterial({color:'#82918c',roughness:.43,metalness:.55}),dark=new T.MeshStandardMaterial({color:'#2c3b37',roughness:.85}),concrete=new T.MeshStandardMaterial({color:'#8e978b',roughness:.96});
@@ -34,13 +35,13 @@ export function createHallContext(T,scene){
    const x=rand()*2048,y=302+layer*40+rand()*57;p.fillStyle=['#7c9181','#6d836f','#647e66'][layer];p.beginPath();p.ellipse(x,y,12+rand()*41,20+rand()*45,rand()*.7,0,Math.PI*2);p.fill();
   }
   const map=new T.CanvasTexture(c);map.colorSpace=T.SRGBColorSpace;map.generateMipmaps=true;map.minFilter=T.LinearMipmapLinearFilter;
-  const back=add(new T.PlaneGeometry(44,14),new T.MeshBasicMaterial({map,color:'#c3d1c7'}),side*27,6,0);back.rotation.y=-side*Math.PI/2;back.name='Continuous outdoor panorama '+side;
+  const back=add(new T.PlaneGeometry(ARENA.length-2,16),new T.MeshBasicMaterial({map,color:'#aebcb7'}),side*(ARENA.halfWidth+7.5),10,0);back.rotation.y=-side*Math.PI/2;back.name='Continuous outdoor panorama '+side;
  }
  for(const side of [-1,1]){
-  panorama(side);box(13,.06,38,concrete,side*21.5,-.04,0);
+  panorama(side);box(13,.06,ARENA.length-4,concrete,side*(ARENA.halfWidth+2.5),-.04,0);
   // Real foreground depth: trunks/crowns shift relative to the distant panorama.
   for(let i=0;i<8;i++){
-   const z=-16+i*4.6+(side<0?.6:-.9),x=side*(19.5+(i%3)*.8),height=4.9+(i%3)*.44;
+   const z=-26+i*7.4+(side<0?.6:-.9),x=side*(25.6+(i%3)*.8),height=6.2+(i%3)*.5;
    add(trunk,bark,x,1.9,z);
    for(let k=0;k<3;k++){
     for(let layer=0;layer<3;layer++){const leaf=add(crown,leaves[(i+k)%3],x+Math.sin(i*3+k)*.7,height-.5+k*.38,z+Math.cos(k*2)*.65);leaf.name='Foreground leaf cluster';leaf.scale.set(1+(i%2)*.15,.9+k*.09,1);leaf.rotation.set(0,-side*Math.PI/2+(layer-1)*.78,(k-1)*.14);}
@@ -53,20 +54,20 @@ export function createHallContext(T,scene){
    for(const dz of [-1.15,0,1.15])box(.07,4.20,.022,dark,side*14.425,6.5,z+dz);
    for(const dz of [-1.73,.57])box(.035,.14,.028,metal,side*14.39,5.12,z+dz);
   }
-  for(const z of [-15,-10,-5,0,5,10,15]){
-   box(.08,.32,.50,metal,side*14.17,8.91,z);
-   for(const dz of [-.17,.17])for(const yy of [8.82,9.0]){const bolt=add(new T.CylinderGeometry(.018,.018,.018,6),dark,side*14.12,yy,z+dz);bolt.rotation.z=Math.PI/2;}
+  for(const z of WINDOW_BAYS){
+   box(.08,.32,.50,metal,side*23.9,16.25,z);
+   for(const dz of [-.17,.17])for(const yy of [16.16,16.34]){const bolt=add(new T.CylinderGeometry(.018,.018,.018,6),dark,side*23.86,yy,z+dz);bolt.rotation.z=Math.PI/2;}
   }
  }
  // Return-air grilles, conduit and door furniture break up the blank end wall.
  for(const x of [-9,9]){
-  box(2.3,.85,.12,metal,x,7.2,-17.68);box(2.15,.70,.13,dark,x,7.2,-17.59);
-  for(let i=0;i<10;i++)box(2.12,.027,.11,metal,x,6.9+i*.067,-17.50);
+  box(2.3,.85,.12,metal,x,16.0,-31.68);box(2.15,.70,.13,dark,x,16.0,-31.59);
+  for(let i=0;i<10;i++)box(2.12,.027,.11,metal,x,15.7+i*.067,-31.50);
  }
- box(28,.05,.045,metal,0,3.18,-17.67);
- for(const x of [-10.2,5.8]){
-  box(.38,.68,.018,metal,x,1.86,-17.375);box(.32,.61,.02,dark,x,1.86,-17.36);
-  box(.88,.045,.06,metal,x,1.08,-17.30);box(.33,.075,.09,metal,x+.32,2.42,-17.31);
-  for(const y of [.35,1.32,2.24])box(.037,.12,.045,metal,x-.68,y,-17.35);
+ box(42,.05,.045,metal,0,4.0,-31.67);
+ for(const x of [-18,18]){
+  box(.38,.68,.018,metal,x,2.0,-31.375);box(.32,.61,.02,dark,x,2.0,-31.36);
+  box(.88,.045,.06,metal,x,1.2,-31.30);box(.33,.075,.09,metal,x+.32,2.65,-31.31);
+  for(const y of [.35,1.42,2.45])box(.037,.12,.045,metal,x-.68,y,-31.35);
  }
 }

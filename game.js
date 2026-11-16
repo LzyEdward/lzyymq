@@ -21,6 +21,7 @@ import { swingPose, moveVelocity, groundedCameraOffset, serveSupportPose, suppor
 import { dressHall } from './hall-details.mjs';
 import { hallSurfaces } from './hall-surfaces.mjs';
 import {createHallContext} from './hall-context.mjs';
+import {ARENA} from './arena-layout.mjs';
 import {RACKET_SKINS,racketSkin} from './racket-catalog.mjs';
 import {createRacketGallery} from './racket-gallery.mjs';
 import { roofGeometry } from './roof-structure.mjs';
@@ -153,8 +154,8 @@ function createAudience(){
   audienceGroup=new THREE.Group();audienceGroup.name='International tournament audience';scene.add(audienceGroup);
   const seatMat=material('#273d39',.92),railMat=material('#d8bf74',.55,.2),shirtPalette=['#d8e4d5','#b9d3c7','#e5c779','#d77c70','#7fa9c1','#d2b7db'];
   const seatGeo=new THREE.BoxGeometry(.42,.08,.28),bodyGeo=new THREE.CylinderGeometry(.09,.13,.34,7),headGeo=new THREE.SphereGeometry(.105,8,6),items=[];
-  for(const side of [-1,1])for(let row=0;row<4;row++)for(let i=0;i<28;i++)items.push({x:side*(8.15+row*.72),z:-14.8+i*1.08+(row%2)*.2,y:.58+row*.3,color:shirtPalette[(i+row*2+(side>0?1:0))%shirtPalette.length],skin:['#b98568','#d3a07b','#8c5c4c'][i%3]});
-  for(let row=0;row<8;row++)for(let i=0;i<38;i++)items.push({x:-13.3+i*.72+(row%2)*.12,z:-12.05-row*.47,y:.56+row*.32,color:shirtPalette[(i+row*3)%shirtPalette.length],skin:i%2?'#b98568':'#d3a07b'});
+  for(const side of [-1,1])for(let row=0;row<ARENA.sideStandRows;row++)for(let i=0;i<ARENA.sideStandSeats;i++)items.push({x:side*(8.45+row*.72),z:-25.2+i*.96+(row%2)*.12,y:.64+row*.34,color:shirtPalette[(i+row*2+(side>0?1:0))%shirtPalette.length],skin:['#b98568','#d3a07b','#8c5c4c'][i%3]});
+  for(let row=0;row<ARENA.endStandRows;row++)for(let i=0;i<ARENA.endStandSeats;i++)items.push({x:-22+i*.82+(row%2)*.12,z:-11.8-row*.91,y:.62+row*.38,color:shirtPalette[(i+row*3)%shirtPalette.length],skin:i%2?'#b98568':'#d3a07b'});
   const seats=new THREE.InstancedMesh(seatGeo,seatMat,items.length),bodies=new THREE.InstancedMesh(bodyGeo,new THREE.MeshStandardMaterial({color:'#ffffff',roughness:.88}),items.length),heads=new THREE.InstancedMesh(headGeo,new THREE.MeshStandardMaterial({color:'#ffffff',roughness:.9}),items.length),dummy=new THREE.Object3D();
   const hairGeo=new THREE.SphereGeometry(.105,8,5,0,Math.PI*2,0,Math.PI/2),hairMat=new THREE.MeshStandardMaterial({color:'#ffffff',roughness:.92}),hair=new THREE.InstancedMesh(hairGeo,hairMat,items.length);
   const armGeo=new THREE.CylinderGeometry(.018,.026,.18,6),armMat=new THREE.MeshStandardMaterial({color:'#ffffff',roughness:.86}),arms=new THREE.InstancedMesh(armGeo,armMat,items.length*2);
@@ -169,12 +170,17 @@ function createAudience(){
   seats.castShadow=bodies.castShadow=heads.castShadow=hair.castShadow=arms.castShadow=false;audienceGroup.add(seats,bodies,heads,hair,arms);
   // Stepped end-stand tiers anchor the crowd in the hall and frame the court.
   const riser=material('#293632',.9),edge=material('#8c805f',.72,.08);
-  for(let row=0;row<8;row++){
-    const z=-12.05-row*.47,y=.33+row*.32;
-    box(27.6,.19,.48,riser,0,y,z,audienceGroup);
-    box(27.65,.025,.49,edge,0,y+.105,z,audienceGroup);
+  for(let row=0;row<ARENA.endStandRows;row++){
+    const z=-11.8-row*.91,y=.39+row*.38;
+    box(46,.26,.88,riser,0,y,z,audienceGroup);
+    box(46.05,.025,.89,edge,0,y+.142,z,audienceGroup);
   }
-  for(const side of [-1,1])box(.05,.08,22,railMat,side*10.45,1.22,-12.8,audienceGroup);
+  for(let row=0;row<ARENA.sideStandRows;row++)for(const side of [-1,1]){
+    const x=side*(8.45+row*.72),y=.39+row*.34;
+    box(.72,.26,53,riser,x,y,0,audienceGroup);
+    box(.73,.025,53.05,edge,x,y+.142,0,audienceGroup);
+  }
+  for(const side of [-1,1])box(.07,.18,54,railMat,side*8.18,1.42,0,audienceGroup);
   audienceGroup.userData.applyVenue=(spec={})=>{
     venueAccent=spec.accent||'#d8bf74';railMat.color.set(venueAccent);
     audienceGroup.userData.crowdLabel=spec.crowd||'观众看台';
@@ -196,8 +202,8 @@ function createHall() {
   scene.fog = new THREE.FogExp2('#8296a0', .0045);
   const hemi = new THREE.HemisphereLight('#d9e0e2', '#504d58', .48); scene.add(hemi);
   const sun = new THREE.DirectionalLight('#e8e0d3', 1.55); sun.position.set(-11, 16, -8); sun.castShadow = true;
-  sun.shadow.mapSize.set(1024, 1024); sun.shadow.camera.left = -18; sun.shadow.camera.right = 18;
-  sun.shadow.camera.top = 19; sun.shadow.camera.bottom = -19; sun.shadow.camera.near = .1; sun.shadow.camera.far = 65;
+  sun.shadow.mapSize.set(1024, 1024); sun.shadow.camera.left = -26; sun.shadow.camera.right = 26;
+  sun.shadow.camera.top = 21; sun.shadow.camera.bottom = -21; sun.shadow.camera.near = .1; sun.shadow.camera.far = 82;
   sun.shadow.normalBias = .018; sun.shadow.bias = -.00012; sun.shadow.radius = 4; scene.add(sun);
   const fill = new THREE.DirectionalLight('#d9deeb', .38); fill.position.set(10, 10, 4); scene.add(fill);
   const bounce=new THREE.DirectionalLight('#d8c7ba',.18);bounce.position.set(0,3,14);scene.add(bounce);
@@ -214,7 +220,7 @@ function createHall() {
   });
   floorTex.wrapS = floorTex.wrapT = THREE.RepeatWrapping; floorTex.repeat.set(6, 8);
   // Physics ground y=0; 4 mm PVC lies directly on wood. Lines are paint, not raised bars.
-  const floor = box(31, .2, 39, new THREE.MeshPhysicalMaterial({ map: surfaceMaps.wood||floorTex, normalMap:surfaceMaps.woodNormal||null,normalScale:new THREE.Vector2(.22,.22),roughnessMap:surfaceMaps.woodRough||null,roughness:.78,clearcoat:.12,clearcoatRoughness:.55 }), 0, -.104, 0); floor.receiveShadow = true;
+  const floor = box(ARENA.width, .2, ARENA.length, new THREE.MeshPhysicalMaterial({ map: surfaceMaps.wood||floorTex, normalMap:surfaceMaps.woodNormal||null,normalScale:new THREE.Vector2(.22,.22),roughnessMap:surfaceMaps.woodRough||null,roughness:.78,clearcoat:.12,clearcoatRoughness:.55 }), 0, -.104, 0); floor.receiveShadow = true;
   if(surfaceMaps.wood)floorTex.dispose();
   const courtTex=architecture.court;
   const mat = box(7.9, .004, 16.2, new THREE.MeshPhysicalMaterial({ map: courtTex, normalMap:architecture.courtNormal,normalScale:new THREE.Vector2(.16,.16),roughness:.88,clearcoat:.04,clearcoatRoughness:.88 }), 0, -.002, 0); mat.receiveShadow = true;mainCourtMaterial=mat.material;
@@ -230,25 +236,24 @@ function createHall() {
   lineAt(0, -6.7, 0, -1.98); lineAt(0, 1.98, 0, 6.7);
   const wall = material('#b7c4cf'), lower = material('#65538a'), black = material('#253732'), steel = material('#7b8291', .4, .6);
   wall.map=architecture.wall;wall.roughness=.95;lower.map=architecture.wall;lower.roughness=.91;
-  box(31, 11, .3, wall, 0, 5.3, -18); box(31, 11, .3, wall, 0, 5.3, 18);
+  box(ARENA.width, ARENA.wallHeight, .3, wall, 0, ARENA.wallHeight/2, -ARENA.halfLength); box(ARENA.width, ARENA.wallHeight, .3, wall, 0, ARENA.wallHeight/2, ARENA.halfLength);
   // Open apertures expose real exterior depth instead of wallpaper on the wall.
   for(const side of [-1,1]){
-    box(.3,4.4,36,wall,side*15,2.2,0);box(.3,2.15,36,wall,side*15,9.725,0);
-    for(const z of [-16.5,16.5])box(.3,4.25,3,wall,side*15,6.525,z);
-    for(const z of [-15,-10,-5,0,5,10,15])box(.3,4.25,.5,wall,side*15,6.525,z);
+    box(.3,4.4,ARENA.length-2,wall,side*ARENA.halfWidth,2.2,0);box(.3,4.8,ARENA.length-2,wall,side*ARENA.halfWidth,17.6,0);
+    for(const z of [-30,30])box(.3,11,3,wall,side*ARENA.halfWidth,9.5,z);
   }
-  box(30, 2.8, .2, lower, 0, 1.4, -17.78); box(30, 2.8, .2, lower, 0, 1.4, 17.78);
+  box(ARENA.width-1, 2.8, .2, lower, 0, 1.4, -ARENA.halfLength+.22); box(ARENA.width-1, 2.8, .2, lower, 0, 1.4, ARENA.halfLength-.22);
   const panelWood = material('#907a58');
   const windowMaterial=new THREE.MeshStandardMaterial({color:'#b7c9c4',transparent:true,opacity:.08,depthWrite:false,roughness:.3,metalness:.12,side:THREE.DoubleSide});
   for (const side of [-1, 1]) {
-    box(.3, 3.1, 36, panelWood, side * 14.7, 1.5, 0);
-    for (let z = -17.5; z < 18; z += .32) box(.04, 3.1, .038, black, side * 14.5, 1.5, z);
-    for (let z = -15; z <= 15; z += 5) {
-      box(.38, 10.6, .38, black, side * 14.4, 5.2, z);
-      if(z<15){
-        const pane=mesh(new THREE.PlaneGeometry(4.5,4.2),windowMaterial,side*14.6,6.5,z+2.5);pane.rotation.y=-side*Math.PI/2;
-        for(let yy=4.4;yy<=8.7;yy+=1.4)box(.08,.055,4.6,black,side*14.47,yy,z+2.5);
-        for(let zz=0;zz<=4.6;zz+=1.15)box(.08,4.3,.045,black,side*14.46,6.5,z+.2+zz);
+    box(.3, 3.1, ARENA.length-2, panelWood, side * 23.8, 1.5, 0);
+    for (let z = -30; z < 30; z += .32) box(.04, 3.1, .038, black, side * 23.6, 1.5, z);
+    for (let z = -27.5; z <= 27.5; z += 5) {
+      box(.38, 15.8, .38, black, side * 23.4, 10.2, z);
+      if(z<27.5){
+        const pane=mesh(new THREE.PlaneGeometry(4.5,10.6),windowMaterial,side*23.6,10.2,z+2.5);pane.rotation.y=-side*Math.PI/2;
+        for(let yy=5;yy<=15;yy+=2.5)box(.08,.055,4.6,black,side*23.47,yy,z+2.5);
+        for(let zz=0;zz<=4.6;zz+=1.15)box(.08,10.5,.045,black,side*23.46,10.2,z+.2+zz);
       }
     }
   }
@@ -256,34 +261,36 @@ function createHall() {
   mesh(roofGeometry(THREE),roof);
   const diffuserMaterial=new THREE.MeshStandardMaterial({map:architecture.diffuser,color:'#e6ebdf',emissiveMap:architecture.diffuser,emissive:'#eef2e1',emissiveIntensity:.8,roughness:.64});
   const lampRim=material('#d0d6c9',.55,.18);
-  for (let z = -15; z <= 15; z += 5) {
-    box(29, .26, .24, black, 0, 9.2, z);
-    cylinder(V(-14.3, 9.15, z), V(0, 10.4, z), .065, steel);
-    cylinder(V(14.3, 9.15, z), V(0, 10.4, z), .065, steel);
-    for (let x = -12; x <= 12; x += 3) cylinder(V(x, 9.2, z), V(x + 1.5, 9.9, z), .025, steel);
+  for (let z = -28; z <= 28; z += 7) {
+    box(48, .26, .24, black, 0, 17.6, z);
+    cylinder(V(-23.4, 17.55, z), V(0, ARENA.roofY, z), .065, steel);
+    cylinder(V(23.4, 17.55, z), V(0, ARENA.roofY, z), .065, steel);
+    for (let x = -21; x <= 21; x += 3) cylinder(V(x, 17.6, z), V(x + 1.5, 18.3, z), .025, steel);
     for (const x of [-7, 7]) {
-      cylinder(V(x, 9.2, z), V(x, 8.55, z), .018, steel);
-      box(.7, .1, 1.8, steel, x, 8.55, z);
-      box(.63,.024,1.68,lampRim,x,8.493,z);
-      box(.56, .014, 1.58, diffuserMaterial, x, 8.473, z);
-      for(const dz of [-.86,.86])box(.73,.035,.035,lampRim,x,8.49,z+dz);
+      for(const xx of [x-8,x+8]){
+        cylinder(V(xx, 17.6, z), V(xx, 16.8, z), .018, steel);
+        box(.7, .1, 1.8, steel, xx, 16.8, z);
+        box(.63,.024,1.68,lampRim,xx,16.743,z);
+        box(.56, .014, 1.58, diffuserMaterial, xx, 16.723, z);
+        for(const dz of [-.86,.86])box(.73,.035,.035,lampRim,xx,16.74,z+dz);
+      }
     }
   }
-  for (const x of [-10, 10]) box(.12, .12, 35, steel, x, 9.3, 0);
+  for (const x of [-22, 22]) box(.12, .12, 60, steel, x, 17.8, 0);
   // Long, soft window-shaped patches make the court read as an actual indoor space.
   const lightPatch = new THREE.MeshBasicMaterial({ color: '#fff5c6', transparent: true, opacity: .035, depthWrite: false });
-  for (let z = -12; z < 15; z += 5) { const p = mesh(new THREE.PlaneGeometry(6, 2.5), lightPatch, -8, -.0035, z); p.rotation.x = -Math.PI / 2; p.rotation.z = .36; }
+  for (let z = -28; z < 30; z += 7) { const p = mesh(new THREE.PlaneGeometry(7, 2.8), lightPatch, -11, -.0035, z); p.rotation.x = -Math.PI / 2; p.rotation.z = .36; }
   // A restrained event fascia sits above the modeled end stand; the arena has
   // real depth and spectators instead of a flat billboard filling the wall.
-  const banner = textPanel('PARIS 2024  ·  BADMINTON', 6.2, .38, { bg: '#243330', color: '#d7c89d', size: 48, weight: 600 }); banner.position.set(0, 10.35, -17.54); scene.add(banner);venueSign=banner;
-  const no = textPanel('01', 3, 3, { bg: '#203e3c', color: '#a6b5a2', size: 180, weight: 300 }); no.position.set(10.3, 4.2, -17.57); scene.add(no);
-  const backBrand = textPanel('MOVE  WITH  THE  MOMENT.', 8, 1, { bg: '#24443e', color: '#93a796', size: 51 }); backBrand.position.set(0, 1.9, -17.6); scene.add(backBrand);
-  const sideBrand = textPanel('羽 境  /  FEATHER COURT', 8.5, 1.2, { bg: '#24443e', color: '#9fb49e', size: 58 }); sideBrand.position.set(-14.45, 2.1, -3); sideBrand.rotation.y = Math.PI / 2; scene.add(sideBrand);
+  const banner = textPanel('PARIS 2024  ·  BADMINTON', 8, .48, { bg: '#243330', color: '#d7c89d', size: 48, weight: 600 }); banner.position.set(0, 18.2, -31.52); scene.add(banner);venueSign=banner;
+  const no = textPanel('01', 3, 3, { bg: '#203e3c', color: '#a6b5a2', size: 180, weight: 300 }); no.position.set(18, 7.2, -31.57); scene.add(no);
+  const backBrand = textPanel('MOVE  WITH  THE  MOMENT.', 9, 1, { bg: '#24443e', color: '#93a796', size: 51 }); backBrand.position.set(0, 3.4, -31.6); scene.add(backBrand);
+  const sideBrand = textPanel('羽 境  /  FEATHER COURT', 9, 1.2, { bg: '#24443e', color: '#9fb49e', size: 58 }); sideBrand.position.set(-23.45, 2.1, -3); sideBrand.rotation.y = Math.PI / 2; scene.add(sideBrand);
   const door = material('#1b302e');
-  for (const x of [-10.2, 5.8]) {
-    box(1.6, 2.65, .1, steel, x, 1.32, -17.54); box(1.45, 2.5, .12, door, x, 1.25, -17.45);
-    box(.06, .3, .06, steel, x + .48, 1.12, -17.34);
-    const exit = textPanel('EXIT →', 1.1, .28, { bg: '#2b6e47', color: '#e5f9cf', size: 90 }); exit.position.set(x, 2.95, -17.5); scene.add(exit);
+  for (const x of [-18, 18]) {
+    box(1.8, 3.1, .1, steel, x, 1.55, -31.54); box(1.65, 3, .12, door, x, 1.5, -31.45);
+    box(.06, .3, .06, steel, x + .52, 1.35, -31.34);
+    const exit = textPanel('EXIT →', 1.4, .34, { bg: '#2b6e47', color: '#e5f9cf', size: 90 }); exit.position.set(x, 3.35, -31.5); scene.add(exit);
   }
   const benchWood = material('#b6996a', .65), benchMetal = material('#223b35', .4, .5);
   if(surfaceMaps.wood){const benchGrain=surfaceMaps.wood.clone();benchGrain.repeat.set(1.1,.035);benchGrain.needsUpdate=true;benchWood.map=benchGrain;benchWood.color.set('#e2d1af');}
@@ -300,7 +307,7 @@ function createHall() {
   for (const z of [-6, 0, 6]) box(5, .0002, .025, faint, -10, -.0009, z);
   createAudience();createNet();dressHall(THREE,scene);createHallContext(THREE,scene);
   courtScore = textPanel('YOU   00  :  00   LIN', 4.2, .9, { bg: '#102823', color: '#def6a3', size: 70 });
-  courtScore.position.set(2.5, 4, -17.5); scene.add(courtScore);
+  courtScore.position.set(2.5, 4, -31.5); scene.add(courtScore);
 }
 
 function initRacketGallery(){

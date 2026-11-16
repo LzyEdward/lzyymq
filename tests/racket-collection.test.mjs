@@ -6,6 +6,7 @@ import {RACKET_SKINS,racketSkin} from '../racket-catalog.mjs';
 import {framePaint,frameFinishPixels} from '../racket-finish.mjs';
 import {createRacketModel,disposeRacketModel} from '../racket-model.mjs';
 import {WINDOW_BAYS,createHallContext} from '../hall-context.mjs';
+import {ARENA} from '../arena-layout.mjs';
 
 test('five referenced editions extend the existing collection and every finish is distinct and periodic',()=>{
  assert.equal(Object.keys(RACKET_SKINS).length,8);
@@ -41,7 +42,7 @@ test('skin selection preserves exact contact geometry and prints its own shaft m
 });
 
 test('exterior scenery has physical depth, bounded windows and a small static geometry budget',()=>{
- for(const z of WINDOW_BAYS)assert.ok(Math.abs(z)+2.25<15);
+ for(const z of WINDOW_BAYS)assert.ok(Math.abs(z)+2.25<ARENA.halfLength);
  const oldDocument=globalThis.document;
  globalThis.document={createElement:()=>({getContext:()=>({createLinearGradient:()=>({addColorStop(){}}),fillRect(){},beginPath(){},ellipse(){},fill(){}})})};
  try{
@@ -49,8 +50,8 @@ test('exterior scenery has physical depth, bounded windows and a small static ge
   scene.traverse(o=>{if(!o.isMesh)return;mats.add(o.material);triangles+=(o.geometry.index?.count||o.geometry.attributes.position.count)/3;});
   assert.ok(triangles<20000,`static context triangles: ${triangles}`);assert.equal(mats.size,9);
   const panoramas=scene.children.filter(o=>o.name.startsWith('Continuous outdoor panorama'));
-  assert.equal(panoramas.length,2);assert.ok(panoramas.every(o=>Math.abs(o.position.x)===27));
+  assert.equal(panoramas.length,2);assert.ok(panoramas.every(o=>Math.abs(o.position.x)===ARENA.halfWidth+7.5));
   const foreground=scene.children.filter(o=>o.name==='Foreground leaf cluster');assert.equal(foreground.length,144);
-  assert.ok(foreground.every(o=>Math.abs(o.position.x)>18&&Math.abs(o.position.x)<24));
+  assert.ok(foreground.every(o=>Math.abs(o.position.x)>24&&Math.abs(o.position.x)<29));
  }finally{globalThis.document=oldDocument;}
 });
