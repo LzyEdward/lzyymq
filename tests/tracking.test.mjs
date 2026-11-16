@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from 'three';
-import {trackAngles,stepTracking,angleDelta} from '../tracking.mjs';
+import {trackAngles,stepTracking,angleDelta,highBallOffset} from '../tracking.mjs';
 test('head tracking sees an overhead or behind-head shuttle instead of clamping at 37 degrees',()=>{
  const eye={x:0,y:1.69,z:4};
  for(const ball of [{x:0,y:8,z:3.8},{x:1,y:7,z:5.4},{x:-2,y:6,z:1}]){
@@ -16,4 +16,10 @@ test('tracking wraps yaw by the shortest angle and is independent of frame subdi
  const goal={yaw:-3.13,pitch:1.2};let a={yaw:3.13,pitch:0},b={...a};
  for(let i=0;i<60;i++)a=stepTracking(a,goal,1/120);for(let i=0;i<30;i++)b=stepTracking(b,goal,1/60);
  assert.ok(Math.abs(a.yaw-b.yaw)<1e-9&&Math.abs(a.pitch-b.pitch)<1e-9);
+});
+test('comfortable follow uses a slower horizontal response than full tracking',()=>{
+ const goal={yaw:1.2,pitch:1.1},current={yaw:0,pitch:0};
+ const fast=stepTracking(current,goal,1/60),gentle=stepTracking(current,goal,1/60,3.2);
+ assert.ok(Math.abs(gentle.yaw)<Math.abs(fast.yaw)*.25);
+ assert.equal(highBallOffset({eye:{x:0,y:1.69,z:4},ball:{x:0,y:7,z:2},yaw:0,manualPitch:0})>0,true,'vertical high-ball assistance remains separate');
 });

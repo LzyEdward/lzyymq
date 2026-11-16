@@ -56,7 +56,7 @@ const state = {
   matchPoints:11,server:'player',matchId:'',ratingDelta:null,smashes:0,winners:0,errors:0,lastShot:null,
   directionMode:'natural',tacticMessage:'',
   advanced:false,manualOverride:false,tutorial:false,tutorialStage:0,jumpPeak:0,
-  aiming:false,aimAlt:false,swingTarget:null,serveTarget:null,serveStyle:'low',lastLanding:null,racketStyle:'attack',racketSkin:'astrox100zz',playerStyle:'linDan08',opponentStyle:'allround',playerStats:playerStatsForStyle('linDan08'),opponentStats:normalizeSkills(),highBallAssist:false,manualPitch:-.03,autoPitchOffset:0,
+  aiming:false,aimAlt:false,swingTarget:null,serveTarget:null,serveStyle:'low',lastLanding:null,racketStyle:'attack',racketSkin:'astrox100zz',playerStyle:'linDan08',opponentStyle:'allround',playerStats:playerStatsForStyle('linDan08'),opponentStats:normalizeSkills(),highBallAssist:true,manualPitch:-.03,autoPitchOffset:0,
   tournamentId:'',tournamentRound:0,tournamentOpponent:'',tournamentVenue:'',tournamentAccent:'#d8bf74',
   currentOpponentId:'',
 };
@@ -1047,7 +1047,9 @@ function updatePlayer(dt, pad = null) {
   if (state.comfortable) {
     const tracking = state.phase === 'rally';
     const goal=tracking?trackAngles({x:player.pos.x,y:1.69+state.jump,z:player.pos.z},ball.pos,ball.vel,state.yaw):{yaw:0,pitch:-.04};
-    const angles=stepTracking(state,goal,dt);state.yaw=angles.yaw;state.pitch=angles.pitch;
+    // Keep the old vertical high-ball lift; comfortable tracking only follows
+    // horizontal direction, at a gentler rate to avoid camera sickness.
+    const angles=stepTracking(state,goal,dt,3.2);state.yaw=angles.yaw;
   }
   const previousStep=player.step;player.step+=player.speed*dt;
   if(player.speed>.7&&state.jump===0&&Math.floor(player.step/.95)!==Math.floor(previousStep/.95)){noise(.055,210,.035+player.speed*.004,'lowpass',Math.sin(player.step*3)*.18);noise(.022,1200,.015,'bandpass');}
@@ -1177,9 +1179,9 @@ function updateCamera(dt) {
   const gait=groundedCameraOffset({speed:player.speed,lateral:player.vel.x,forward:player.vel.z,phase:player.step*6.6,intensity:state.motion});
   cameraGoal.set(player.renderPos.x+gait.x,1.69+state.jump-jumping.landing*.055+(state.jump>0?0:gait.y),player.renderPos.z+gait.z);
   camera.position.x=damp(camera.position.x,cameraGoal.x,27,dt);camera.position.y=damp(camera.position.y,cameraGoal.y,27,dt);camera.position.z=damp(camera.position.z,cameraGoal.z,27,dt);
-  const wantedAuto=highBallOffset({eye:camera.position,ball:ball.renderPos,yaw:state.yaw,manualPitch:state.manualPitch,fov:camera.fov,enabled:ballInFront&&!state.comfortable});
+  const wantedAuto=highBallOffset({eye:camera.position,ball:ball.renderPos,yaw:state.yaw,manualPitch:state.manualPitch,fov:camera.fov,enabled:ballInFront});
   state.autoPitchOffset=stepHighBallOffset(state.autoPitchOffset,wantedAuto,dt);
-  if(!state.comfortable)state.pitch=clamp(state.manualPitch+state.autoPitchOffset,-1.42,1.545);
+  state.pitch=clamp(state.manualPitch+state.autoPitchOffset,-1.42,1.545);
   state.impact*=Math.exp(-18*dt);camera.rotation.order='YXZ';camera.rotation.y=state.yaw;camera.rotation.x=state.pitch+Math.sin(state.timer*85)*state.impact;
   camera.rotation.z=damp(camera.rotation.z,gait.roll,16,dt);
   state.cameraPeak=Math.max(state.cameraPeak||0,camera.position.y);
@@ -1538,7 +1540,7 @@ function restorePreferences(){
   $('#eagle-auto').addEventListener('change',savePreferences);
   try{if(!testing)career=parseCareer(localStorage.getItem(CAREER_KEY));}catch{}loadTour();updateCareerUI();let prefs={};
   try{if(!testing)prefs=JSON.parse(localStorage.getItem('feather-court-3-settings')||'{}');}catch{}
-  if(prefs.assistSettingsVersion!==1){prefs.assists=false;prefs.comfortable=false;prefs.highBallAssist=false;prefs.scheme='manual';$('#control-scheme').value='manual';}
+  if(prefs.assistSettingsVersion!==1){prefs.assists=false;prefs.comfortable=false;prefs.highBallAssist=true;prefs.scheme='manual';$('#control-scheme').value='manual';}
   for(const [key,id] of [['points','match-points'],['difficulty','difficulty'],['scheme','control-scheme'],['profile','opponent-profile'],['quality','quality'],['playerStyle','player-style'],['opponentStyle','opponent-style']])if(prefs[key]&&[...$('#'+id).options].some(o=>o.value===prefs[key]))$('#'+id).value=prefs[key];
   if(prefs.performanceVersion!==1)$('#quality').value='auto';
   setFocus(prefs.focus||false);state.motion=Number.isFinite(prefs.motion)?clamp(prefs.motion,0,1):.35;$('#motion').value=state.motion;

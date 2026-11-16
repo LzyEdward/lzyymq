@@ -8,8 +8,8 @@ export function trackAngles(eye,ball,velocity={x:0,y:0,z:0},previousYaw=0){
  const yaw=horizontal<.24?previousYaw:Math.atan2(-dx,-dz);
  return {yaw,pitch:clamp(Math.atan2(dy,Math.max(.015,horizontal)),-1.42,1.545)};
 }
-export function stepTracking(current,goal,dt){
- const alpha=1-Math.exp(-18*Math.max(0,dt));
+export function stepTracking(current,goal,dt,rate=18){
+ const alpha=1-Math.exp(-Math.max(.1,rate)*Math.max(0,dt));
  return {yaw:current.yaw+angleDelta(current.yaw,goal.yaw)*alpha,pitch:current.pitch+(goal.pitch-current.pitch)*alpha};
 }
 
