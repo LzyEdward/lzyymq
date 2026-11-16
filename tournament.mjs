@@ -36,9 +36,27 @@ export const TOUR_STARS = freeze({
   tommy: freeze({id:'tommy',name:'汤米·苏吉亚托',latin:'Tommy Sugiarto',country:'印度尼西亚',era:'2006–2020',profile:'defend',style:'chenLong',kit:'chenLong',difficulty:'expert',seed:30,signature:'稳健后场和顽强防守'}),
   chenHong: freeze({id:'chenHong',name:'陈宏',latin:'Chen Hong',country:'中国',era:'1996–2007',profile:'attack',style:'linDan08',kit:'linDan08',difficulty:'expert',seed:31,signature:'快速抢攻和连续点杀'}),
   sunJun: freeze({id:'sunJun',name:'孙俊',latin:'Sun Jun',country:'中国',era:'1995–2001',profile:'counter',style:'allround',kit:'allround',difficulty:'expert',seed:32,signature:'左手突击与底线控制'}),
+  padukone: freeze({id:'padukone',name:'普拉卡什·帕迪科内',latin:'Prakash Padukone',country:'印度',era:'1978–1991',profile:'balanced',style:'allround',kit:'allround',difficulty:'expert',seed:33,signature:'全场平衡与细腻控球'}),
+  sony: freeze({id:'sony',name:'索尼·昆科罗',latin:'Sony Dwi Kuncoro',country:'印度尼西亚',era:'2000–2017',profile:'counter',style:'leeChongWei',kit:'leeChongWei',difficulty:'advanced',seed:34,signature:'快速反击与突然变线'}),
+  peterRasmussen: freeze({id:'peterRasmussen',name:'彼得·拉斯姆森',latin:'Peter Rasmussen',country:'丹麦',era:'1990–2000',profile:'attack',style:'linDan08',kit:'linDan08',difficulty:'expert',seed:35,signature:'后场进攻与连续下压'}),
+  parkSungHwan: freeze({id:'parkSungHwan',name:'朴成奂',latin:'Park Sung-hwan',country:'韩国',era:'2002–2013',profile:'defend',style:'chenLong',kit:'chenLong',difficulty:'advanced',seed:36,signature:'快速防守与平抽反击'}),
+  huYun: freeze({id:'huYun',name:'胡赟',latin:'Hu Yun',country:'中国香港',era:'2003–2016',profile:'counter',style:'chenLong',kit:'chenLong',difficulty:'expert',seed:37,signature:'落点控制与耐心相持'}),
+  ngKaLong: freeze({id:'ngKaLong',name:'伍家朗',latin:'Ng Ka Long Angus',country:'中国香港',era:'2012–至今',profile:'balanced',style:'allround',kit:'allround',difficulty:'advanced',seed:38,signature:'快速连贯与突击抢点'}),
+  kantaphon: freeze({id:'kantaphon',name:'坎塔蓬',latin:'Kantaphon Wangcharoen',country:'泰国',era:'2014–至今',profile:'attack',style:'leeChongWei',kit:'leeChongWei',difficulty:'advanced',seed:39,signature:'提速突击与前场压迫'}),
+  tsuneyama: freeze({id:'tsuneyama',name:'常山干太',latin:'Kanta Tsuneyama',country:'日本',era:'2014–至今',profile:'defend',style:'chenLong',kit:'chenLong',difficulty:'advanced',seed:40,signature:'多拍防守与线路耐心'}),
+  tanongsak: freeze({id:'tanongsak',name:'塔农萨克',latin:'Tanongsak Saensomboonsuk',country:'泰国',era:'2007–2019',profile:'attack',style:'linDan08',kit:'linDan08',difficulty:'expert',seed:41,signature:'后场突击与主动抢攻'}),
+  wongWingKi: freeze({id:'wongWingKi',name:'黄永棋',latin:'Wong Wing Ki',country:'中国香港',era:'2007–2020',profile:'counter',style:'leeChongWei',kit:'leeChongWei',difficulty:'expert',seed:42,signature:'高速防反与斜线变化'}),
+  hsuJenHao: freeze({id:'hsuJenHao',name:'许仁豪',latin:'Hsu Jen-hao',country:'中国台北',era:'2009–2022',profile:'balanced',style:'allround',kit:'allround',difficulty:'expert',seed:43,signature:'全场覆盖与节奏调动'}),
+  kashyap: freeze({id:'kashyap',name:'帕鲁帕利·卡夏普',latin:'Parupalli Kashyap',country:'印度',era:'2006–2020',profile:'attack',style:'leeChongWei',kit:'leeChongWei',difficulty:'expert',seed:44,signature:'前场压迫与快速突击'}),
+  sanyam: freeze({id:'sanyam',name:'西蒙·桑托索',latin:'Simon Santoso',country:'印度尼西亚',era:'2000–2016',profile:'defend',style:'chenLong',kit:'chenLong',difficulty:'expert',seed:45,signature:'稳健防守与反击落点'}),
+  saiPraneeth: freeze({id:'saiPraneeth',name:'赛·普拉尼斯',latin:'B. Sai Praneeth',country:'印度',era:'2009–2022',profile:'attack',style:'leeChongWei',kit:'leeChongWei',difficulty:'advanced',seed:46,signature:'快速抢攻与连续提速'}),
+  leeDongKeun: freeze({id:'leeDongKeun',name:'李东根',latin:'Lee Dong-keun',country:'韩国',era:'2007–2018',profile:'counter',style:'chenLong',kit:'chenLong',difficulty:'advanced',seed:47,signature:'防守反击与网前变化'}),
+  zhaoJianHua: freeze({id:'zhaoJianHua',name:'赵剑华',latin:'Zhao Jianhua',country:'中国',era:'1983–1992',profile:'attack',style:'taufik',kit:'taufik',difficulty:'expert',seed:48,signature:'手腕突击与网前细节'}),
 });
 
-export const TOUR_ROSTER = freeze(Object.values(TOUR_STARS).sort((a,b)=>a.seed-b.seed).map(p=>p.id));
+// Guest rivals enlarge exhibition matchmaking without changing the 32-slot event format.
+export const TOUR_ROSTER = freeze(Object.values(TOUR_STARS).filter(p=>p.seed<=32).sort((a,b)=>a.seed-b.seed).map(p=>p.id));
+export const EXHIBITION_ROSTER = freeze(Object.values(TOUR_STARS).sort((a,b)=>a.seed-b.seed).map(p=>p.id));
 
 export const TOUR_EVENTS = freeze([
   freeze({id:'allEngland',name:'全英公开赛',english:'YONEX All England Open',city:'伯明翰',venue:'Utilita Arena Birmingham',surface:'传统木地板',crowd:'经典满场',accent:'#d8bf74',courtTone:'#2b6658',runoffTone:'#214b43',rounds:['32强','16强','8强','半决赛','决赛'],draw:TOUR_ROSTER}),
@@ -46,7 +64,7 @@ export const TOUR_EVENTS = freeze([
   freeze({id:'china',name:'中国公开赛',english:'China Open',city:'常州',venue:'常州奥体中心',surface:'中速地胶',crowd:'红色主场',accent:'#d64545',courtTone:'#2b5d55',runoffTone:'#4a302f',rounds:['32强','16强','8强','半决赛','决赛'],draw:TOUR_ROSTER}),
   freeze({id:'malaysia',name:'马来西亚公开赛',english:'Malaysia Open',city:'吉隆坡',venue:'Axiata Arena',surface:'快节奏地胶',crowd:'蓝金看台',accent:'#65b8d9',courtTone:'#205b70',runoffTone:'#204559',rounds:['32强','16强','8强','半决赛','决赛'],draw:TOUR_ROSTER}),
   freeze({id:'worlds',name:'世界羽联世锦赛',english:'BWF World Championships',city:'巴黎',venue:'Arena Paris Sud',surface:'中性比赛地胶',crowd:'世界聚光灯',accent:'#b88de0',courtTone:'#3b4b69',runoffTone:'#2d3555',rounds:['32强','16强','8强','半决赛','决赛'],draw:TOUR_ROSTER}),
-  freeze({id:'olympics',name:'奥运会羽毛球赛',english:'Olympic Games Badminton',city:'洛杉矶',venue:'LA Olympic Arena',surface:'奥运专用地胶',crowd:'奥运全场',accent:'#e7c55d',courtTone:'#286355',runoffTone:'#315644',rounds:['32强','16强','8强','半决赛','决赛'],draw:TOUR_ROSTER}),
+  freeze({id:'olympics',name:'巴黎奥运会羽毛球赛',english:'Paris 2024 Olympic Badminton',city:'巴黎',venue:'Arena Porte de la Chapelle',surface:'奥运赛时场地',crowd:'巴黎奥运满场',accent:'#c6a7f2',courtTone:'#35a89b',runoffTone:'#7855a8',rounds:['32强','16强','8强','半决赛','决赛'],draw:TOUR_ROSTER}),
 ]);
 
 export function star(id){return TOUR_STARS[id]||TOUR_STARS.peterGade;}
@@ -56,6 +74,17 @@ const SEED_ORDER=[1,32,16,17,8,25,9,24,4,29,13,20,5,28,12,21,2,31,15,18,7,26,10,
 const hashSeed=text=>{let h=2166136261;for(const c of text)h=Math.imul(h^c.charCodeAt(0),16777619);return h>>>0||1;};
 const seededRandom=seed=>{let x=seed>>>0;return()=>{x^=x<<13;x^=x>>>17;x^=x<<5;return(x>>>0)/4294967296;};};
 const seedOf=id=>id==='player'?1:star(id).seed;
+export function chooseRandomOpponent(roster=EXHIBITION_ROSTER,recentIds=[],random=Math.random){
+  const candidates=roster.filter(id=>TOUR_STARS[id]);
+  if(!candidates.length)return 'peterGade';
+  const recent=new Set(recentIds);
+  const fresh=candidates.filter(id=>!recent.has(id));
+  const pool=fresh.length?fresh:candidates;
+  return pool[Math.min(pool.length-1,Math.floor(Math.max(0,Math.min(.999999,random()))*pool.length))];
+}
+function seededShuffle(items,random){
+  const out=[...items];for(let i=out.length-1;i>0;i--){const j=Math.floor(random()*(i+1));[out[i],out[j]]=[out[j],out[i]];}return out;
+}
 
 function simulateMatch(match,random){
   if(match.player||match.winner||!match.a||!match.b)return;
@@ -66,13 +95,15 @@ function simulateMatch(match,random){
 
 // A complete seeded 32-slot knockout draw. The player takes seed 1 and all
 // other 31 historic/current athletes occupy their published seed positions.
-export function buildBracket(current,seed=hashSeed(current.id)){
-  const bySeed=new Map(current.draw.map(id=>[star(id).seed,id]));bySeed.set(1,'player');
+export function buildBracket(current,seed=hashSeed(current.id),recentOpponents=[]){
   const random=seededRandom(seed),rounds=[],opening=[];
-  for(let i=0;i<SEED_ORDER.length;i+=2){
-    const a=bySeed.get(SEED_ORDER[i]),b=bySeed.get(SEED_ORDER[i+1]);
-    opening.push({a,b,winner:null,player:a==='player'||b==='player'});
-  }
+  const opponentId=chooseRandomOpponent(current.draw,recentOpponents,random);
+  // The player occupies one of the 32 slots, so the event draw contributes
+  // only 31 athletes. Keep the chosen first-round rival, then pair 30 others.
+  const remaining=seededShuffle(current.draw.filter(id=>id!==opponentId),random).slice(0,30);
+  opening.push({a:'player',b:opponentId,winner:null,player:true});
+  for(let i=0;i<remaining.length;i+=2)opening.push({a:remaining[i],b:remaining[i+1],winner:null,player:false});
+  const shuffledMatches=seededShuffle(opening.slice(1),random);opening.splice(1,opening.length-1,...shuffledMatches);
   rounds.push(opening);
   for(let r=1;r<current.rounds.length;r++){
     const previous=rounds[r-1],matches=[];
@@ -93,9 +124,10 @@ export function buildBracket(current,seed=hashSeed(current.id)){
   return rounds;
 }
 
-export function freshTour(eventId='allEngland'){
+export function freshTour(eventId='allEngland',{recentOpponents=[]}={}){
   const current=event(eventId),startedAt=new Date().toISOString();
-  const bracket=buildBracket(current,hashSeed(`${current.id}:${startedAt}`));
+  const seed=hashSeed(`${current.id}:${startedAt}:${Math.random()}`);
+  const bracket=buildBracket(current,seed,recentOpponents);
   return {eventId:current.id,roundIndex:0,opponentId:bracket[0][0].b,wins:0,losses:0,completed:false,eliminated:false,startedAt,bracket};
 }
 

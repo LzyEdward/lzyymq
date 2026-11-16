@@ -1,8 +1,8 @@
-import { sculptGrip } from './hand-sculpt.mjs?v=2ff2bafddd7dc52f';
-import {createArmKinematics} from './first-person-arm.mjs?v=266661bd87fc52e1';
-import {createSkinnedPlayerArm,playerArmAvailable} from './player-arm.mjs?v=534b92310284e328';
-import {createHandSkin} from './hand-surface.mjs?v=e4f19a20f78b897f';
-import {ARM_NAILS} from './arm-nails.mjs?v=f8ad14caebc6a156';
+import { sculptGrip } from './hand-sculpt.mjs';
+import {createArmKinematics} from './first-person-arm.mjs';
+import {createSkinnedPlayerArm,playerArmAvailable} from './player-arm.mjs';
+import {createHandSkin} from './hand-surface.mjs';
+import {ARM_NAILS} from './arm-nails.mjs';
 
 // A complete arm already contains its palm and fingers. Only its material and
 // baked nail attachments are needed; don't download or sculpt a hidden hand.

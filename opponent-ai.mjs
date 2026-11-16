@@ -1,4 +1,4 @@
-import {matchIntent,characterWeight} from './match-mind.mjs?v=e5b4c578b264237a';
+import {matchIntent,characterWeight} from './match-mind.mjs';
 const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
 
 // Weaknesses are deliberately expressed as readable tactical lanes.  They

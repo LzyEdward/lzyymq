@@ -1,4 +1,4 @@
-import {advance} from './physics.mjs?v=e3adc2276e91027a';
+import {advance} from './physics.mjs';
 // Input intent is independent of the racket animation. A click may be early;
 // holding a button keeps the next return armed without repeated clicks.
 export class HitIntent {
@@ -13,6 +13,23 @@ export class HitIntent {
   release(source) { this.sources.delete(source); this.sourceKinds.delete(source); }
   armed(now) { return this.sources.size > 0 || now <= this.pendingUntil; }
   consume() { this.pendingUntil = -Infinity; this.kind = [...this.sourceKinds.values()].at(-1) || null; }
+}
+
+// Optional automatic returns are tracked per incoming rally. A manual swing
+// takes priority, and disabling the setting cancels any not-yet-started return.
+export class AutoReturnAssist {
+  constructor() { this.rally = -1; this.pending = false; }
+  update({ enabled, phase, active, lastHitter, rally, manualIntent = false, swinging = false }) {
+    if (!enabled || phase !== 'rally' || !active || lastHitter !== 'opponent') {
+      this.pending = false;
+      if (!enabled || phase !== 'rally' || lastHitter === 'player') this.rally = -1;
+      return false;
+    }
+    if (this.rally !== rally) { this.rally = rally; this.pending = true; }
+    if (manualIntent || swinging) { this.pending = false; return false; }
+    return this.pending;
+  }
+  consume() { this.pending = false; }
 }
 
 export function canContact({ position, velocity, player, active, lastHitter, assisted, jump = 0, yaw = 0, preparing = false, reachBonus = 0 }) {

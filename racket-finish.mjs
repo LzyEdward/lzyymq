@@ -1,5 +1,5 @@
 // Paint lies on the existing frame UVs; no floating decals or extra draw calls.
-import {RACKET_SKINS,racketSkin} from './racket-catalog.mjs?v=99e3093fcfbf9bed';
+import {RACKET_SKINS,racketSkin} from './racket-catalog.mjs';
 const navy=[17,30,48],blue=[39,101,168],ice=[141,185,219],white=[232,239,244],orange=[239,99,38];
 const fract=x=>x-Math.floor(x);
 const rgbHex=hex=>[1,3,5].map(i=>parseInt(hex.slice(i,i+2),16));

@@ -4,6 +4,7 @@
 .learn-launch span{font-size:10px;color:#edf2d4b0;letter-spacing:.5px}.learn-launch b{font-size:11px;color:var(--lime);font-weight:500;white-space:nowrap}.learn-launch:hover{background:#dff3a324}
 #advanced-btn{position:absolute;top:79px;right:30px;padding:8px 10px;border:1px solid #eef4d526;border-radius:4px;color:#dee7c99c;background:#102d2777;font-size:9px;pointer-events:auto}
 body:not(.advanced-controls) #tactics,body:not(.advanced-controls) #aim-widget,body:not(.advanced-controls) #action-tools,body:not(.advanced-controls) .shot-bar{display:none}
+.shot-bar kbd[data-keypad]::after{content:" / 小" attr(data-keypad);font-size:.72em;opacity:.72;letter-spacing:0}
 body:not(.advanced-controls) #reticle{display:none}
 body:not(.advanced-controls) #stance-readout{top:117px}
 body.playing.controls-visible #hud>#control-dock,body.playing.controls-visible #hud>#focus-btn{display:block!important}

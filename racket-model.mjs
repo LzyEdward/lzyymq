@@ -1,10 +1,10 @@
 // ASTROX 100ZZ Dark Navy (554). Shape and asymmetric paint reference:
 // https://badmintonworldbalcatta.com/products/astrox-100zz-dark-navy-4ug5
-import {createWovenStrings} from './woven-strings.mjs?v=0a67d8f314b8c856';
-import {createFrameFinish} from './racket-finish.mjs?v=64131ee4a5624476';
-import {racketHeadPoint,createRacketFrame} from './racket-frame.mjs?v=ea843caa7bf9dc17';
-import {RACKET_PALETTES,racketSkin} from './racket-catalog.mjs?v=99e3093fcfbf9bed';
-export {RACKET_PALETTES} from './racket-catalog.mjs?v=99e3093fcfbf9bed';
+import {createWovenStrings} from './woven-strings.mjs';
+import {createFrameFinish} from './racket-finish.mjs';
+import {racketHeadPoint,createRacketFrame} from './racket-frame.mjs';
+import {RACKET_PALETTES,racketSkin} from './racket-catalog.mjs';
+export {RACKET_PALETTES} from './racket-catalog.mjs';
 export function disposeRacketModel(root){
  const resources=new Set();root.traverse(o=>{
   if(o.geometry)resources.add(o.geometry);

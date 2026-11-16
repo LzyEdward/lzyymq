@@ -1,13 +1,14 @@
-import {boundedAsset} from './asset-loading.mjs?v=cbec86138c004352';
+import {boundedAsset} from './asset-loading.mjs';
 // Local PBR surfaces and a restrained depth-based contact-occlusion pass.
 export async function loadSurfaceMaps(THREE,renderer,{safe=false,onWarning=()=>{}}={}){
  if(safe)return {};
  const loader=new THREE.TextureLoader(),anisotropy=Math.min(8,renderer.capabilities.getMaxAnisotropy());
  async function map(file,repeat,color=false){let expired=false;const result=await boundedAsset(async()=>{const t=await loader.loadAsync('./assets/textures/'+file);if(expired){t.dispose();return null;}t.wrapS=t.wrapT=THREE.RepeatWrapping;t.repeat.set(...repeat);t.anisotropy=anisotropy;if(color)t.colorSpace=THREE.SRGBColorSpace;return t;},{timeout:15000,label:file,onWarning:warning=>{expired=true;onWarning(warning);}});return result;}
- const [wood,woodNormal,woodRough,athleteSkin]=await Promise.all([
+ const [wood,woodNormal,woodRough,athleteSkin,venuePhoto]=await Promise.all([
   map('wooden_floor_02_Diffuse.jpg',[7.5,9.5],true),map('wooden_floor_02_nor_gl.jpg',[7.5,9.5]),map('wooden_floor_02_Rough.jpg',[7.5,9.5]),
   map('athlete-skin.jpg',[1,1],true),
- ]);return {wood,woodNormal,woodRough,athleteSkin};
+  (()=>{let expired=false;return boundedAsset(async()=>{const photo=await loader.loadAsync('./assets/venues/paris-2024-badminton.jpg');if(expired){photo.dispose();return null;}photo.colorSpace=THREE.SRGBColorSpace;photo.anisotropy=anisotropy;return photo;},{timeout:12000,label:'巴黎奥运球馆照片',onWarning:warning=>{expired=true;onWarning(warning);}});})(),
+ ]);return {wood,woodNormal,woodRough,athleteSkin,venuePhoto};
 }
 
 export function createEnvironment(THREE,renderer,scene){

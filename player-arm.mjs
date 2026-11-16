@@ -1,8 +1,8 @@
-import * as source from './assets/athlete-data.mjs?v=7f28ea9b22f91323';
-import {boundedAsset,decodeAssetBuffer} from './asset-loading.mjs?v=cbec86138c004352';
-import {handPaths,supportFingerPaths} from './hand-pose.mjs?v=5a35072752929282';
-import {ARM_WRIST,ARM_ELBOW} from './first-person-arm.mjs?v=266661bd87fc52e1';
-import {handUV} from './hand-surface.mjs?v=e4f19a20f78b897f';
+import * as source from './assets/athlete-data.mjs';
+import {boundedAsset,decodeAssetBuffer} from './asset-loading.mjs';
+import {handPaths,supportFingerPaths} from './hand-pose.mjs';
+import {ARM_WRIST,ARM_ELBOW} from './first-person-arm.mjs';
+import {handUV} from './hand-surface.mjs';
 let armGeometry=null;
 export const playerArmAvailable=()=>armGeometry!==null;
 export const ARM_BONES=source.bones.filter(b=>/^(?:upperarm01|lowerarm01|wrist|finger\d-\d)\.R$/.test(b.name)).map(b=>b.name);

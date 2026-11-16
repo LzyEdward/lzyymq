@@ -1,5 +1,5 @@
-import {RACKET_SKINS,racketSkin} from './racket-catalog.mjs?v=99e3093fcfbf9bed';
-import {createRacketModel,disposeRacketModel} from './racket-model.mjs?v=bb93980d9d4d9ea1';
+import {RACKET_SKINS,racketSkin} from './racket-catalog.mjs';
+import {createRacketModel,disposeRacketModel} from './racket-model.mjs';
 
 // The collection borrows the existing camera/renderer. It redraws only on input.
 export function createRacketGallery(T,{camera,getSkin,applySkin,invalidate,onOpen,onClose}){

@@ -1,4 +1,4 @@
-import { COURT, CORK_RADIUS, LINE_HALF_WIDTH, clamp, landingCall } from './physics.mjs?v=e3adc2276e91027a';
+import { COURT, CORK_RADIUS, LINE_HALF_WIDTH, clamp, landingCall } from './physics.mjs';
 
 // Stores measured simulation samples. Replay never re-solves or changes a point.
 export class FlightRecorder {
