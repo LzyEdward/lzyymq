@@ -185,7 +185,7 @@ export function createAthlete(THREE, createRacket,{skinMap=null,mergeGeometries=
   upper.updateWorldMatrix(true,true);const v2=end.sub(joint).normalize();upper.getWorldQuaternion(parentQ);v2.applyQuaternion(parentQ.invert());lower.quaternion.setFromUnitVectors(r.v2.clone().normalize(),v2);
  }
  let stride=0;const footPlants=[new FootPlant(),new FootPlant()];
- function update({speed=0,dt=1/60,time=0,swing=0,lateral=0,forward=0,shot='clear',anticipation=0,lookY=1.5,lookX=0,grip=1,split=0,crossover=false,contact=null,lunge=0,netVariant=''}={}){
+ function update({speed=0,dt=1/60,time=0,swing=0,lateral=0,forward=0,shot='clear',anticipation=0,lookY=1.5,lookX=0,grip=1,split=0,crossover=false,contact=null,lunge=0,netVariant='',supportContact=null,jumpHeight=0}={}){
   lunge=clamp(lunge,0,1);const netStroke=['net','netcross','push','netkill'].includes(shot),crossStep=crossover&&Math.abs(lateral)>.3;
   stride+=Math.min(dt,.05)*speed*4.1;const run=clamp(speed/4,0,1),motion=Math.sin(stride),t=clamp(swing/.55,0,1),stroke=swing>0?Math.sin(t*Math.PI):0;
   body.position.y=-.055-Math.abs(motion)*.018*run+Math.sin(time*2.2)*.002+anticipation*.009-Math.sin(split*Math.PI)*.032-lunge*.155;
@@ -203,12 +203,14 @@ export function createAthlete(THREE, createRacket,{skinMap=null,mergeGeometries=
    const crossed=crossStep&&i===1,x=clamp(side*(.17+anticipation*.025+split*.035)+velocity.x*travel+(crossed?Math.sign(lateral)*.36:0),crossed?-.02:side<0?-.55:.02,crossed?.55:side<0?-.02:.55);
    const ideal=vec(x,.064+Math.sin(swingPhase*Math.PI)*.11*run,velocity.z*travel+.012);
    if(lunge>.03){footPlants[i].reset();ideal.lerp(vec(i?-.22:.19,.064,i?.55:-.29),lunge);}
+   if(jumpHeight>0)footPlants[i].reset();
    const planted=footPlants[i].sample(root.localToWorld(ideal.clone()).toArray(),cycle,speed>.45);
    const footTarget=root.worldToLocal(vec(...planted));
    limb('upperleg01.'+suffix,footTarget,vec(side*.17+velocity.x*.1,.48,.8));
    const foot=bones['foot.'+suffix];foot.parent.getWorldQuaternion(parentQ);const desired=new THREE.Quaternion();root.getWorldQuaternion(desired);foot.quaternion.copy(parentQ.invert().multiply(desired));
-   const localFoot=root.worldToLocal(foot.getWorldPosition(new THREE.Vector3()));soleShadows[i].position.set(localFoot.x,.01,localFoot.z+.055);soleShadows[i].material.opacity=.58*(1-clamp((localFoot.y-.064)/.13,0,.9));
+   const localFoot=root.worldToLocal(foot.getWorldPosition(new THREE.Vector3()));soleShadows[i].position.set(localFoot.x,.01-jumpHeight,localFoot.z+.055);soleShadows[i].material.opacity=.58*(1-clamp((localFoot.y-.064)/.13,0,.9));
   }
+  shadow.position.y=.009-jumpHeight;shadow.material.opacity=.4/(1+jumpHeight);
   const overhead=['smash','slicesmash','clear','drop','slicedrop'].includes(shot),under=shot==='lift'||shot==='serve';let hand=vec(-.24,1.24,.28),pole=vec(-.47,1.08,-.02);
   if(swing>0){if(overhead){if(t<.25){const u=t/.25;hand.set(-.28-u*.03,1.27+u*.43,.16-u*.3);}else{const u=(t-.25)/.75;hand.set(-.30+u*.47,1.72-u*.66,-.14+Math.sin(u*Math.PI)*.5);}}else if(under){hand.set(-.27+stroke*.35,1.13-stroke*.32,.22+stroke*.3);pole.set(-.7,.95,.05);}else hand.set(-.29+stroke*.45,1.29+stroke*.08,.22+stroke*.32);}else{hand.y+=anticipation*.19;hand.x-=run*.025+motion*run*.025;hand.z+=Math.cos(stride)*run*.055;}
   if(['slicesmash','slicedrop'].includes(shot)&&swing>0){bones.spine03.rotation.y+=stroke*.22;hand.x-=stroke*.13;pole.x-=stroke*.10;}
@@ -235,6 +237,7 @@ export function createAthlete(THREE, createRacket,{skinMap=null,mergeGeometries=
   }
   limb('upperarm01.R',hand,pole);limb('upperarm01.L',vec(.23+stroke*.15-motion*run*.105,1.07+stroke*.29-Math.abs(motion)*run*.018,.16+stroke*.06+Math.cos(stride)*run*.045-lunge*.28),vec(.28,.8,.04));
   root.getWorldQuaternion(parentQ);worldWrist.premultiply(parentQ);bones['wrist.R'].parent.getWorldQuaternion(parentQ);bones['wrist.R'].quaternion.copy(parentQ.invert().multiply(worldWrist));bones['wrist.L'].rotation.set(-.1,0,.12);
+  if(supportContact){const held=vec(...supportContact);held.x+=.015;held.y-=.09;limb('upperarm01.L',held,vec(.5,.7,.2));}
   bones['wrist.R'].updateWorldMatrix(true,false);const orientation=new THREE.Quaternion().setFromUnitVectors(vec(0,1,0),racketY);root.getWorldQuaternion(parentQ);orientation.premultiply(parentQ);bones['wrist.R'].getWorldQuaternion(parentQ);racket.quaternion.copy(parentQ.invert().multiply(orientation));
   for(const suffix of ['L','R']){
    const amount=suffix==='R'?grip:.30,sign=suffix==='R'?1:-1,frame=gripFrames[suffix];
@@ -252,6 +255,6 @@ export function createAthlete(THREE, createRacket,{skinMap=null,mergeGeometries=
  }
  const kits={allround:['#e3e9df','#1c343c','#378683'],linDan08:['#c63b38','#1b2630','#d9bb68'],leeChongWei:['#e6c550','#172738','#d8e7ee'],chenLong:['#dfe8ed','#203344','#607e9d'],taufik:['#dce6d2','#243c31','#b48c56']};
  function setKit(key='allround'){const spec=key&&typeof key==='object'?key:null,[shirt,pants,accent]=kits[spec?.key||key]||kits.allround;jersey.color.set(spec?.shirt||shirt);shorts.color.set(spec?.pants||pants);trim.color.set(spec?.accent||accent);root.userData.kit=spec?.key||key;}
- update();return {root,body,torso,head,legs:[bones['upperleg01.L'],bones['upperleg01.R']],knees:[bones['lowerleg01.L'],bones['lowerleg01.R']],arms:[bones['upperarm01.L'],bones['upperarm01.R']],elbows:[bones['lowerarm01.L'],bones['lowerarm01.R']],wrists:[bones['wrist.L'],bones['wrist.R']],skeleton,meshes,bones,bind,shoes,racket,update,setKit};
+ update();return {root,body,torso,head,legs:[bones['upperleg01.L'],bones['upperleg01.R']],knees:[bones['lowerleg01.L'],bones['lowerleg01.R']],arms:[bones['upperarm01.L'],bones['upperarm01.R']],elbows:[bones['lowerarm01.L'],bones['lowerarm01.R']],wrists:[bones['wrist.L'],bones['wrist.R']],skeleton,meshes,bones,bind,shoes,racket,update,setKit,resetFeet:()=>footPlants.forEach(foot=>foot.reset())};
 }
 

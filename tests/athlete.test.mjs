@@ -3,6 +3,26 @@ import assert from 'node:assert/strict';
 import * as THREE from 'three';
 import {createAthlete} from '../athlete.mjs';
 
+test('player avatar can jump, reset planted feet and hold a serve without lifting its floor shadow',()=>{
+ const previous=globalThis.document;
+ globalThis.document={createElement:()=>({width:0,height:0,getContext:()=>({fillRect(){}})})};
+ try{
+  const avatar=createAthlete(THREE,()=>new THREE.Group());
+  avatar.root.position.set(2,0,5);avatar.root.rotation.y=Math.PI;avatar.resetFeet();avatar.update({dt:1/60});avatar.root.updateMatrixWorld(true);
+  const grounded=avatar.bones['foot.R'].getWorldPosition(new THREE.Vector3()).y;
+  avatar.root.position.y=.8;avatar.update({dt:1/60,jumpHeight:.8,supportContact:[.2,1.1,.7]});avatar.root.updateMatrixWorld(true);
+  const airborne=avatar.bones['foot.R'].getWorldPosition(new THREE.Vector3()).y;
+  assert.ok(airborne-grounded>.65&&airborne-grounded<.95);
+  for(const shadow of avatar.root.children.filter(o=>o.isMesh)){
+   assert.ok(Math.abs(shadow.getWorldPosition(new THREE.Vector3()).y-.01)<.003);
+  }
+  avatar.root.position.set(-2,0,1);avatar.resetFeet();avatar.update({dt:1/60});avatar.root.updateMatrixWorld(true);
+  assert.ok(Math.abs(avatar.bones['foot.R'].getWorldPosition(new THREE.Vector3()).x+2)<.6);
+  avatar.setKit('linDan08');assert.equal(avatar.root.userData.kit,'linDan08');
+  assert.ok(avatar.skeleton.boneMatrices.every(Number.isFinite));
+ }finally{globalThis.document=previous;}
+});
+
 test('articulated athlete has human proportions, finite surfaces and independently moving knees/elbows',()=>{
   const previous=globalThis.document;
   globalThis.document={createElement:()=>({width:0,height:0,getContext:()=>({fillRect(){}})})};

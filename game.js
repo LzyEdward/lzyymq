@@ -6,6 +6,7 @@ import { AutoReturnAssist, HitIntent, canContact, receivingTarget, swingWindow, 
 import { JumpMotion, MovementOwnership, keyCommand, pointerCommand } from './interaction.mjs';
 import { freeLook, landingFromMap, moveLanding, normalizeLanding, landingName, LANDING_PRESETS } from './aiming.mjs';
 import { createAthlete } from './athlete.mjs';
+import {cameraMode,toggleCameraMode,orbitLook,thirdPersonPose,thirdPersonLift,avatarSwingTime} from './camera-mode.mjs';
 import { movementVector, gradeContact, strokeOutcome, shotTarget, SHOT_DEPTHS, Dash, targetDistance, DRILL_TARGETS, practiceFeed, smartStroke, racketPowerBoost, techniqueTarget } from './gameplay.mjs';
 import { OPPONENT_LEVELS, LEVEL_DESCRIPTIONS, LEVEL_REFERENCES, opponentLevel, placementSpread, matchFinished, rankName, freshCareer, parseCareer, settleMatch } from './competition.mjs';
 import {planOpponentStroke,recoveryBase,opponentFootwork,opponentReceiveMissChance,opponentStrokeExecution,opponentServeTarget,opponentContactWindow,opponentReceiveBase,opponentWeaknessProfile,opponentWeaknessKey} from './opponent-ai.mjs';
@@ -60,7 +61,7 @@ const state = {
   advanced:false,manualOverride:false,tutorial:false,tutorialStage:0,jumpPeak:0,
   aiming:false,aimAlt:false,swingTarget:null,serveTarget:null,serveStyle:'low',lastLanding:null,racketStyle:'attack',racketSkin:'astrox100zz',playerStyle:'linDan08',opponentStyle:'allround',playerStats:playerStatsForStyle('linDan08'),opponentStats:normalizeSkills(),highBallAssist:true,manualPitch:-.03,autoPitchOffset:0,
   tournamentId:'',tournamentRound:0,tournamentOpponent:'',tournamentVenue:'',tournamentAccent:'#d8bf74',
-  currentOpponentId:'',
+  currentOpponentId:'',cameraMode:'first',orbitYaw:0,orbitPitch:-.28,thirdLift:0,firstView:null,
 };
 let career=freshCareer();
 const CAREER_KEY='feather-court-career-v1';
@@ -105,6 +106,7 @@ function closeLineReview() {
 }
 for(const entity of [player,opponent,ball]){entity.previous=entity.pos.clone();entity.renderPos=entity.pos.clone();}
 let renderer, scene, camera, racket, shuttle, bot, landingMarker, targetMarker, aimMarker, shuttleShadow, net, courtScore, presentation, surfaceMaps;
+let playerAvatar=null;
 let audienceGroup=null, venueSign=null, venueAccent='#9475aa',mainCourtMaterial=null,runoffMaterial=null;
 let audio, master, trailLine, shuttleNoise, shuttleFilter, shuttleGain, shuttlePan, lastShuttleSoundUpdate=-1, menuTime = 0, accumulator = 0, fps = 60;
 let lastHud = 0, previousCameraPos = V(), pointerDown = false, touchMove = { x: 0, y: 0 };
@@ -328,6 +330,7 @@ function applyRacketSkin(skin=state.racketSkin){
   const old=racket.userData.racketModel,next=createRacketModel(THREE,{skin,player:true});next.scale.copy(old.scale);racket.remove(old);racket.add(next);racket.userData.racketModel=next;
   disposeRacketModel(old);
  }
+ if(playerAvatar){const mount=playerAvatar.racket,old=mount.userData.racketModel;mount.remove(old);disposeRacketModel(old);const next=createRacket(true);mount.add(next);mount.userData.racketModel=next;}
  const select=$('#racket-skin');if(select&&select.value!==skin)select.value=skin;
  const spec=racketSkin(skin);$('#racket-skin-detail').textContent=spec.model+' · '+spec.edition;
  for(const label of document.querySelectorAll('[data-current-racket]'))label.textContent=spec.label+' · '+spec.edition;
@@ -552,6 +555,7 @@ function applyPlayerStyle(key){
   for(const [name,value] of Object.entries(stats)){const input=$(`#player-${name}`);if(input){input.value=Math.round(value*100);input.parentElement.querySelector('output').value=`${input.value}%`;input.parentElement.querySelector('output').textContent=`${input.value}%`;}}
   state.playerStats=stats;
   if(racket?.userData.fabric)racket.userData.fabric.color.set(({linDan08:'#ba3533',leeChongWei:'#d9c255',chenLong:'#dce4e8',taufik:'#d4dfce'})[key]||'#dce3df');
+  playerAvatar?.setKit(state.playerStyle);
   if(techniquePanel)techniquePanel.write('player',stats);
   $('#player-style').value=state.playerStyle;
   document.querySelectorAll('[data-player-style]').forEach(button=>{const active=button.dataset.playerStyle===state.playerStyle;button.classList.toggle('active',active);button.setAttribute('aria-pressed',String(active));});
@@ -573,6 +577,10 @@ function setAimEditor(value){
 function applyMouseLook(dx,dy){
   if(state.aiming||state.aimAlt){chooseLanding(moveLanding(selectedLanding(),dx,dy));return;}
   if(state.comfortable)return;
+  if(state.cameraMode==='third'){
+    const view=orbitLook(freeLook({yaw:state.orbitYaw,pitch:state.orbitPitch},dx,dy,state.sensitivity,innerHeight,camera?.fov||73,innerWidth));
+    state.orbitYaw=view.yaw;state.orbitPitch=view.pitch;state.manualLookUntil=state.timer+1.1;state.lastLook=state.timer;return;
+  }
   // Take over from the currently displayed angle; the lift must not fight a
   // player's downward mouse movement or reapply an invisible old offset.
   Object.assign(state,manualLookTakeover(state,dy,state.timer));
@@ -668,7 +676,7 @@ function startGame(mode = 'match', preserveSettings = false) {
   hitIntent.clear(); pointerDown = false; state.manualLookUntil=0; accumulator = 0; setAssist(state.assists);
   opponent.returns = 0; opponent.energy = 100; opponent.pos.set(-.4, 0, -4.5); opponent.vel.set(0, 0, 0);
   opponent.history=[];opponent.readRally=-1;opponent.readTarget=null;opponent.netLunge=0;opponent.netHold=0;opponent.lastContact=null;opponent.lastTarget=null;opponent.action='';opponent.actionAt=-10;opponent.movementMode='ready';opponent.actionCounts={};opponent.movementCounts={};opponent.weaknesses=opponentWeaknessProfile({level:currentOpponentLevel(),style:state.opponentStyle,profile:state.profile});opponent.exposure={};opponent.adaptation={};opponent.lastWeakness='';ball.spin=0;state.lastPlacement=null;
-  player.pos.set(.45, 0, 4.45); player.vel.set(0, 0, 0); keys.clear();
+  player.pos.set(.45, 0, 4.45); player.vel.set(0, 0, 0);player.renderPos.copy(player.pos);player.previous.copy(player.pos);playerAvatar?.resetFeet();state.firstView=null;state.thirdLift=0; keys.clear();
   $('#menu').classList.add('hidden'); $('#pause-overlay').classList.add('hidden'); $('#help-overlay').classList.add('hidden'); $('#hud').classList.remove('hidden'); document.body.classList.add('playing');
   const modeNames = { match: '单打比赛', practice: '自由对打', targets: '打点挑战' };
   $('#game-mode').textContent = modeNames[mode] || modeNames.match;
@@ -677,7 +685,7 @@ function startGame(mode = 'match', preserveSettings = false) {
   $('#score-status').textContent = mode === 'practice' ? '保持节奏' : mode === 'targets' ? '瞄准场地区域' : `${state.matchPoints} 分制`;
   $('#point-toast').classList.add('hidden'); $('#resume-btn').innerHTML = '继续比赛 <span>→</span>';
   $('#speed-label').textContent='等待发球';
-  updateCourtScore(); prepareServe();camera.position.set(player.pos.x,1.69,player.pos.z);camera.rotation.set(state.pitch,state.yaw,0,'YXZ');canvas.focus({preventScroll:true}); requestLock();
+  updateCourtScore(); prepareServe();camera.position.set(player.pos.x,1.69,player.pos.z);camera.rotation.set(state.pitch,state.yaw,0,'YXZ');canvas.focus({preventScroll:true}); requestLock();if(state.cameraMode==='third')updateCamera(0);syncPlayerVisibility();
   if (mode === 'targets') feedback('六区打点挑战', '选择高远 / 轻吊，再瞄准发光区域');
   else if (mode === 'practice') feedback('鼠标自由看 · Alt + 鼠标调落点', '左键智能回球 · 右键杀球 · WASD / 空格可选');
   else feedback('鼠标看球，左键就能开打', '左键智能发球与回球 · 右键杀球 · 自动辅助在暂停设置管理');
@@ -1017,11 +1025,15 @@ function updatePlayer(dt, pad = null) {
   if(jumpFrame.launched){noise(.045,420,.04,'highpass');haptic(.18,.05,24);}
   if(jumpFrame.landed){noise(.09,170,.095);haptic(.25,.12,28);if(state.tutorial&&state.tutorialStage===1)setLessonStage(2);}
   if(state.tutorial&&state.tutorialStage===0&&player.pos.distanceTo(state.lessonOrigin)>.9)setLessonStage(1);
-  if(pad){const dx=(pad.axes?.[2]||0),dy=(pad.axes?.[3]||0);if(Math.hypot(dx,dy)>.15){if(pad.buttons[4]?.pressed)chooseLanding(moveLanding(selectedLanding(),dx*dt*160,dy*dt*160));else if(!state.comfortable){const view=freeLook({...state,pitch:state.manualPitch},dx*dt*850,dy*dt*850);state.yaw=view.yaw;state.manualPitch=view.pitch;state.pitch=state.manualPitch+state.autoPitchOffset;}}}
+  if(pad){const dx=(pad.axes?.[2]||0),dy=(pad.axes?.[3]||0);if(Math.hypot(dx,dy)>.15){if(pad.buttons[4]?.pressed)chooseLanding(moveLanding(selectedLanding(),dx*dt*160,dy*dt*160));else if(!state.comfortable){applyMouseLook(dx*dt*850,dy*dt*850);}}}
   const dashStep = dash.step(dt);
   player.pos.x = clamp(player.pos.x + dashStep.x, -3.4, 3.4);
   player.pos.z = clamp(player.pos.z + dashStep.z, .65, 7.35);
-  if (state.comfortable) {
+  if(state.cameraMode==='third'){
+    const goal=ball.active?trackAngles({x:player.pos.x,y:1.69+state.jump,z:player.pos.z},ball.pos,ball.vel,0):{yaw:0,pitch:-.03};
+    state.yaw=damp(state.yaw,clamp(goal.yaw,-1.05,1.05),12,dt);
+    if(state.comfortable)state.orbitYaw=damp(state.orbitYaw,clamp(goal.yaw,-.55,.55),3,dt);
+  } else if (state.comfortable) {
     const tracking = state.phase === 'rally';
     const goal=tracking?trackAngles({x:player.pos.x,y:1.69+state.jump,z:player.pos.z},ball.pos,ball.vel,state.yaw):{yaw:0,pitch:-.04};
     // Follow the shuttle in both axes. A damped response keeps head-high balls
@@ -1152,7 +1164,56 @@ function positionServeHand(cork,pose){
   const pinch=V(-.023,.137,.018).multiply(hand.scale).applyQuaternion(hand.quaternion);
   hand.position.copy(cork).add(V(...pose.offset)).sub(pinch);
 }
+function ensurePlayerAvatar(){
+ if(playerAvatar)return playerAvatar;
+ playerAvatar=createAthlete(THREE,()=>{const mount=new THREE.Group(),model=createRacket(true);mount.add(model);mount.userData.racketModel=model;return mount;},{skinMap:surfaceMaps?.athleteSkin,mergeGeometries});
+ playerAvatar.root.name='Player · third person';playerAvatar.root.visible=false;playerAvatar.setKit(state.playerStyle);scene.add(playerAvatar.root);
+ return playerAvatar;
+}
+function setCameraMode(value){
+ const mode=cameraMode(value),changed=mode!==state.cameraMode;
+ if(changed){
+  if(mode==='third'){
+   state.firstView={yaw:state.yaw,pitch:state.pitch,manualPitch:state.manualPitch,autoPitchOffset:state.autoPitchOffset,manualLookUntil:state.manualLookUntil};
+   state.yaw=0;state.pitch=state.manualPitch=-.03;state.autoPitchOffset=0;state.thirdLift=0;
+  }else if(state.firstView){Object.assign(state,state.firstView);state.firstView=null;}
+  state.cameraMode=mode;playerAvatar?.resetFeet();
+ }
+ for(const select of document.querySelectorAll('[data-camera-mode]'))select.value=mode;
+ document.body.classList.toggle('third-person',mode==='third');
+ if(['play','pause'].includes(state.screen)){
+  updateCamera(0);syncPlayerVisibility();updateTactics();renderBudget.invalidate();
+ }
+}
+function syncPlayerVisibility(){
+ const third=state.cameraMode==='third'&&['play','pause','overhead-preview'].includes(state.screen);
+ if(playerAvatar)playerAvatar.root.visible=third;
+ if(third){racket.visible=false;if(racket.userData.support)racket.userData.support.visible=false;}
+}
+function updatePlayerAvatar(dt){
+ const avatar=ensurePlayerAvatar();avatar.root.position.copy(player.renderPos);avatar.root.position.y=state.jump;avatar.root.rotation.y=Math.PI+state.yaw;
+ avatar.root.updateMatrixWorld(true);
+ const point=state.swing>0&&state.contactPoint?avatar.root.worldToLocal(state.contactPoint.clone()):null;
+ const contact=point&&Math.hypot(point.x,point.z)<2.2&&point.y<3.5?point.toArray():null;
+ const kind=state.swing>0?state.swingKind:state.shot,netShot=['net','netcross','push'].includes(kind);
+ const holding=['serve','serving'].includes(state.phase);
+ const support=holding?avatar.root.worldToLocal(ball.renderPos.clone()).toArray():null;
+ avatar.update({dt,time:state.timer,speed:player.speed,swing:avatarSwingTime(state.swing,state.contactElapsed||.07,Math.max(strokeTiming(kind).recovery,(state.contactElapsed||.07)+.15)),
+  lateral:player.vel.x,forward:player.vel.z,shot:kind,contact,supportContact:support,jumpHeight:state.jump,
+  lookY:ball.pos.y,lookX:-(ball.pos.x-player.pos.x),anticipation:ball.active&&state.lastHitter==='opponent'?.35:0,
+  lunge:netShot&&state.swing>0?Math.sin(Math.min(1,state.swing/.35)*Math.PI)*.45:0,
+  netVariant:kind==='netcross'?'勾对角':kind==='net'?'搓网':kind==='push'?'推后场':''});
+}
 function updateCamera(dt) {
+ if(state.cameraMode==='third'){
+  const enabled=state.highBallAssist&&ball.active&&state.timer>=(state.manualLookUntil||0);
+  state.thirdLift=damp(state.thirdLift,thirdPersonLift({player:player.renderPos,ball:ball.renderPos,enabled}),enabled?5:3,dt);
+  const pose=thirdPersonPose({player:player.renderPos,jump:state.jump,yaw:state.orbitYaw,pitch:state.orbitPitch,lift:state.thirdLift});
+  camera.position.set(pose.position.x,pose.position.y,pose.position.z);camera.lookAt(pose.target.x,pose.target.y,pose.target.z);
+  camera.fov=73;camera.updateProjectionMatrix();camera.updateMatrixWorld(true);updatePlayerAvatar(dt);syncPlayerVisibility();return;
+ }
+ if(playerAvatar)playerAvatar.root.visible=false;
+ racket.visible=true;
   const ballInFront=ball.active&&state.lastHitter==='opponent'&&state.highBallAssist&&state.timer>=(state.manualLookUntil||0);
   const gait=groundedCameraOffset({speed:player.speed,lateral:player.vel.x,forward:player.vel.z,phase:player.step*6.6,intensity:state.motion});
   cameraGoal.set(player.renderPos.x+gait.x,1.69+state.jump-jumping.landing*.055+(state.jump>0?0:gait.y),player.renderPos.z+gait.z);
@@ -1278,7 +1339,7 @@ function updateTactics() {
   $('#landing-dot').style.left=`${(target.x/5.18+.5)*100}%`;$('#landing-dot').style.top=`${(target.z+6.7)/6.7*100}%`;
   $('#landing-control').classList.toggle('editing',state.aiming||state.aimAlt);
   $('#aim-edit').textContent=state.aiming?'T 返回视角':'T 鼠标选点';
-  $('#view-status').textContent=state.aiming?'调落点中 · T 返回视角':state.aimAlt?'Alt 调落点中':state.comfortable?'跟球辅助 · V 关闭':document.pointerLockElement===canvas?'鼠标自由视角 · Esc 暂停':'鼠标自由视角 · 点击球场锁定鼠标';
+  $('#view-status').textContent=(state.cameraMode==='third'?'第三人称 · F2 切换 · ':'第一人称 · F2 切换 · ')+(state.aiming?'调落点中 · T 返回视角':state.aimAlt?'Alt 调落点中':state.comfortable?'跟球辅助 · V 关闭':document.pointerLockElement===canvas?'鼠标自由视角 · Esc 暂停':'鼠标自由视角 · 点击球场锁定鼠标');
   const steps={'split':'分腿启动','net-approach':'蹬跨上网','crossover':'交叉后退','chasse':'并步侧移','ready':'持拍准备','recover':'回动守中'};
   const activity=state.timer-(opponent.actionAt??-10)<1.25&&opponent.action?opponent.action:steps[opponent.movementMode]||'持拍准备';
   const weaknessLabel={backhand:'反手位',rear:'后退',net:'网前',body:'追身',recovery:'回位'}[opponent.lastWeakness];
@@ -1416,11 +1477,12 @@ function animate() {
     accumulator += dt;
     for (let n = 0; accumulator >= 1 / 120 && n < 8; n++) { fixedUpdate(1 / 120); accumulator -= 1 / 120; }
     for(const entity of [player,opponent,ball])entity.renderPos.lerpVectors(entity.previous,entity.pos,clamp(accumulator*120,0,1));
-    updateCamera(dt);updateOpponentModel(dt); updateEffects(dt); racket.visible = true;
+    updateCamera(dt);updateOpponentModel(dt); updateEffects(dt); racket.visible = state.cameraMode==='first';
     if (state.elapsed - lastHud > .075) { updateHud(); lastHud = state.elapsed; }
   }
   if (state.screen === 'review') eagleEye.update(dt);
   if(state.screen==='menu'&&racket.userData.support)racket.userData.support.visible=false;
+  syncPlayerVisibility();
   updateShuttleSound();
   if(racket.userData.updateArm&&racket.visible)racket.userData.updateArm();
   presentation.render(scene,camera);
@@ -1503,7 +1565,7 @@ function hideHelp() { $('#help-overlay').classList.add('hidden'); }
 
 function setFocus(value){state.focus=Boolean(value);document.body.classList.toggle('focus',state.focus);$('#focus-toggle').checked=state.focus;$('#focus-btn').classList.toggle('active',state.focus);$('#focus-btn').setAttribute('aria-pressed',String(state.focus));}
 function setComfortable(value){
- if(state.comfortable&&!value){state.manualPitch=state.pitch;state.autoPitchOffset=0;}
+ if(state.cameraMode==='first'&&state.comfortable&&!value){state.manualPitch=state.pitch;state.autoPitchOffset=0;}
  state.comfortable=Boolean(value);$('#comfortable-toggle').checked=state.comfortable;
  syncControlScheme();
  if(state.comfortable)document.exitPointerLock?.();
@@ -1514,7 +1576,7 @@ function applyRenderProfile(){
  presentation.setQuality(profile.quality);renderBudget.invalidate();
 }
 function applyQuality(quality){qualityMode=['auto','balanced','high','ultra'].includes(quality)?quality:'auto';adaptiveResolution.reset(performance.now());applyRenderProfile();}
-function savePreferences(){if(testing)return;try{localStorage.setItem('feather-court-3-settings',JSON.stringify({assistSettingsVersion:1,assists:$('#assist-toggle').checked,autoReturn:$('#auto-return-toggle').checked,comfortable:$('#comfortable-toggle').checked,difficulty:$('#difficulty').value,scheme:$('#control-scheme').value,profile:$('#opponent-profile').value,points:$('#match-points').value,quality:$('#quality').value,performanceVersion:1,focus:state.focus,motion:state.motion,sensitivity:state.sensitivity,lookSyncVersion:2,pace:state.pace,sound:state.sound,racketStyle:state.racketStyle,racketSkin:state.racketSkin,playerStyle:$('#player-style').value,opponentStyle:$('#opponent-style').value,playerStats:playerStatsFromInputs(),opponentStats:state.opponentStats,highBallAssist:$('#high-ball-toggle').checked,placementHint:$('#placement-hint').checked,eagleAuto:$('#eagle-auto').checked}));}catch{}}
+function savePreferences(){if(testing)return;try{localStorage.setItem('feather-court-3-settings',JSON.stringify({cameraMode:state.cameraMode,orbitYaw:state.orbitYaw,orbitPitch:state.orbitPitch,assistSettingsVersion:1,assists:$('#assist-toggle').checked,autoReturn:$('#auto-return-toggle').checked,comfortable:$('#comfortable-toggle').checked,difficulty:$('#difficulty').value,scheme:$('#control-scheme').value,profile:$('#opponent-profile').value,points:$('#match-points').value,quality:$('#quality').value,performanceVersion:1,focus:state.focus,motion:state.motion,sensitivity:state.sensitivity,lookSyncVersion:2,pace:state.pace,sound:state.sound,racketStyle:state.racketStyle,racketSkin:state.racketSkin,playerStyle:$('#player-style').value,opponentStyle:$('#opponent-style').value,playerStats:playerStatsFromInputs(),opponentStats:state.opponentStats,highBallAssist:$('#high-ball-toggle').checked,placementHint:$('#placement-hint').checked,eagleAuto:$('#eagle-auto').checked}));}catch{}}
 function restorePreferences(){
   try { const settings=JSON.parse(localStorage.getItem('feather-court-3-settings')||'{}');$('#eagle-auto').checked=settings.eagleAuto!==false; } catch {}
   $('#eagle-auto').addEventListener('change',savePreferences);
@@ -1538,6 +1600,7 @@ function restorePreferences(){
   if(typeof prefs.highBallAssist==='boolean')state.highBallAssist=$('#high-ball-toggle').checked=prefs.highBallAssist;
   else state.highBallAssist=$('#high-ball-toggle').checked;
   if(prefs.assistSettingsVersion!==1)savePreferences();
+  const orbit=orbitLook({yaw:Number.isFinite(prefs.orbitYaw)?prefs.orbitYaw:0,pitch:Number.isFinite(prefs.orbitPitch)?prefs.orbitPitch:-.28});state.orbitYaw=orbit.yaw;state.orbitPitch=orbit.pitch;setCameraMode(prefs.cameraMode);
   applyQuality($('#quality').value);updateDifficultyUI();updateCharacterPreview();
 }
 function showPlayer(){state.screen='inspect';state.inspectYaw=.30;state.inspectDistance=3.1;state.inspectPitch=.12;state.inspectPose='idle';state.inspectTime=0;keys.clear();hitIntent.clear();document.exitPointerLock?.();$('#menu').classList.add('hidden');$('#hud').classList.add('hidden');$('#showroom').classList.remove('hidden');$('#pause-overlay').classList.add('hidden');document.body.classList.remove('playing');}
@@ -1597,6 +1660,7 @@ function bindEvents() {
   };
   aimCourt.addEventListener('pointerdown', event => { event.preventDefault(); aimCourt.setPointerCapture(event.pointerId); aimOnMap(event); });
   aimCourt.addEventListener('pointermove', event => { if (aimCourt.hasPointerCapture(event.pointerId)) aimOnMap(event); });
+  document.querySelectorAll('[data-camera-mode]').forEach(select=>select.addEventListener('change',e=>{setCameraMode(e.target.value);savePreferences();}));
   $('#quality').addEventListener('change',e=>{applyQuality(e.target.value);savePreferences();});
   document.querySelectorAll('[data-shot]').forEach(el => el.addEventListener('click', () => { setShot(el.dataset.shot);canvas.focus({preventScroll:true}); requestLock(); }));
   window.addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();applyRenderProfile();});
@@ -1607,12 +1671,13 @@ function bindEvents() {
       if (e.code === 'Escape' || e.code === 'KeyB') { e.preventDefault(); eagleEye.close(); }
       return;
     }
+    if(e.code==='F2'&&['play','pause','menu'].includes(state.screen)){e.preventDefault();setCameraMode(toggleCameraMode(state.cameraMode));savePreferences();if(state.screen==='play')feedback(state.cameraMode==='third'?'第三人称':'第一人称','F2 切换视角 · WASD 跑位，鼠标转动，原有击球键不变');return;}
     const editing=/^(INPUT|SELECT|TEXTAREA)$/.test(e.target.tagName)||e.target.isContentEditable;
     if(editing&&e.code!=='Escape')return;
     if (['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Tab'].includes(e.code) && state.screen === 'play') e.preventDefault();
     if (e.repeat) return;
     if (e.code === 'KeyB') { openLineReview(); return; }
-    if (e.code === 'Escape' || e.code === 'KeyP') { if(['inspect','hand-inspect','shuttle-inspect','equipment-inspect','net-inspect','swing-inspect'].includes(state.screen)){exitGame();$('#test-panel')?.classList.remove('hidden');$('#masthead')?.classList.remove('hidden');}else if (state.screen === 'play') pauseGame(); else if (state.screen === 'pause') resumeGame(); return; }
+    if (e.code === 'Escape' || e.code === 'KeyP') { if(['inspect','hand-inspect','shuttle-inspect','equipment-inspect','net-inspect','swing-inspect','overhead-preview'].includes(state.screen)){exitGame();$('#test-panel')?.classList.remove('hidden');$('#masthead')?.classList.remove('hidden');}else if (state.screen === 'play') pauseGame(); else if (state.screen === 'pause') resumeGame(); return; }
     if (state.screen !== 'play') return;
     if(['AltLeft','AltRight'].includes(e.code)){e.preventDefault();state.aimAlt=true;hitIntent.clear();}
     keys.add(e.code);
@@ -2181,6 +2246,45 @@ async function init() {
         checks.push({name:'complete-match',pass:state.finished&&Math.max(...state.score)>=11,score:[...state.score],hits:state.hits,finished:state.finished});
         $('#test-result').textContent=JSON.stringify({pass:checks.every(check=>check.pass),checks},null,2);pauseGame();
       });
+      const cameraPreview=document.createElement('button');cameraPreview.id='preview-third-person';cameraPreview.textContent='查看第三人称全身实景 · Esc 返回';panel.prepend(cameraPreview);
+      cameraPreview.onclick=()=>{
+       startGame('practice');state.sound=false;setCameraMode('third');state.orbitYaw=0;state.orbitPitch=-.28;state.thirdLift=0;
+       ball.renderPos.copy(ball.pos);updateCamera(1/60);updateOpponentModel(1/60);updateEffects(1/60);
+       state.screen='overhead-preview';for(const id of ['test-panel','masthead','pause-overlay'])$('#'+id).classList.add('hidden');renderBudget.invalidate();
+      };
+      const cameraTest=document.createElement('button');cameraTest.id='run-camera-test';cameraTest.textContent='验证双视角、全身动作与高球构图';panel.prepend(cameraTest);
+      cameraTest.onclick=()=>{
+       const checks=[];setCameraMode('first');startGame('practice');state.sound=false;setAssist(false);
+       state.yaw=.19;state.pitch=.12;state.manualPitch=.12;state.autoPitchOffset=0;
+       chooseLanding({x:1.8,z:-5.4});const first={yaw:state.yaw,pitch:state.pitch};
+       state.phase='rally';state.lastHitter='opponent';state.rally=3;state.score=[5,4];ball.active=true;
+       ball.pos.set(.2,2.85,3.75);ball.vel.set(0,-.2,.1);player.pos.set(0,0,4.4);player.renderPos.copy(player.pos);ball.renderPos.copy(ball.pos);
+       const before={score:[...state.score],rally:state.rally,ball:ball.pos.toArray(),target:selectedLanding(),stamina:state.stamina,assists:state.assists,autoReturn:state.autoReturn};
+       setCameraMode('third');updateCamera(1/60);
+       applyMouseLook(120,40);
+       checks.push({name:'orbit-does-not-change-contact-facing',pass:state.yaw===0&&state.orbitYaw!==0});
+       const after={score:[...state.score],rally:state.rally,ball:ball.pos.toArray(),target:selectedLanding(),stamina:state.stamina,assists:state.assists,autoReturn:state.autoReturn};
+       checks.push({name:'switch-preserves-match-and-assists',pass:JSON.stringify(before)===JSON.stringify(after),before,after});
+       checks.push({name:'third-person-full-body-without-duplicate-arms',pass:playerAvatar.root.visible&&!racket.visible&&!racket.userData.support.visible&&playerAvatar.skeleton.bones.length===48});
+       setCameraMode('first');
+       checks.push({name:'first-person-restores-manual-view',pass:state.yaw===first.yaw&&state.manualPitch===first.pitch&&Math.abs(state.pitch-first.pitch)<1e-8&&racket.visible&&!playerAvatar.root.visible});
+       setCameraMode('third');state.orbitYaw=0;state.orbitPitch=-.28;state.manualLookUntil=0;
+       hitIntent.press(state.timer,'smash','selftest');handleHitIntent();for(let i=0;i<20&&state.hits===0;i++)fixedUpdate(1/120);
+       checks.push({name:'third-person-actual-smash-contact',pass:state.hits===1&&state.lastShot?.type==='smash',hits:state.hits,shot:state.lastShot?.type});hitIntent.clear();
+       for(const kind of ['clear','drop','smash','net','push','netcross','slicesmash','slicedrop','serve']){
+        state.swingKind=kind;state.swing=.05;state.contactElapsed=.05;state.contactPoint=player.pos.clone().add(V(.2,kind==='net'?1.1:2.4,-.65));state.jump=.65;
+        updatePlayerAvatar(1/60);playerAvatar.root.updateMatrixWorld(true);
+        checks.push({name:'avatar-'+kind,pass:playerAvatar.root.position.y===.65&&playerAvatar.skeleton.boneMatrices.every(Number.isFinite)});
+       }
+       state.jump=0;state.swing=0;state.contactPoint=null;state.phase='rally';ball.active=true;ball.pos.set(.2,9,player.pos.z-.5);ball.renderPos.copy(ball.pos);state.highBallAssist=true;
+       for(let i=0;i<120;i++)updateCamera(1/60);
+       const high=ball.renderPos.clone().project(camera),foot=player.renderPos.clone().project(camera);
+       checks.push({name:'overhead-shuttle-and-feet-visible',pass:Math.abs(high.y)<1&&Math.abs(high.x)<1&&Math.abs(foot.y)<1,shuttle:high.toArray(),feet:foot.toArray()});
+       const oldSkin=state.racketSkin,nextSkin=oldSkin==='astrox88dpro'?'astrox100zz':'astrox88dpro';applyRacketSkin(nextSkin);
+       checks.push({name:'avatar-racket-skin-synchronized',pass:playerAvatar.racket.userData.racketModel.userData.skin===racket.userData.racketModel.userData.skin});applyRacketSkin(oldSkin);
+       state.thirdLift=0;ball.pos.set(.2,1.2,3.8);ball.renderPos.copy(ball.pos);state.phase='serve';ball.active=false;updateCamera(1/60);updateEffects(1/60);updateOpponentModel(1/60);
+       $('#test-result').textContent=JSON.stringify({pass:checks.every(c=>c.pass),checks},null,2);pauseGame();
+      };
       const feelCheck=document.createElement('button');feelCheck.id='run-feel-test';feelCheck.textContent='验证7.31出手时机、收拍与鼠标接管';panel.insertBefore(feelCheck,$('#test-result'));
       feelCheck.onclick=()=>{
        const checks=[];

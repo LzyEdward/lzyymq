@@ -213,3 +213,5 @@ body:has(#menu:not(.hidden)) .icon-btn { width: 36px; height: 36px; line-height:
 .celebration-layer{position:fixed;inset:0;z-index:30;pointer-events:none;overflow:hidden;background:radial-gradient(ellipse at center,rgba(218,191,116,.13),transparent 42%)}.celebration-layer i{position:absolute;top:-8%;width:10px;height:22px;border-radius:2px;background:var(--confetti);opacity:.96;transform:rotate(0deg);animation:confetti-fall var(--fall) var(--delay) ease-in forwards}.celebration-layer i:nth-child(3n){width:6px;height:28px}.celebration-layer i:nth-child(4n){border-radius:50%;width:8px;height:8px}@keyframes confetti-fall{to{top:108%;transform:translate3d(var(--drift,0px),0,0) rotate(var(--spin));opacity:.1}}
 .assist-note{font-size:8px;letter-spacing:.2px;color:#e1e5dc70}
 .venue-photo-credit{font-size:8px;color:#dce4d491;text-decoration:none;letter-spacing:.15px}.venue-photo-credit:hover{color:#f4e3ad;text-decoration:underline}
+
+.camera-options{align-items:center}.camera-options p{font-size:12px;line-height:1.7;color:var(--muted,#b7c4c2);margin:0}.camera-options select{width:100%}
