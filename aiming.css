@@ -20,3 +20,9 @@
 
 #tactic-readout{position:absolute;left:50%;top:99px;transform:translateX(-50%);font-size:10px;letter-spacing:1px;color:#e0efb8d9;text-shadow:0 1px 9px #061d18;pointer-events:none;transition:opacity .2s}
 @media(max-width:800px){#tactic-readout{top:95px;font-size:9px;max-width:72vw;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}}
+
+body.playing.third-person #hud #reticle{display:none}
+#contact-halo{position:absolute;pointer-events:none;width:25px;height:25px;border:1.5px solid transparent;border-inline-color:#eff7f2ad;border-radius:50%;transform:translate(-50%,-50%);filter:drop-shadow(0 1px 2px #081d22);z-index:-1}
+#contact-halo[data-timing="ready"]{border-color:#e1ffa7;border-block-color:transparent;border-width:2px}
+#contact-halo[data-timing="queued"]{border-color:#8fe5ff;border-inline-color:transparent;border-width:2px}
+body.focus #contact-halo{display:none}

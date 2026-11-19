@@ -1,12 +1,31 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from 'three';
-import {cameraMode,toggleCameraMode,orbitLook,thirdPersonPose,thirdPersonLift,avatarSwingTime} from '../camera-mode.mjs';
+import {cameraMode,toggleCameraMode,orbitLook,thirdPersonPose,thirdPersonLift,avatarObstruction,avatarSwingTime} from '../camera-mode.mjs';
 import {strokeTiming} from '../controls.mjs';
 
 test('camera modes validate stored preferences and toggle both ways',()=>{
- assert.equal(cameraMode(undefined),'first');assert.equal(cameraMode('broken'),'first');
+ assert.equal(cameraMode(undefined),'third');assert.equal(cameraMode('broken'),'third');
  assert.equal(toggleCameraMode('first'),'third');assert.equal(toggleCameraMode('third'),'first');
+});
+test('shoulder view separates the player from the central net while keeping full court in view',()=>{
+ const player={x:0,z:4.4},pose=thirdPersonPose({player}),camera=new THREE.PerspectiveCamera(73,16/9,.05,100);
+ camera.position.set(...Object.values(pose.position));camera.lookAt(...Object.values(pose.target));camera.updateMatrixWorld(true);
+ const torso=new THREE.Vector3(0,1.25,4.4).project(camera),net=new THREE.Vector3(0,1.52,0).project(camera);
+ assert.ok(net.x-torso.x>.045,'ball lane should sit away from the player silhouette');
+ for(const x of [-3.05,3.05])for(const z of [-6.7,6.7]){
+  const corner=new THREE.Vector3(x,0,z).project(camera);
+  assert.ok(Math.abs(corner.x)<1&&Math.abs(corner.y)<1,'court corner should remain visible');
+ }
+});
+test('avatar occlusion discriminates low balls behind the silhouette from clear shots',()=>{
+ const player={x:0,z:4.4},eye=thirdPersonPose({player}).position;
+ const behind={x:-(eye.x-player.x)*.15,y:1.21-(eye.y-1.21)*.15,z:player.z-(eye.z-player.z)*.15};
+ assert.ok(avatarObstruction(eye,behind,player)>.9,'torso blocks center of the ray');
+ assert.equal(avatarObstruction(eye,{...behind,x:behind.x+.65},player),0);
+ assert.equal(avatarObstruction(eye,{...behind,y:6},player),0);
+ assert.equal(avatarObstruction(eye,{x:.05,y:1.2,z:5.6},player),0,'avatar is behind shuttle');
+ assert.equal(avatarObstruction(eye,behind,player,1.7),0,'airborne player clears low ball');
 });
 test('third-person camera stays above the floor and outside all four stands',()=>{
  for(const x of [-3.4,0,3.4])for(const z of [.65,4.4,7.35])for(const jump of [0,1.4])

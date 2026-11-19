@@ -6,7 +6,7 @@ import { AutoReturnAssist, HitIntent, canContact, receivingTarget, swingWindow, 
 import { JumpMotion, MovementOwnership, keyCommand, pointerCommand } from './interaction.mjs';
 import { freeLook, landingFromMap, moveLanding, normalizeLanding, landingName, LANDING_PRESETS } from './aiming.mjs';
 import { createAthlete } from './athlete.mjs';
-import {cameraMode,toggleCameraMode,orbitLook,thirdPersonPose,thirdPersonLift,avatarSwingTime} from './camera-mode.mjs';
+import {cameraMode,toggleCameraMode,orbitLook,thirdPersonPose,thirdPersonLift,avatarObstruction,avatarSwingTime} from './camera-mode.mjs';
 import { movementVector, gradeContact, strokeOutcome, shotTarget, SHOT_DEPTHS, Dash, targetDistance, DRILL_TARGETS, practiceFeed, smartStroke, racketPowerBoost, techniqueTarget } from './gameplay.mjs';
 import { OPPONENT_LEVELS, LEVEL_DESCRIPTIONS, LEVEL_REFERENCES, opponentLevel, placementSpread, matchFinished, rankName, freshCareer, parseCareer, settleMatch } from './competition.mjs';
 import {planOpponentStroke,recoveryBase,opponentFootwork,opponentReceiveMissChance,opponentStrokeExecution,opponentServeTarget,opponentContactWindow,opponentReceiveBase,opponentWeaknessProfile,opponentWeaknessKey} from './opponent-ai.mjs';
@@ -61,7 +61,7 @@ const state = {
   advanced:false,manualOverride:false,tutorial:false,tutorialStage:0,jumpPeak:0,
   aiming:false,aimAlt:false,swingTarget:null,serveTarget:null,serveStyle:'low',lastLanding:null,racketStyle:'attack',racketSkin:'astrox100zz',playerStyle:'linDan08',opponentStyle:'allround',playerStats:playerStatsForStyle('linDan08'),opponentStats:normalizeSkills(),highBallAssist:true,manualPitch:-.03,autoPitchOffset:0,
   tournamentId:'',tournamentRound:0,tournamentOpponent:'',tournamentVenue:'',tournamentAccent:'#d8bf74',
-  currentOpponentId:'',cameraMode:'first',orbitYaw:0,orbitPitch:-.28,thirdLift:0,firstView:null,
+  currentOpponentId:'',cameraMode:'first',orbitYaw:0,orbitPitch:-.28,thirdLift:0,avatarFade:0,contactHint:true,firstView:null,
 };
 let career=freshCareer();
 const CAREER_KEY='feather-court-career-v1';
@@ -676,7 +676,7 @@ function startGame(mode = 'match', preserveSettings = false) {
   hitIntent.clear(); pointerDown = false; state.manualLookUntil=0; accumulator = 0; setAssist(state.assists);
   opponent.returns = 0; opponent.energy = 100; opponent.pos.set(-.4, 0, -4.5); opponent.vel.set(0, 0, 0);
   opponent.history=[];opponent.readRally=-1;opponent.readTarget=null;opponent.netLunge=0;opponent.netHold=0;opponent.lastContact=null;opponent.lastTarget=null;opponent.action='';opponent.actionAt=-10;opponent.movementMode='ready';opponent.actionCounts={};opponent.movementCounts={};opponent.weaknesses=opponentWeaknessProfile({level:currentOpponentLevel(),style:state.opponentStyle,profile:state.profile});opponent.exposure={};opponent.adaptation={};opponent.lastWeakness='';ball.spin=0;state.lastPlacement=null;
-  player.pos.set(.45, 0, 4.45); player.vel.set(0, 0, 0);player.renderPos.copy(player.pos);player.previous.copy(player.pos);playerAvatar?.resetFeet();state.firstView=null;state.thirdLift=0; keys.clear();
+  player.pos.set(.45, 0, 4.45); player.vel.set(0, 0, 0);player.renderPos.copy(player.pos);player.previous.copy(player.pos);playerAvatar?.resetFeet();state.firstView=null;state.thirdLift=0;state.avatarFade=0; keys.clear();
   $('#menu').classList.add('hidden'); $('#pause-overlay').classList.add('hidden'); $('#help-overlay').classList.add('hidden'); $('#hud').classList.remove('hidden'); document.body.classList.add('playing');
   const modeNames = { match: '单打比赛', practice: '自由对打', targets: '打点挑战' };
   $('#game-mode').textContent = modeNames[mode] || modeNames.match;
@@ -840,13 +840,22 @@ function startLesson(){
 function contactReady(preparing = false) {
   return canContact({position:ball.pos,velocity:ball.vel,player:player.pos,active:ball.active,lastHitter:state.lastHitter,assisted:state.assists || dash.remaining > 0,jump:state.jump,yaw:state.yaw,preparing,reachBonus:(state.playerStats.defense-1)*.55});
 }
+function selectedSwingKind(request){
+ const kind=request||state.shot;return kind==='auto'?autoShot():kind;
+}
+function playerSwingWindow(kind,age,contactDelay){
+ return swingWindow({position:ball.pos,velocity:ball.vel,player:player.pos,playerVelocity:player.vel,kind,jump:state.jump,assisted:state.assists||dash.remaining>0,age,pace:ballTimeScale(),lookAhead:contactDelay,active:ball.active,lastHitter:state.lastHitter,yaw:state.yaw,reachBonus:(state.playerStats.defense-1)*.55});
+}
+function playerContactDelay(kind){
+ return strokeTiming(kind,state.lastShot?.type==='serve'&&state.rally===1).contact;
+}
 function handleHitIntent() {
   const manualIntent=hitIntent.armed(state.timer);
   const automatic=autoReturnAssist.update({enabled:state.autoReturn,phase:state.phase,active:ball.active,lastHitter:state.lastHitter,rally:state.rally,manualIntent,swinging:state.swing>0});
   if ((!manualIntent&&!automatic) || !contactReady(true) || state.swing > 0) return;
-  state.swingKind = automatic ? (state.shot === 'auto' ? autoShot() : state.shot) : hitIntent.kind==='auto' ? autoShot() : hitIntent.kind || (state.shot === 'auto' ? autoShot() : state.shot);
-  const serveReceive=state.lastShot?.type==='serve'&&state.rally===1,contactDelay=strokeTiming(state.swingKind,serveReceive).contact;
-  const anticipated=swingWindow({position:ball.pos,velocity:ball.vel,player:player.pos,playerVelocity:player.vel,kind:state.swingKind,jump:state.jump,assisted:state.assists||dash.remaining>0,age:automatic?0:state.timer-hitIntent.lastPressAt,pace:ballTimeScale(),lookAhead:contactDelay,active:ball.active,lastHitter:state.lastHitter,yaw:state.yaw,reachBonus:(state.playerStats.defense-1)*.55});
+  state.swingKind=selectedSwingKind(automatic?null:hitIntent.kind);
+  const contactDelay=playerContactDelay(state.swingKind);
+  const anticipated=playerSwingWindow(state.swingKind,automatic?0:state.timer-hitIntent.lastPressAt,contactDelay);
   if(!anticipated)return;
   if(automatic)autoReturnAssist.consume();
   state.swing = .001; state.swingContact = false; state.swingMissed = false;state.contactElapsed=contactDelay;state.swingRequestedKind=hitIntent.kind;
@@ -1167,6 +1176,16 @@ function positionServeHand(cork,pose){
 function ensurePlayerAvatar(){
  if(playerAvatar)return playerAvatar;
  playerAvatar=createAthlete(THREE,()=>{const mount=new THREE.Group(),model=createRacket(true);mount.add(model);mount.userData.racketModel=model;return mount;},{skinMap:surfaceMaps?.athleteSkin,mergeGeometries});
+ // Dither coverage in the opaque pass to keep normal depth sorting.
+ const fadeMaterials=new Map();
+ playerAvatar.body.traverse(object=>{
+  if(!object.isMesh||playerAvatar.racket.getObjectById(object.id))return;
+  for(const material of (Array.isArray(object.material)?object.material:[object.material])){
+   if(!material.transparent)material.alphaHash=true;
+   fadeMaterials.set(material,material.opacity);
+  }
+ });
+ playerAvatar.fadeMaterials=fadeMaterials;
  playerAvatar.root.name='Player · third person';playerAvatar.root.visible=false;playerAvatar.setKit(state.playerStyle);scene.add(playerAvatar.root);
  return playerAvatar;
 }
@@ -1175,14 +1194,14 @@ function setCameraMode(value){
  if(changed){
   if(mode==='third'){
    state.firstView={yaw:state.yaw,pitch:state.pitch,manualPitch:state.manualPitch,autoPitchOffset:state.autoPitchOffset,manualLookUntil:state.manualLookUntil};
-   state.yaw=0;state.pitch=state.manualPitch=-.03;state.autoPitchOffset=0;state.thirdLift=0;
+   state.yaw=0;state.pitch=state.manualPitch=-.03;state.autoPitchOffset=0;state.thirdLift=0;state.avatarFade=0;
   }else if(state.firstView){Object.assign(state,state.firstView);state.firstView=null;}
   state.cameraMode=mode;playerAvatar?.resetFeet();
  }
  for(const select of document.querySelectorAll('[data-camera-mode]'))select.value=mode;
  document.body.classList.toggle('third-person',mode==='third');
  if(['play','pause'].includes(state.screen)){
-  updateCamera(0);syncPlayerVisibility();updateTactics();renderBudget.invalidate();
+  updateCamera(0);syncPlayerVisibility();updateContactHint();updateTactics();renderBudget.invalidate();
  }
 }
 function syncPlayerVisibility(){
@@ -1204,13 +1223,24 @@ function updatePlayerAvatar(dt){
   lunge:netShot&&state.swing>0?Math.sin(Math.min(1,state.swing/.35)*Math.PI)*.45:0,
   netVariant:kind==='netcross'?'勾对角':kind==='net'?'搓网':kind==='push'?'推后场':''});
 }
+function updateAvatarOcclusion(dt){
+ const receiving=state.phase==='rally'&&ball.active&&state.lastHitter==='opponent';
+ const incoming=ball.renderPos;
+ const close=receiving&&Math.hypot(incoming.x-player.renderPos.x,incoming.z-player.renderPos.z)<3.2;
+ const obstruction=close?avatarObstruction(camera.position,incoming,player.renderPos,state.jump):0;
+ state.avatarFade=dt===0?obstruction:damp(state.avatarFade,obstruction,obstruction>state.avatarFade?30:10,dt);
+ const opacity=state.avatarFade<.005?1:1-.82*state.avatarFade;
+ if(opacity===playerAvatar.coverage)return;
+ playerAvatar.coverage=opacity;
+ for(const [material,original] of playerAvatar.fadeMaterials)material.opacity=original*opacity;
+}
 function updateCamera(dt) {
  if(state.cameraMode==='third'){
   const enabled=state.highBallAssist&&ball.active&&state.timer>=(state.manualLookUntil||0);
   state.thirdLift=damp(state.thirdLift,thirdPersonLift({player:player.renderPos,ball:ball.renderPos,enabled}),enabled?5:3,dt);
   const pose=thirdPersonPose({player:player.renderPos,jump:state.jump,yaw:state.orbitYaw,pitch:state.orbitPitch,lift:state.thirdLift});
   camera.position.set(pose.position.x,pose.position.y,pose.position.z);camera.lookAt(pose.target.x,pose.target.y,pose.target.z);
-  camera.fov=73;camera.updateProjectionMatrix();camera.updateMatrixWorld(true);updatePlayerAvatar(dt);syncPlayerVisibility();return;
+  camera.fov=73;camera.updateProjectionMatrix();camera.updateMatrixWorld(true);updatePlayerAvatar(dt);updateAvatarOcclusion(dt);syncPlayerVisibility();return;
  }
  if(playerAvatar)playerAvatar.root.visible=false;
  racket.visible=true;
@@ -1246,6 +1276,25 @@ function updateOpponentModel(dt) {
  bot.label.visible=!state.focus;bot.label.quaternion.copy(camera.quaternion);bot.label.rotation.x=0;bot.label.rotation.z=0;
 }
 
+function updateContactHint(){
+ const halo=$('#contact-halo');
+ const receiving=state.screen==='play'&&state.cameraMode==='third'&&state.contactHint&&!state.focus&&!state.aiming&&!state.aimAlt
+  &&state.phase==='rally'&&ball.active&&state.lastHitter==='opponent'&&ball.pos.z>=.38;
+ if(!receiving){halo.classList.add('hidden');return;}
+ const near=Math.hypot(ball.pos.x-player.pos.x,ball.pos.z-player.pos.z)<3.15&&ball.pos.y<3.7+state.jump;
+ const p=tmp.copy(ball.renderPos).project(camera);
+ if(!near||p.z< -1||p.z>1||Math.abs(p.x)>.96||Math.abs(p.y)>.94){halo.classList.add('hidden');return;}
+ const queued=hitIntent.armed(state.timer)||(state.swing>0&&!state.swingMissed&&!state.swingContact);
+ let ready=false;
+ if(!queued&&state.swing===0&&contactReady(true)){
+  const kind=selectedSwingKind('auto');
+  ready=!!playerSwingWindow(kind,0,playerContactDelay(kind));
+ }
+ const timing=queued?'queued':ready?'ready':'near';
+ if(halo.dataset.timing!==timing)halo.dataset.timing=timing;
+ halo.style.left=(p.x*.5+.5)*100+'%';halo.style.top=(-p.y*.5+.5)*100+'%';
+ halo.classList.remove('hidden');
+}
 function updateEffects(dt) {
   shuttle.position.copy(ball.renderPos);
   if (groundMotion) {
@@ -1281,6 +1330,7 @@ function updateEffects(dt) {
   net.userData.update(dt);
   if (state.feedback > 0) { state.feedback -= dt; if (state.feedback <= .3) $('#hit-feedback').style.opacity = Math.max(0, state.feedback / .3); }
   state.contactFlash = Math.max(0, (state.contactFlash || 0) - dt);
+  updateContactHint();
   // World, racket and feather motion remain at the full render rate. Small
   // DOM indicators only need 30 Hz; avoid styling hidden tactical widgets 60×/s.
   if(state.timer>=lastEffectsUI&&state.timer-lastEffectsUI<1/30)return;
@@ -1306,9 +1356,6 @@ function updateEffects(dt) {
   $('#easy-cue').classList.toggle('armed',armed);$('#easy-cue').classList.toggle('ready',ready);
   $('#aim-direction').textContent=state.mode==='targets'&&state.target?`目标 · ${state.target.name}`:state.aim<-.28?'左侧空当':state.aim>.28?'右侧空当':'回到中路';
   $('#aim-marker').style.left = `${((state.aim + 1) / 2) * 100}%`;
-  $('#contact-halo').classList.toggle('hidden',!receiving||state.focus);
-  $('#contact-halo').dataset.high=String(receiving&&ball.pos.y>camera.position.y+2);
-  if(receiving){const p=tmp.copy(ball.pos).project(camera);$('#contact-halo').style.left=`${(p.x*.5+.5)*100}%`;$('#contact-halo').style.top=`${(-p.y*.5+.5)*100}%`;$('#contact-halo').classList.toggle('ready',ready);}
   const pulse = $('#impact-pulse');
   pulse.style.opacity = String(state.contactFlash / .38 * .8);
   pulse.style.transform = `translate(-50%,-50%) scale(${1 + (1 - state.contactFlash / .38) * 1.3})`;
@@ -1500,6 +1547,7 @@ function requestLock() {
 }
 function pauseGame(finished = false) {
   if (state.screen !== 'play') return;
+  $('#contact-halo').classList.add('hidden');
   state.screen = 'pause'; keys.clear();state.aiming=false;state.aimAlt=false;document.body.classList.remove('choosing-landing'); pointerDown = false; gamepadHitHeld = false; gamepadJumpHeld = false; hitIntent.clear();jumping.cancelBuffer(); touchMove.x = touchMove.y = 0;
   // Release capture before showing the modal so the OS cursor is usable in
   // the settings panel and can move to other windows while paused.
@@ -1576,7 +1624,7 @@ function applyRenderProfile(){
  presentation.setQuality(profile.quality);renderBudget.invalidate();
 }
 function applyQuality(quality){qualityMode=['auto','balanced','high','ultra'].includes(quality)?quality:'auto';adaptiveResolution.reset(performance.now());applyRenderProfile();}
-function savePreferences(){if(testing)return;try{localStorage.setItem('feather-court-3-settings',JSON.stringify({cameraMode:state.cameraMode,orbitYaw:state.orbitYaw,orbitPitch:state.orbitPitch,assistSettingsVersion:1,assists:$('#assist-toggle').checked,autoReturn:$('#auto-return-toggle').checked,comfortable:$('#comfortable-toggle').checked,difficulty:$('#difficulty').value,scheme:$('#control-scheme').value,profile:$('#opponent-profile').value,points:$('#match-points').value,quality:$('#quality').value,performanceVersion:1,focus:state.focus,motion:state.motion,sensitivity:state.sensitivity,lookSyncVersion:2,pace:state.pace,sound:state.sound,racketStyle:state.racketStyle,racketSkin:state.racketSkin,playerStyle:$('#player-style').value,opponentStyle:$('#opponent-style').value,playerStats:playerStatsFromInputs(),opponentStats:state.opponentStats,highBallAssist:$('#high-ball-toggle').checked,placementHint:$('#placement-hint').checked,eagleAuto:$('#eagle-auto').checked}));}catch{}}
+function savePreferences(){if(testing)return;try{localStorage.setItem('feather-court-3-settings',JSON.stringify({contactHint:state.contactHint,cameraMode:state.cameraMode,orbitYaw:state.orbitYaw,orbitPitch:state.orbitPitch,assistSettingsVersion:1,assists:$('#assist-toggle').checked,autoReturn:$('#auto-return-toggle').checked,comfortable:$('#comfortable-toggle').checked,difficulty:$('#difficulty').value,scheme:$('#control-scheme').value,profile:$('#opponent-profile').value,points:$('#match-points').value,quality:$('#quality').value,performanceVersion:1,focus:state.focus,motion:state.motion,sensitivity:state.sensitivity,lookSyncVersion:2,pace:state.pace,sound:state.sound,racketStyle:state.racketStyle,racketSkin:state.racketSkin,playerStyle:$('#player-style').value,opponentStyle:$('#opponent-style').value,playerStats:playerStatsFromInputs(),opponentStats:state.opponentStats,highBallAssist:$('#high-ball-toggle').checked,placementHint:$('#placement-hint').checked,eagleAuto:$('#eagle-auto').checked}));}catch{}}
 function restorePreferences(){
   try { const settings=JSON.parse(localStorage.getItem('feather-court-3-settings')||'{}');$('#eagle-auto').checked=settings.eagleAuto!==false; } catch {}
   $('#eagle-auto').addEventListener('change',savePreferences);
@@ -1599,8 +1647,9 @@ function restorePreferences(){
   state.comfortable=$('#comfortable-toggle').checked=prefs.comfortable===true;
   if(typeof prefs.highBallAssist==='boolean')state.highBallAssist=$('#high-ball-toggle').checked=prefs.highBallAssist;
   else state.highBallAssist=$('#high-ball-toggle').checked;
+  state.contactHint=$('#contact-hint-toggle').checked=prefs.contactHint!==false;
+  const orbit=orbitLook({yaw:Number.isFinite(prefs.orbitYaw)?prefs.orbitYaw:0,pitch:Number.isFinite(prefs.orbitPitch)?prefs.orbitPitch:-.28});state.orbitYaw=orbit.yaw;state.orbitPitch=orbit.pitch;setCameraMode(testing?'first':prefs.cameraMode);
   if(prefs.assistSettingsVersion!==1)savePreferences();
-  const orbit=orbitLook({yaw:Number.isFinite(prefs.orbitYaw)?prefs.orbitYaw:0,pitch:Number.isFinite(prefs.orbitPitch)?prefs.orbitPitch:-.28});state.orbitYaw=orbit.yaw;state.orbitPitch=orbit.pitch;setCameraMode(prefs.cameraMode);
   applyQuality($('#quality').value);updateDifficultyUI();updateCharacterPreview();
 }
 function showPlayer(){state.screen='inspect';state.inspectYaw=.30;state.inspectDistance=3.1;state.inspectPitch=.12;state.inspectPose='idle';state.inspectTime=0;keys.clear();hitIntent.clear();document.exitPointerLock?.();$('#menu').classList.add('hidden');$('#hud').classList.add('hidden');$('#showroom').classList.remove('hidden');$('#pause-overlay').classList.add('hidden');document.body.classList.remove('playing');}
@@ -1660,6 +1709,7 @@ function bindEvents() {
   };
   aimCourt.addEventListener('pointerdown', event => { event.preventDefault(); aimCourt.setPointerCapture(event.pointerId); aimOnMap(event); });
   aimCourt.addEventListener('pointermove', event => { if (aimCourt.hasPointerCapture(event.pointerId)) aimOnMap(event); });
+  $('#contact-hint-toggle').addEventListener('change',e=>{state.contactHint=e.target.checked;updateContactHint();savePreferences();});
   document.querySelectorAll('[data-camera-mode]').forEach(select=>select.addEventListener('change',e=>{setCameraMode(e.target.value);savePreferences();}));
   $('#quality').addEventListener('change',e=>{applyQuality(e.target.value);savePreferences();});
   document.querySelectorAll('[data-shot]').forEach(el => el.addEventListener('click', () => { setShot(el.dataset.shot);canvas.focus({preventScroll:true}); requestLock(); }));
@@ -2271,6 +2321,19 @@ async function init() {
        setCameraMode('third');state.orbitYaw=0;state.orbitPitch=-.28;state.manualLookUntil=0;
        hitIntent.press(state.timer,'smash','selftest');handleHitIntent();for(let i=0;i<20&&state.hits===0;i++)fixedUpdate(1/120);
        checks.push({name:'third-person-actual-smash-contact',pass:state.hits===1&&state.lastShot?.type==='smash',hits:state.hits,shot:state.lastShot?.type});hitIntent.clear();
+       state.swing=0;state.lastHitter='opponent';state.yaw=0;
+       updateCamera(0);
+       const torso=player.renderPos.clone().add(V(0,1.21,0));
+       ball.pos.copy(torso).lerp(camera.position,-.15);ball.renderPos.copy(ball.pos);ball.vel.set(0,-.2,1);
+       updateCamera(1/60);updateContactHint();
+       const halo=$('#contact-halo'),faded=playerAvatar.coverage;
+       checks.push({name:'blocked-incoming-shuttle-fades-avatar-and-shows-ready-cue',pass:faded<.8&&!halo.classList.contains('hidden')&&halo.dataset.timing==='ready',faded,timing:halo.dataset.timing});
+       hitIntent.press(state.timer,'auto','selftest');updateContactHint();
+       checks.push({name:'armed-input-shows-queued-cue',pass:halo.dataset.timing==='queued'});hitIntent.clear();
+       const savedHint=state.contactHint;state.contactHint=false;updateContactHint();
+       checks.push({name:'contact-cue-can-be-disabled',pass:halo.classList.contains('hidden')});state.contactHint=savedHint;
+       ball.pos.x=player.pos.x+2.5;ball.renderPos.copy(ball.pos);for(let i=0;i<60;i++)updateCamera(1/60);updateContactHint();
+       checks.push({name:'avatar-recovers-and-out-of-reach-ball-is-not-ready',pass:playerAvatar.coverage===1&&halo.dataset.timing==='near'});
        for(const kind of ['clear','drop','smash','net','push','netcross','slicesmash','slicedrop','serve']){
         state.swingKind=kind;state.swing=.05;state.contactElapsed=.05;state.contactPoint=player.pos.clone().add(V(.2,kind==='net'?1.1:2.4,-.65));state.jump=.65;
         updatePlayerAvatar(1/60);playerAvatar.root.updateMatrixWorld(true);
