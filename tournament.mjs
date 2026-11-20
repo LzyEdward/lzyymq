@@ -63,8 +63,8 @@ export const TOUR_EVENTS = freeze([
   freeze({id:'indonesia',name:'印度尼西亚公开赛',english:'Indonesia Open',city:'雅加达',venue:'Istora Senayan',surface:'高速蓝地胶',crowd:'鼓点看台',accent:'#e66b4d',courtTone:'#1d5264',runoffTone:'#173d52',rounds:['32强','16强','8强','半决赛','决赛'],draw:TOUR_ROSTER}),
   freeze({id:'china',name:'中国公开赛',english:'China Open',city:'常州',venue:'常州奥体中心',surface:'中速地胶',crowd:'红色主场',accent:'#d64545',courtTone:'#2b5d55',runoffTone:'#4a302f',rounds:['32强','16强','8强','半决赛','决赛'],draw:TOUR_ROSTER}),
   freeze({id:'malaysia',name:'马来西亚公开赛',english:'Malaysia Open',city:'吉隆坡',venue:'Axiata Arena',surface:'快节奏地胶',crowd:'蓝金看台',accent:'#65b8d9',courtTone:'#205b70',runoffTone:'#204559',rounds:['32强','16强','8强','半决赛','决赛'],draw:TOUR_ROSTER}),
-  freeze({id:'worlds',name:'世界羽联世锦赛',english:'BWF World Championships',city:'巴黎',venue:'Arena Paris Sud',surface:'中性比赛地胶',crowd:'世界聚光灯',accent:'#b88de0',courtTone:'#3b4b69',runoffTone:'#2d3555',rounds:['32强','16强','8强','半决赛','决赛'],draw:TOUR_ROSTER}),
-  freeze({id:'olympics',name:'巴黎奥运会羽毛球赛',english:'Paris 2024 Olympic Badminton',city:'巴黎',venue:'Arena Porte de la Chapelle',surface:'奥运赛时场地',crowd:'巴黎奥运满场',accent:'#c6a7f2',courtTone:'#35a89b',runoffTone:'#7855a8',rounds:['32强','16强','8强','半决赛','决赛'],draw:TOUR_ROSTER}),
+  freeze({id:'worlds',name:'世界羽联世锦赛',english:'BWF World Championships',city:'巴黎',venue:'Arena Paris Sud',surface:'中性比赛地胶',crowd:'世界聚光灯',accent:'#b88de0',courtTone:'#3b4b69',runoffTone:'#333d42',rounds:['32强','16强','8强','半决赛','决赛'],draw:TOUR_ROSTER}),
+  freeze({id:'olympics',name:'巴黎奥运会羽毛球赛',english:'Paris 2024 Olympic Badminton',city:'巴黎',venue:'Arena Porte de la Chapelle',surface:'奥运赛时场地',crowd:'巴黎奥运满场',accent:'#c6a7f2',courtTone:'#8ccaba',runoffTone:'#41494a',rounds:['32强','16强','8强','半决赛','决赛'],draw:TOUR_ROSTER}),
 ]);
 
 export function star(id){return TOUR_STARS[id]||TOUR_STARS.peterGade;}

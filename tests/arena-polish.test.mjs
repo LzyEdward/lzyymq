@@ -35,6 +35,20 @@ test('detailed spectators and architecture stay within a bounded GPU budget',()=
  group.traverse(o=>{o.geometry?.dispose();o.material?.dispose();});
 });
 
+test('competition fascia and the Olympic safety floor stay neutral under event colours',()=>{
+ const group=createArenaBowl(T,mergeGeometries);
+ const fascia=group.children.map(mesh=>mesh.material).find(material=>material?.color?.getHexString()==='3c464b');
+ assert.ok(fascia,'the competition fascia has a neutral graphite base');
+ const base=new T.Color('#3c464b');
+ for(const color of ['#71469a','#b88de0','#c6a7f2','#e66b4d']){
+  group.userData.applyVenue({id:color,accent:color});
+  assert.equal(group.userData.eventId,color);
+  for(const channel of ['r','g','b'])
+   assert.ok(Math.abs(fascia.color[channel]-base[channel])<.075, color+' should not tint the fascia purple');
+ }
+ group.traverse(object=>{object.geometry?.dispose();object.material?.dispose();});
+});
+
 test('compact strokes return to ready sooner and meet the shuttle at their actual contact times',()=>{
  for(const kind of ['net','netcross','push','drive','netkill','lift','clear','drop','smash','slicesmash']){
   const timing=strokeTiming(kind),contact=[.30,.03,-1.1];

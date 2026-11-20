@@ -3,8 +3,8 @@ import {arenaSeats} from './arena-layout.mjs';
 export function createArenaBowl(T,mergeGeometries){
  const group=new T.Group();group.name='Four-sided competition arena';
  const mat=(color,roughness=.87,metalness=0)=>new T.MeshStandardMaterial({color,roughness,metalness});
- const concrete=mat('#303139'),trim=mat('#756889',.65,.15),seatMat=mat('#55405f'),cloth=mat('#ffffff'),skin=mat('#ffffff'),hairMat=mat('#ffffff'),pants=mat('#252a33'),metal=mat('#93949b',.4,.65);
- const accent=mat('#775789'),aisleLight=new T.MeshBasicMaterial({color:'#bfb49a',toneMapped:true});
+ const concrete=mat('#303338'),trim=mat('#5f6570',.78,.08),seatMat=mat('#444951'),cloth=mat('#ffffff'),skin=mat('#ffffff'),hairMat=mat('#ffffff'),pants=mat('#252a33'),metal=mat('#93949b',.4,.65);
+ const accent=mat('#3c464b'),aisleLight=new T.MeshBasicMaterial({color:'#bfb49a',toneMapped:true});
  const batches=new Map(),dummy=new T.Object3D();
  function box(w,h,d,m,x,y,z,ry=0){
   if(!batches.has(m))batches.set(m,[]);
@@ -77,6 +77,11 @@ export function createArenaBowl(T,mergeGeometries){
  // All architecture uses a small shared set of material batches.
  for(const [material,parts] of batches){const geometry=mergeGeometries(parts,false),m=new T.Mesh(geometry,material);m.receiveShadow=false;group.add(m);parts.forEach(g=>g.dispose());}
  group.userData.capacity=seats.length;group.userData.spectators=people.length;
- group.userData.applyVenue=(spec={})=>{accent.color.set(spec.accent||'#775789');group.userData.eventId=spec.id||'';};
+ const fasciaColor=new T.Color('#3c464b'),eventColor=new T.Color();
+ group.userData.applyVenue=(spec={})=>{
+  eventColor.set(spec.accent||'#3c464b');
+  accent.color.copy(fasciaColor).lerp(eventColor,.07);
+  group.userData.eventId=spec.id||'';
+ };
  return group;
 }

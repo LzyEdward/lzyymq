@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from 'three';
-import {cameraMode,toggleCameraMode,orbitLook,thirdPersonPose,thirdPersonLift,avatarObstruction,avatarSwingTime} from '../camera-mode.mjs';
+import {cameraMode,toggleCameraMode,orbitLook,thirdPersonPose,thirdPersonLift,thirdPersonFov,shuttleScreenCue,avatarObstruction,avatarSwingTime} from '../camera-mode.mjs';
 import {strokeTiming} from '../controls.mjs';
 
 test('camera modes validate stored preferences and toggle both ways',()=>{
@@ -9,7 +9,7 @@ test('camera modes validate stored preferences and toggle both ways',()=>{
  assert.equal(toggleCameraMode('first'),'third');assert.equal(toggleCameraMode('third'),'first');
 });
 test('shoulder view separates the player from the central net while keeping full court in view',()=>{
- const player={x:0,z:4.4},pose=thirdPersonPose({player}),camera=new THREE.PerspectiveCamera(73,16/9,.05,100);
+ const player={x:0,z:4.4},pose=thirdPersonPose({player,framing:'wide'}),camera=new THREE.PerspectiveCamera(thirdPersonFov(0),16/9,.05,100);
  camera.position.set(...Object.values(pose.position));camera.lookAt(...Object.values(pose.target));camera.updateMatrixWorld(true);
  const torso=new THREE.Vector3(0,1.25,4.4).project(camera),net=new THREE.Vector3(0,1.52,0).project(camera);
  assert.ok(net.x-torso.x>.045,'ball lane should sit away from the player silhouette');
@@ -42,7 +42,7 @@ test('default framing shows whole player, net and overhead shuttle without mouse
  for(const aspect of [16/9,1,.65])for(const z of [.8,4.4,7.35])for(const height of [2,6,9]){
   const player={x:0,z},ball={x:.2,y:height,z:z-.5};
   const lift=thirdPersonLift({player,ball,enabled:true});
-  const pose=thirdPersonPose({player,lift}),camera=new THREE.PerspectiveCamera(73,aspect,.05,100);
+  const pose=thirdPersonPose({player,lift}),camera=new THREE.PerspectiveCamera(thirdPersonFov(lift),aspect,.05,100);
   camera.position.set(...Object.values(pose.position));camera.lookAt(...Object.values(pose.target));camera.updateMatrixWorld(true);
   for(const [name,p] of [['feet',[0,.05,z]],['head',[0,1.85,z]],['shuttle',[ball.x,ball.y,ball.z]],['net',[0,1.52,0]]]){
    const point=new THREE.Vector3(...p).project(camera);
@@ -50,6 +50,32 @@ test('default framing shows whole player, net and overhead shuttle without mouse
   }
  }
  assert.equal(thirdPersonLift({player:{x:0,z:4},ball:{x:0,y:10,z:4},enabled:false}),0);
+});
+test('close camera shows the player larger and gives way to an overhead clear',()=>{
+ const player={x:.45,z:4.45};
+ const span=(framing,lift)=>{
+  const {position,target}=thirdPersonPose({player,framing,lift});
+  const camera=new THREE.PerspectiveCamera(thirdPersonFov(lift),16/9,.05,100);
+  camera.position.set(...Object.values(position));camera.lookAt(...Object.values(target));camera.updateMatrixWorld(true);
+  return new THREE.Vector3(player.x,1.8,player.z).project(camera).y-new THREE.Vector3(player.x,.05,player.z).project(camera).y;
+ };
+ assert.ok(span('near',0)>span('wide',0)*1.32);
+ assert.ok(span('near',3)<span('near',0));
+});
+test('shuttle edge marker preserves direction past the camera and clears on reentry',()=>{
+ assert.equal(shuttleScreenCue({x:.1,y:0,z:-5},73,1.6).edge,false);
+ const right=shuttleScreenCue({x:3,y:1,z:-1},73,1.6);
+ assert.ok(right.edge&&right.x>0&&right.y>0&&right.angle>0&&right.angle<90);
+ const top=shuttleScreenCue({x:0,y:9,z:-3},73,1.6);
+ assert.ok(top.edge&&top.y>0&&top.angle===0);
+ assert.equal(shuttleScreenCue({x:0,y:0,z:4},73,1.6).angle,180);
+});
+test('an out-of-frame shuttle retains the correct side when it passes behind the player camera',()=>{
+ const behindRight=shuttleScreenCue({x:3,y:1,z:2},77,16/9);
+ const behindLeft=shuttleScreenCue({x:-3,y:1,z:2},77,16/9);
+ assert.ok(behindRight.edge&&behindLeft.edge);
+ assert.ok(behindRight.x<0&&behindLeft.x>0,'screen arrow reverses to point back toward the shuttle');
+ assert.ok(behindRight.y<0&&behindLeft.y<0,'a shuttle behind the player points toward the bottom edge');
 });
 test('all player strokes visually contact at actual gameplay time and recover monotonically',()=>{
  for(const kind of ['auto','clear','drop','smash','net','push','netcross','slicesmash','slicedrop','serve']){

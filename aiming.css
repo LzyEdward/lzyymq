@@ -26,3 +26,17 @@ body.playing.third-person #hud #reticle{display:none}
 #contact-halo[data-timing="ready"]{border-color:#e1ffa7;border-block-color:transparent;border-width:2px}
 #contact-halo[data-timing="queued"]{border-color:#8fe5ff;border-inline-color:transparent;border-width:2px}
 body.focus #contact-halo{display:none}
+#contact-halo[data-timing="track"]{
+ width:23px;height:23px;border-width:2px;border-inline-color:#fff4bf;
+ filter:drop-shadow(0 1px 2px #081d22) drop-shadow(0 0 1px #081d22);
+}
+body.third-person #shuttle-indicator {
+ width:30px;height:30px;display:grid;place-items:center;
+ border-radius:50%;background:#142824dd;border:1px solid #fff4bf89;
+}
+body.third-person #shuttle-indicator b,body.third-person #shuttle-indicator span {display:none}
+body.third-person #shuttle-indicator i {
+ width:14px;height:14px;background:#fff4bf;
+ clip-path:polygon(50% 0,100% 100%,50% 75%,0 100%);
+ transform:rotate(var(--shuttle-arrow,0deg));
+}
