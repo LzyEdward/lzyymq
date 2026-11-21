@@ -93,6 +93,24 @@ body:has(#menu:not(.hidden)) .icon-btn { width: 36px; height: 36px; line-height:
 #menu .menu-actions { display: grid; gap: 10px; margin-top: 20px; }
 #menu .menu-actions .btn-primary { height: 54px; width: 100%; min-width: 0; padding: 0 19px; border-radius: 9px; font-size: 15px; font-weight: 650; letter-spacing: .5px; }
 #menu .secondary-modes { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+#menu #training-btn { width: 100%; min-width: 0; padding-inline: 14px; color: #e4f2ce; }
+#training-picker { color: var(--cream); padding: 30px; }
+#training-picker::backdrop { background: #081a19c9; }
+#training-picker h2 { margin: 0 34px 6px 0; font-size: 27px; }
+#training-picker > p { color: #cedbd1; font-size: 13px; margin: 0 0 18px; }
+.training-options { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; }
+.training-options button {
+  background: #193e36; border: 1px solid #bddebd46; border-radius: 7px; color: #f1f5e7;
+  min-height: 72px; padding: 10px 12px; text-align: start;
+}
+.training-options button:hover, .training-options button:focus-visible { background: #2b5547; }
+.training-options b, .training-options span { display: block; }
+.training-options b { font-size: 15px; }
+.training-options span { color: #c3d8c6; font-size: 11px; margin-top: 4px; }
+@media (max-width: 430px) {
+  #training-picker { padding: 22px; }
+  #training-picker h2 { font-size: 23px; }
+}
 #menu .menu-actions .btn-secondary { width: 100%; min-width: 0; height: 43px; padding: 0 14px; gap: 8px; border-radius: 8px; font-size: 12px; font-weight: 500; letter-spacing: .2px; border-color: #e2ebd42b !important; color: #d8e3ce; background: transparent; backdrop-filter: none; }
 #menu .menu-actions .btn-secondary span { font-size: 17px; }
 #menu .menu-actions .btn-secondary:hover { background: #dcebc10d; transform: none; }
