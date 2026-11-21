@@ -51,6 +51,31 @@ export function canContact({ position, velocity, player, active, lastHitter, ass
     (!assisted || velocity.y < 1.8 || position.y < 1.75);
 }
 
+// A low defensive racket can reach only as far as the shoulder, arm and shaft
+// together. Getting an input into the preparation window does not make contact.
+export function defensiveReach(ball, feet, jump=0, side=1) {
+  const height=ball.y-jump;
+  const dx=ball.x-feet.x-.16*side, front=(feet.z-ball.z)*side;
+  const crouch=Math.max(0,Math.min(.46,(1.32-height)*.52));
+  return front>=-.35 && Math.hypot(dx,front-.16,height-(1.42-crouch))<=1.21;
+}
+
+// Intersect the cork's swept segment with a string bed in racket-local metres.
+// Expanding by the cork radius catches a legitimate graze between fixed ticks.
+export function crossesStrings(a,b,centerY=.51){
+  let lo=0,hi=1;
+  const dz=b.z-a.z, thickness=.025;
+  if(Math.abs(dz)<1e-8){if(Math.abs(a.z)>thickness)return false;}
+  else{
+    const s=(-thickness-a.z)/dz,t=(thickness-a.z)/dz;
+    lo=Math.max(lo,Math.min(s,t));hi=Math.min(hi,Math.max(s,t));
+    if(lo>hi)return false;
+  }
+  const x=a.x/.111,y=(a.y-centerY)/.151,dx=(b.x-a.x)/.111,dy=(b.y-a.y)/.151;
+  const u=Math.max(lo,Math.min(hi,-(x*dx+y*dy)/(dx*dx+dy*dy||1)));
+  return (x+u*dx)**2+(y+u*dy)**2<=1;
+}
+
 export function receivingTarget(prediction, current, preferLanding = false) {
   const p = (preferLanding && prediction?.landing) || prediction?.intercept || prediction?.landing;
   if (!p) return { x: current.x * .3, z: 3.9 };
@@ -64,6 +89,7 @@ export function swingWindow({position,velocity,player,playerVelocity={x:0,z:0},k
  for(let i=0;i<9;i++)advance(anticipated,v,lookAhead*pace/9);
  const futurePlayer={x:player.x+playerVelocity.x*lookAhead,z:player.z+playerVelocity.z*lookAhead};
  if(!canContact({...contact,position:anticipated,velocity:v,player:futurePlayer,jump,assisted}))return null;
+ if(anticipated.y-jump<2.30&&!defensiveReach(anticipated,futurePlayer,jump))return null;
  const desiredHeight=({clear:2.12,drive:1.9,drop:2.55,slicedrop:2.65,smash:2.98,slicesmash:2.98,lift:1.25,net:1.5,netcross:1.5,push:1.82,netkill:2.15})[kind]??2.1;
  if(age>.22){
   if(anticipated.y>desiredHeight+jump&&v.y<2)return null;

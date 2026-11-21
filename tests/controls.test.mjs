@@ -67,6 +67,8 @@ test('a grounded player can return the later, arcing opponent serve before it la
  for(let i=0;i<114;i++)advance(position,incoming,1/120); // 0.95 s into the serve
  const context={position,velocity:incoming,player:{x:0,z:4.45},playerVelocity:{x:0,z:0},active:true,lastHitter:'opponent',assisted:false,yaw:0,kind:'clear',jump:0,age:.5,pace:1};
  assert.equal(canContact({...context,preparing:true}),true,'the shuttle must enter the swing-start window');
+ assert.equal(swingWindow({...context,lookAhead:.04}),null,'an early press waits while the serve is beyond the strings');
+ for(let i=0;i<17;i++)advance(position,incoming,1/120);
  const future=swingWindow({...context,lookAhead:.04});
  assert.ok(future,'serve contact prediction should match the faster serve swing');
  const hit={...position},hitVelocity={...incoming};

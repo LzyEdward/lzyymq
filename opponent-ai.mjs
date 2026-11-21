@@ -1,3 +1,4 @@
+import {advance} from './physics.mjs';
 import {matchIntent,characterWeight} from './match-mind.mjs';
 const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
 
@@ -31,6 +32,23 @@ export function opponentWeaknessKey({position={x:0,y:1.5,z:-3},shot='clear'}={})
 export function opponentReceiveBase({serverX=.45,high=false}={}){
  return {x:-Math.sign(serverX||1)*.75,z:high?-4.4:-2.4};
 }
+// Choose a playable point along the descent. A defender covering the back
+// half can wait for a drive instead of chasing its first crossing near the net.
+export function defensiveIntercept(origin,velocity,feet,level,pace=1){
+ const p={...origin},v={...velocity},dt=1/120;
+ let best=null,bestCost=Infinity;
+ for(let i=1;i<=480;i++){
+  advance(p,v,dt*pace);
+  if(p.y<.34)break;
+  if(i%3||p.z>-.55||p.z<-6.8||v.y>1||p.y>2.54)continue;
+  const distance=Math.hypot(p.x-(feet.x-.1),p.z-(feet.z+.45));
+  const time=i*dt,available=Math.max(0,time-level.reaction*.50);
+  const travel=Math.min(available*level.speed,.5*level.acceleration*available**2);
+  const cost=Math.max(0,distance-.66-travel)*2.3+distance*.16+Math.abs(p.y-1.62)*.27+time*.16;
+  if(cost<bestCost){bestCost=cost;best={...p,time};}
+ }
+ return best;
+}
 export function opponentContactWindow({ball,position,level,training=false}){
  const distance=Math.hypot(ball.x-position.x,ball.z-position.z),reach=training?1.25:level.reach;
  const lowReach=ball.y<1.5?reach*(.61+level.netSkill*.17):reach;
@@ -50,7 +68,7 @@ export function opponentServeTarget({level,random=Math.random}={}){
 
 // Opportunity is sampled once per incoming rally by the caller, so a miss is
 // an actual skill outcome rather than a per-frame lottery that always resolves.
-export function opponentReceiveMissChance({level,shot='clear',position,distance,reach,energy=100,weaknesses=null,weaknessKey=null,adaptation=0,attackPressure=0,incomingSpeed=0}){
+export function opponentReceiveMissChance({level,shot='clear',position,distance,reach,energy=100,weaknesses=null,weaknessKey=null,adaptation=0,attackPressure=0,incomingSpeed=0,footSpeed=0,chased=0}){
  const ratio=distance/Math.max(.1,reach);
  const stretch=clamp((ratio-.58)/.48,0,1);
  const netShot=['drop','slicedrop','net','netcross'].includes(shot)&&position.z>-3.8;
@@ -64,6 +82,12 @@ export function opponentReceiveMissChance({level,shot='clear',position,distance,
  chance+=stretch*(.04+.12*(1-level.anticipation));
  if(netShot)chance+=(.035+.29*(1-level.netSkill))*(.72+low*.45);
  chance+=fatigue*.075;
+ // A receiver still braking after covering the court has less control.
+ // A high clear gives time to settle, but changing ends and taking a tight
+ // ball on the run can force a miss even against a skilled receiver.
+ const braking=clamp((footSpeed-.8)/4.1,0,1);
+ const travel=clamp((chased-.6)/2.6,0,1);
+ chance+=travel*(.06+braking*.22+low*.045)*(.75+.25*(1-level.anticipation));
  const lane=weaknessKey||opponentWeaknessKey({position,shot});
  const weakness=Number(weaknesses?.[lane])||0;
  // A discovered weakness matters, while repeated identical attacks let the

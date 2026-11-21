@@ -74,7 +74,7 @@ export function targetDistance(landing, target) {
   return Math.hypot(landing.x - target.x, landing.z - target.z);
 }
 
-export const SHOT_DEPTHS = Object.freeze({ clear: -5.85, drive: -4.7, drop: -1.15, slicedrop:-1.10, smash: -3.8, slicesmash:-3.5, lift: -5.5, net: -.85, netcross: -.85, push: -4.85, netkill: -1.75, auto: -5.45 });
+export const SHOT_DEPTHS = Object.freeze({ clear: -5.85, drive: -4.7, drop: -1.15, slicedrop:-1.10, smash: -3.8, slicesmash:-3.5, lift: -5.5, net: -.85, netcross: -.85, push: -5.65, netkill: -1.75, auto: -5.45 });
 
 // A technique supplies a sensible landing only until the player sets a point.
 // Cross-court means opposite the *contact lane*, not opposite camera yaw.
@@ -84,7 +84,8 @@ export function techniqueTarget({position={x:0,z:3},aim=0,kind='clear',manual=nu
  const side=Math.abs(position.x)>.3?-Math.sign(position.x):Math.abs(aim)>.2?Math.sign(aim):-1;
  const straight=['net','drop'].includes(kind)&&Math.abs(aim)<.05?position.x*.94/2.45:aim;
  const attack=kind==='smash'||kind==='slicesmash';
- const depth=attack?SHOT_DEPTHS[kind]-clamp((position.z-3.35)*.66,0,1.7):null;
+ const killDepth=-clamp(position.z*1.60/Math.max(.22,(position.y??1.9)-1.60)+.38,1.3,5.85);
+ const depth=kind==='netkill'?killDepth:attack?SHOT_DEPTHS[kind]-clamp((position.z-3.35)*.66,0,1.7):null;
  return shotTarget({aim:cross?side*.90:straight,depth,kind});
 }
 

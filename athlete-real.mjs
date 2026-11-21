@@ -1,3 +1,4 @@
+import {matchKit,hairCutOffset} from './match-kit.mjs';
 import * as data from './assets/athlete-data.mjs';
 import {FootPlant} from './footwork.mjs';
 import {createCourtShoe} from './court-shoe.mjs';
@@ -18,14 +19,41 @@ export function createAthlete(THREE, createRacket,{skinMap=null,mergeGeometries=
  }
  const weave=grain(32,true),skin=new THREE.MeshPhysicalMaterial({vertexColors:!skinMap,map:skinMap,roughness:.66,bumpMap:grain(64),bumpScale:.00022,clearcoat:.008,clearcoatRoughness:.8,sheen:.055,sheenColor:'#c39882'});
  const jersey=new THREE.MeshPhysicalMaterial({color:'#e3e9df',roughness:.9,bumpMap:weave,bumpScale:.00034,sheen:.42,sheenRoughness:.9,sheenColor:'#ffffff'});
+ const printCanvas=document.createElement('canvas');printCanvas.width=512;printCanvas.height=256;
+ const printContext=printCanvas.getContext('2d'),printMap=new THREE.CanvasTexture(printCanvas);
+ printMap.colorSpace=THREE.SRGBColorSpace;printMap.anisotropy=4;
+ const printPattern={value:0},sleeveTone={value:new THREE.Color()};
  jersey.onBeforeCompile=shader=>{
-  shader.uniforms.uCollarColor={value:trim.color};
+  shader.uniforms.uCollarColor={value:trim.color};shader.uniforms.uKitPattern=printPattern;shader.uniforms.uSleeve=sleeveTone;shader.uniforms.uBackPrint={value:printMap};
   shader.vertexShader=shader.vertexShader.replace('#include <common>','#include <common>\nvarying vec3 vCloth;\nattribute float necklineDistance;\nvarying float vNeckline;').replace('#include <begin_vertex>','#include <begin_vertex>\nvCloth=position;\nvNeckline=necklineDistance;');
-  shader.fragmentShader=shader.fragmentShader.replace('#include <common>','#include <common>\nvarying vec3 vCloth;\nvarying float vNeckline;\nuniform vec3 uCollarColor;').replace('#include <color_fragment>',`#include <color_fragment>
+  shader.fragmentShader=shader.fragmentShader.replace('#include <common>','#include <common>\nvarying vec3 vCloth;\nvarying float vNeckline;\nuniform vec3 uCollarColor;\nuniform float uKitPattern;\nuniform vec3 uSleeve;\nuniform sampler2D uBackPrint;').replace('#include <color_fragment>',`#include <color_fragment>
    float panel=smoothstep(.163,.195,abs(vCloth.x))*(1.-smoothstep(1.25,1.34,vCloth.y))*smoothstep(.99,1.045,vCloth.y);
    float hem=1.-smoothstep(.003,.010,abs(vCloth.y-.992));
    float cuff=smoothstep(.22,.25,abs(vCloth.x))*(1.-smoothstep(.002,.008,abs(vCloth.y-1.316)));
    diffuseColor.rgb=mix(diffuseColor.rgb,vec3(.035,.15,.155),panel*.83+hem*.45+cuff*.8);
+   float raglan=smoothstep(.134,.142,abs(vCloth.x)-(1.43-vCloth.y)*.32);
+   float front=smoothstep(.012,.085,vCloth.z);
+   float chest=smoothstep(1.05,1.12,vCloth.y)*(1.-smoothstep(1.35,1.40,vCloth.y));
+   float slant=vCloth.y+vCloth.x*.48;
+   float ribbon=1.-smoothstep(.021,.026,abs(slant-1.29));
+   float chevron=1.-smoothstep(.025,.03,abs(vCloth.y-abs(vCloth.x)*.64-1.25));
+   float motif=uKitPattern<.5?ribbon:uKitPattern<1.5?raglan:uKitPattern<2.5?1.-smoothstep(1.05,1.32,vCloth.y):chevron;
+   diffuseColor.rgb=mix(diffuseColor.rgb,uCollarColor,motif*(.28+.54*front));
+   if(abs(uKitPattern-1.)<.1)diffuseColor.rgb=mix(diffuseColor.rgb,uSleeve,raglan*.96);
+   float bladePos=slant+abs(vCloth.x+.09)*.65;
+   float bars=1.-smoothstep(.003,.005,abs(mod(bladePos,.024)-.012));
+   float graphic=chest*front*smoothstep(-.095,.06,vCloth.x)*bars;
+   diffuseColor.rgb=mix(diffuseColor.rgb,uCollarColor,graphic*(.30+.26*front));
+   float stripe=1.-smoothstep(.002,.004,abs(slant-1.246));
+   diffuseColor.rgb=mix(diffuseColor.rgb,uCollarColor,stripe*.77*front);
+   vec2 printUv=vec2(.5-vCloth.x/.32,(vCloth.y-1.24)/.145);
+   if(vCloth.z<-.035&&all(greaterThanEqual(printUv,vec2(0.)))&&all(lessThanEqual(printUv,vec2(1.)))){
+    vec4 ink=texture2D(uBackPrint,printUv);diffuseColor.rgb=mix(diffuseColor.rgb,ink.rgb,ink.a);
+   }
+   vec2 chestUv=vec2(.5+(vCloth.x+.081)/.079,(vCloth.y-1.336)/.082);
+   if(front>.65&&all(greaterThanEqual(chestUv,vec2(0.)))&&all(lessThanEqual(chestUv,vec2(1.)))){
+    vec4 ink=texture2D(uBackPrint,chestUv);diffuseColor.rgb=mix(diffuseColor.rgb,ink.rgb,ink.a);
+   }
    float seam=1.-smoothstep(.001,.0025,abs(vCloth.y-1.388+abs(vCloth.x)*.13));
    diffuseColor.rgb=mix(diffuseColor.rgb,vec3(.12,.38,.37),seam*.28);
    float sideFold=sin(vCloth.y*112.+abs(vCloth.x)*27.)*sin(vCloth.y*61.-vCloth.x*18.);
@@ -38,7 +66,7 @@ export function createAthlete(THREE, createRacket,{skinMap=null,mergeGeometries=
    diffuseColor.rgb=mix(diffuseColor.rgb,uCollarColor*(.94+rib*.035),collar);
   `);
  };
- jersey.customProgramCacheKey=()=> 'court-performance-jersey-mesh-collar-v5';
+ jersey.customProgramCacheKey=()=> 'match-jersey-print-v6';
  const shorts=new THREE.MeshPhysicalMaterial({color:'#1c343c',roughness:.9,bumpMap:weave,bumpScale:.001,sheen:.4});
  const hairGrain=grain(64);hairGrain.repeat.set(70,70);
  const sock=new THREE.MeshStandardMaterial({color:'#dedfd4',roughness:.95,bumpMap:weave,bumpScale:.0006}),hair=new THREE.MeshPhysicalMaterial({color:'#111713',roughness:.83,bumpMap:hairGrain,bumpScale:.00012,sheen:.18});
@@ -70,10 +98,13 @@ export function createAthlete(THREE, createRacket,{skinMap=null,mergeGeometries=
  for(const i of new Set(data.indices1)){
   const x=cloth.getX(i),y=cloth.getY(i),z=cloth.getZ(i),edge=1-THREE.MathUtils.smoothstep(Math.abs(x),.135,.225);
   const middle=THREE.MathUtils.smoothstep(y,.985,1.05)*(1-THREE.MathUtils.smoothstep(y,1.43,1.49))*edge;
-  const front=.151+Math.exp(-Math.pow((y-1.34)/.12,2))*.016;
-  const envelope=z>0?Math.max(z,front):Math.min(z,-.115);
+  const curve=Math.sqrt(Math.max(.05,1-(x/.202)**2));
+  const front=(.121+Math.exp(-Math.pow((y-1.34)/.115,2))*.041)*curve+.009;
+  const envelope=z>0?Math.max(z,front):Math.min(z,-.118*curve);
   const folds=(Math.sin(y*95+x*16)*.0017+Math.sin(x*82+y*22)*.0011)*(1-THREE.MathUtils.smoothstep(y,1.24,1.41));
   cloth.setZ(i,z+(envelope-z)*middle+folds*middle*(z>0?1:-1));
+  const skirt=(1-THREE.MathUtils.smoothstep(y,.985,1.08))*THREE.MathUtils.smoothstep(.23-Math.abs(x),0,.055);
+  cloth.setY(i,y-skirt*.019);
  }
  // Average normals across coincident UV vertices. Recomputing each UV island
  // separately produced a comb-like rim along the neckline under grazing light.
@@ -115,6 +146,7 @@ export function createAthlete(THREE, createRacket,{skinMap=null,mergeGeometries=
  function add(geo,mat,parent=body){const m=new THREE.Mesh(geo,mat);m.castShadow=m.receiveShadow=true;parent.add(m);return m;}
  function oval(parent,mat,p,s){const m=add(new THREE.SphereGeometry(1,24,16),mat,parent);m.position.copy(p);m.scale.set(...s);return m;}
  function tube(parent,mat,points,r=.002){return add(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(points),Math.max(8,points.length*4),r,5,false),mat,parent);}
+ const faceTints=[];
  const head=bones.head,eyes=[],restSurface=new THREE.Mesh(anatomySkin.geometry,skin),browMat=new THREE.MeshStandardMaterial({color:'#302820',roughness:.94,alphaToCoverage:true});
  browMat.onBeforeCompile=shader=>{
   shader.vertexShader=shader.vertexShader.replace('#include <common>','#include <common>\nvarying vec2 vBrow;').replace('#include <begin_vertex>','#include <begin_vertex>\nvBrow=uv;');
@@ -145,11 +177,13 @@ export function createAthlete(THREE, createRacket,{skinMap=null,mergeGeometries=
   const browGeometry=new THREE.BufferGeometry();browGeometry.setAttribute('position',new THREE.Float32BufferAttribute(browPosition,3));browGeometry.setAttribute('uv',new THREE.Float32BufferAttribute(browUv,2));browGeometry.setIndex(browIndex);browGeometry.computeVertexNormals();
   const eyebrow=add(browGeometry,browMat,head);eyebrow.name='Surface eyebrow';
   const lidMaterial=new THREE.MeshStandardMaterial({color:'#b58a74',roughness:.67});
+  faceTints.push([lidMaterial,'#b58a74']);
   for(const lower of [false,true])tube(head,lidMaterial,Array.from({length:7},(_,i)=>center.clone().add(vec((i/6-.5)*.025,Math.sin(i/6*Math.PI)*(lower?-.0048:.0058),.007+Math.sin(i/6*Math.PI)*.0047))),.0012);
  }
  // Small facial planes break the game-like sphere silhouette at match distance:
  // ears sit on the head seam and the nose bridge catches a soft highlight.
  const earMat=new THREE.MeshPhysicalMaterial({color:'#b98572',roughness:.74,sheen:.12}),noseMat=new THREE.MeshPhysicalMaterial({color:'#bd8b76',roughness:.7,sheen:.12});
+ faceTints.push([earMat,'#b98572'],[noseMat,'#bd8b76']);
  for(const side of [-1,1]){
   oval(head,earMat,vec(side*.061,1.688,.109).sub(bind.head),[.008,.018,.007]);
   oval(head,earMat,vec(side*.061,1.688,.116).sub(bind.head),[.004,.010,.003]);
@@ -167,9 +201,6 @@ export function createAthlete(THREE, createRacket,{skinMap=null,mergeGeometries=
  const racket=createRacket();
  const gripCenter=bind['finger2-1.R'].clone().add(bind['finger5-1.R']).multiplyScalar(.5).sub(bind['wrist.R']).addScaledVector(gripFrames.R.normal,-.021);
  racket.position.copy(gripCenter).addScaledVector(gripFrames.R.across,-.085);bones['wrist.R'].add(racket);
- const crestCanvas=document.createElement('canvas');crestCanvas.width=256;crestCanvas.height=128;const ctx=crestCanvas.getContext('2d');ctx.fillStyle='#285e63';ctx.textAlign='center';ctx.font='700 42px sans-serif';ctx.fillText?.('FEATHER',128,56);ctx.font='22px sans-serif';ctx.fillText?.('PERFORMANCE / 07',128,94);
- const crestTex=new THREE.CanvasTexture(crestCanvas);crestTex.colorSpace=THREE.SRGBColorSpace;
- const crest=add(new THREE.PlaneGeometry(.13,.065),new THREE.MeshStandardMaterial({map:crestTex,transparent:true,roughness:.9,depthWrite:false}),bones.spine01);crest.position.copy(vec(-.064,1.366,.172).sub(bind.spine01));crest.rotation.y=-.12;
  const shadowCanvas=document.createElement('canvas');shadowCanvas.width=shadowCanvas.height=64;const sc=shadowCanvas.getContext('2d');
  if(sc.createRadialGradient){const gradient=sc.createRadialGradient(32,32,1,32,32,32);gradient.addColorStop(0,'#0009');gradient.addColorStop(1,'#0000');sc.fillStyle=gradient;sc.fillRect(0,0,64,64);}
  const shadowMap=new THREE.CanvasTexture(shadowCanvas),shadow=add(new THREE.PlaneGeometry(.95,.75),new THREE.MeshBasicMaterial({map:shadowMap,transparent:true,opacity:.4,depthWrite:false}),root);shadow.rotation.x=-Math.PI/2;shadow.position.y=.009;shadow.castShadow=false;
@@ -186,7 +217,7 @@ export function createAthlete(THREE, createRacket,{skinMap=null,mergeGeometries=
  }
  let stride=0,ready=0;const footPlants=[new FootPlant(),new FootPlant()];
  const smooth=(t,lo,hi)=>{const u=clamp((t-lo)/(hi-lo),0,1);return u*u*(3-2*u);};
- function update({speed=0,dt=1/60,time=0,swing=0,lateral=0,forward=0,shot='clear',anticipation=0,lookY=1.5,lookX=0,grip=1,split=0,crossover=false,contact=null,lunge=0,netVariant='',supportContact=null,jumpHeight=0,landing=0}={}){
+ function update({speed=0,dt=1/60,time=0,swing=0,lateral=0,forward=0,shot='clear',anticipation=0,lookY=1.5,lookX=0,grip=1,split=0,crossover=false,contact=null,lunge=0,netVariant='',supportContact=null,jumpHeight=0,landing=0,impactOnly=false}={}){
   lunge=clamp(lunge,0,1);const netStroke=['net','netcross','push','netkill'].includes(shot),crossStep=crossover&&Math.abs(lateral)>.3;
   const overhead=['smash','slicesmash','clear','drop','slicedrop'].includes(shot),under=shot==='lift'||shot==='serve';
   const power=shot==='smash'?1:shot==='slicesmash'?.83:shot==='clear'?.72:.48;
@@ -197,22 +228,33 @@ export function createAthlete(THREE, createRacket,{skinMap=null,mergeGeometries=
   const hips=smooth(t,.06,.19)*(1-smooth(t,.30,.72)),air=clamp(jumpHeight/.46,0,1);
   const racketPower=shot==='smash'?1:shot==='slicesmash'?.82:shot==='clear'?.26:.48;
   body.position.y=-.055-Math.abs(motion)*.022*run+Math.sin(time*2.2)*.002-ready*.035-Math.sin(split*Math.PI)*.032-lunge*.145-landing*.064;
+  const weightShift=run*Math.sin(stride),breath=Math.sin(time*2.65)*(1-run*.65);
+  const impact=contact&&swing>0?1-smooth(Math.abs(swing-.135),.012,.135):0;
+  const dip=impact*clamp((1.29-(contact?.[1]??1.29))*.54,0,.46);
+  const reachSide=impact*clamp((contact?.[0]??0)+.15,-.95,.95);
+  body.position.x=.026*weightShift+reachSide*.11;body.position.y-=dip;
+  body.position.z=impact*clamp((contact?.[2]??0)*.16,-.07,.15);
+  bones.root.rotation.y=weightShift*.075+hips*(overhead?.10:.055);
+  bones.root.rotation.z=-weightShift*.032-reachSide*.07;
   bones.spine05.rotation.x=.035+run*.085+ready*.075+lunge*.16+landing*.075;
   bones.spine05.rotation.y=overhead?power*(-coil*.18+hips*.27):0;
   bones.spine03.rotation.x=.04+run*.03+lunge*.075+(overhead?power*(-coil*.09+drive*.20):0);
   bones.spine01.rotation.x=-.025-stroke*.035;
   bones.spine01.rotation.y=overhead?power*(-coil*.44+drive*.54):stroke*(netStroke?.06:.16);
   bones.spine01.rotation.z=overhead?power*(coil*.13-drive*.16):0;
-  bones.spine03.rotation.y=0;bones.spine03.rotation.z=clamp(-lateral*.025,-.15,.15);
+  bones.spine05.rotation.x+=dip*.35+breath*.009;
+  bones.spine03.rotation.y=weightShift*-.092+(overhead?power*(-coil*.15+drive*.19):impact*.105);
+  bones.spine03.rotation.z=clamp(-lateral*.018,-.10,.10)-reachSide*.17+weightShift*.035;
+  bones.spine01.rotation.x+=breath*.014+dip*.16;
   head.rotation.x=clamp((1.55-lookY)*.20,-.58,.32);head.rotation.y=clamp(lookX*.11,-.36,.36);root.updateWorldMatrix(true,true);
   const blinkPhase=(time+1.7)%4.6,blink=blinkPhase<.15?Math.sin(blinkPhase/.15*Math.PI):0;
-  for(const eye of eyes){
+  if(!impactOnly)for(const eye of eyes){
    eye.white.scale.y=.006*(1-blink*.94);eye.iris.scale.y=.0049*(1-blink*.94);eye.pupil.scale.y=.0024*(1-blink*.94);
    const gazeX=clamp(lookX*.0006,-.002,.002),gazeY=clamp((lookY-1.55)*.0011,-.0015,.0015);
    for(const [part,offset] of [[eye.iris,0],[eye.pupil,0],[eye.glint,-.0018]]){part.position.x=eye.center.x+gazeX+offset;part.position.y=eye.center.y+gazeY+(part===eye.glint?.0021:-.0002);part.visible=blink<.8;}
   }
   const velocity=vec(lateral,0,forward);root.getWorldQuaternion(parentQ);velocity.applyQuaternion(parentQ.invert());if(velocity.lengthSq()<.01)velocity.set(0,0,1);velocity.normalize();
-  for(let i=0;i<2;i++){
+  if(!impactOnly)for(let i=0;i<2;i++){
    const side=i?-1:1,suffix=i?'R':'L',cycle=((stride/(Math.PI*2)+i*.5)%1+1)%1,swingPhase=cycle<.5?0:(cycle-.5)*2,u=cycle<.5?cycle*2:swingPhase*swingPhase*(3-2*swingPhase),travel=(cycle<.5?.36-.72*u:-.36+.72*u)*run;
    const crossed=crossStep&&i===1,x=clamp(side*(.17+anticipation*.025+split*.035)+velocity.x*travel+(crossed?Math.sign(lateral)*.36:0),crossed?-.02:side<0?-.55:.02,crossed?.55:side<0?-.02:.55);
    const ideal=vec(x,.064+Math.sin(swingPhase*Math.PI)*.13*run,velocity.z*travel+.012+side*(ready*.06+coil*.18-drive*.11));
@@ -262,6 +304,11 @@ export function createAthlete(THREE, createRacket,{skinMap=null,mergeGeometries=
   }else if(overhead){
    racketY.add(vec(-coil*.38+drive*.94*racketPower,-drive*1.06*racketPower,-coil*.72+drive*.57*racketPower));
   }
+  if(impact){
+   const shoulder=root.worldToLocal(bones['upperarm01.R'].getWorldPosition(vec()));
+   const aim=vec(...contact).sub(shoulder),extension=smooth(aim.length(),.40,.98);
+   racketY.normalize().lerp(aim.normalize(),impact*(.45+.55*extension));
+  }
   racketY.normalize();const handX=vec(-1,0,.2);handX.addScaledVector(racketY,-handX.dot(racketY)).normalize();
   const handZ=handX.clone().cross(racketY).normalize(),worldWrist=new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().makeBasis(handX,racketY,handZ)).multiply(gripFrames.R.orientation.clone().invert());
   if(netWristRoll)worldWrist.multiply(new THREE.Quaternion().setFromAxisAngle(vec(0,1,0),netWristRoll));
@@ -271,10 +318,11 @@ export function createAthlete(THREE, createRacket,{skinMap=null,mergeGeometries=
    hand.lerp(goal,weight*weight*(3-2*weight));pole.lerp(vec(clamp(hand.x*1.15-.23,-.69,.30),netStroke?.76:1.25,netStroke?.05:-.12),weight);
   }
   limb('upperarm01.R',hand,pole);
-  limb('upperarm01.L',vec(.23+stroke*.15-motion*run*.105+drive*.19,1.07+ready*.19+coil*.41+stroke*.12-drive*.17,.16+coil*.31-drive*.25+Math.cos(stride)*run*.045-lunge*.28),vec(.38,.8,.04));
+  if(!impactOnly)limb('upperarm01.L',vec(.23+stroke*.15-motion*run*.105+drive*.19,1.07+ready*.19+coil*.41+stroke*.12-drive*.17,.16+coil*.31-drive*.25+Math.cos(stride)*run*.045-lunge*.28),vec(.38,.8,.04));
   root.getWorldQuaternion(parentQ);worldWrist.premultiply(parentQ);bones['wrist.R'].parent.getWorldQuaternion(parentQ);bones['wrist.R'].quaternion.copy(parentQ.invert().multiply(worldWrist));bones['wrist.L'].rotation.set(-.1,0,.12);
   if(supportContact){const held=vec(...supportContact);held.x+=.015;held.y-=.09;limb('upperarm01.L',held,vec(.5,.7,.2));}
   bones['wrist.R'].updateWorldMatrix(true,false);const orientation=new THREE.Quaternion().setFromUnitVectors(vec(0,1,0),racketY);root.getWorldQuaternion(parentQ);orientation.premultiply(parentQ);bones['wrist.R'].getWorldQuaternion(parentQ);racket.quaternion.copy(parentQ.invert().multiply(orientation));
+  if(impactOnly)return;
   for(const suffix of ['L','R']){
    const amount=suffix==='R'?grip:.30,sign=suffix==='R'?1:-1,frame=gripFrames[suffix];
    for(let f=2;f<=5;f++)for(let part=1;part<=3;part++)bones['finger'+f+'-'+part+'.'+suffix].quaternion.setFromAxisAngle(frame.across,sign*amount*(part===1?1.04:part===2?1.22:.86));
@@ -289,8 +337,37 @@ export function createAthlete(THREE, createRacket,{skinMap=null,mergeGeometries=
   }
   skeleton.update();
  }
- const kits={allround:['#e3e9df','#1c343c','#378683'],linDan08:['#c63b38','#1b2630','#d9bb68'],leeChongWei:['#e6c550','#172738','#d8e7ee'],chenLong:['#dfe8ed','#203344','#607e9d'],taufik:['#dce6d2','#243c31','#b48c56']};
- function setKit(key='allround'){const spec=key&&typeof key==='object'?key:null,[shirt,pants,accent]=kits[spec?.key||key]||kits.allround;jersey.color.set(spec?.shirt||shirt);shorts.color.set(spec?.pants||pants);trim.color.set(spec?.accent||accent);root.userData.kit=spec?.key||key;}
+ const scalpRest=sp.array.slice(),tufts=tuftGeometry.attributes.position,tuftRest=tufts.array.slice();
+ const scalpIds=[...new Set(scalp)];
+ let currentCut='';
+ function setKit(input='custom'){
+  const kit=matchKit(input);if(root.userData.kit===kit.key)return;
+  jersey.color.set(kit.shirt);shorts.color.set(kit.pants);trim.color.set(kit.accent);
+  skin.color.set(kit.skin).multiplyScalar(1.18);
+  skin.emissive.set('#bc8e74').multiply(skin.color);skin.emissiveIntensity=.085;
+  hair.color.set(kit.hair);printPattern.value=kit.pattern;
+  sleeveTone.value.set(kit.pattern===1?'#f8eee0':kit.accent);
+  head.scale.fromArray(kit.build);
+  for(const [mat,base] of faceTints)mat.color.set(base).multiply(skin.color);
+  if(printContext.clearRect){
+   printContext.clearRect(0,0,512,256);printContext.textAlign='center';
+   printContext.fillStyle=(.2126*jersey.color.r+.7152*jersey.color.g+.0722*jersey.color.b)>.40?'#152436':'#f7f5e9';
+   printContext.font='bold 65px Arial';printContext.fillText(kit.lettering,256,97,484);
+   printContext.font='bold 86px Arial';printContext.fillText(kit.team,256,193,405);printMap.needsUpdate=true;
+  }
+  if(currentCut!==kit.cut){
+   const reshape=(attr,original,i,origin)=>{
+    const j=i*3,x=original[j],y=original[j+1],z=original[j+2];
+    const d=hairCutOffset(kit.cut,x+origin.x,y+origin.y,z+origin.z);
+    attr.setXYZ(i,x+d[0],y+d[1],z+d[2]);
+   };
+   const zero=vec();for(const i of scalpIds)reshape(sp,scalpRest,i,zero);
+   for(let i=0;i<tufts.count;i++)reshape(tufts,tuftRest,i,bind.head);
+   sp.needsUpdate=tufts.needsUpdate=true;tuftGeometry.computeBoundingSphere();currentCut=kit.cut;
+  }
+  root.userData.kit=kit.key;
+ }
+ setKit();
  update();return {root,body,torso,head,legs:[bones['upperleg01.L'],bones['upperleg01.R']],knees:[bones['lowerleg01.L'],bones['lowerleg01.R']],arms:[bones['upperarm01.L'],bones['upperarm01.R']],elbows:[bones['lowerarm01.L'],bones['lowerarm01.R']],wrists:[bones['wrist.L'],bones['wrist.R']],skeleton,meshes,bones,bind,shoes,racket,update,setKit,resetFeet:()=>{footPlants.forEach(foot=>foot.reset());ready=0;}};
 }
 

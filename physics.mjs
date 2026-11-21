@@ -157,6 +157,13 @@ export function solveShot(origin, target, type = 'clear',options={}) {
     }
     return {x:dx*horizontal,y:up,z:dz*horizontal};
   }
+  if(type==='push'){
+    const height=clamp((origin.y-1.26)/.75,0,1);
+    const quality=clamp(options.quality??1,0,1);
+    const pace=(13+height*12)*(.79+.21*quality);
+    const push=attackVelocity(origin,dx,dz,distance,pace,options.step??1/120);
+    if(push)return push;
+  }
   if((type==='smash'||type==='slicesmash'||type==='netkill')&&Number.isFinite(options.speed)){
     const velocity = attackVelocity(origin, dx, dz, distance, options.speed, options.step ?? 1 / 120);
     if (velocity) return velocity;

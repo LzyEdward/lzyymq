@@ -31,6 +31,7 @@ export function createViewmodel(THREE,createRacket,{skinMap=null,articulated=fal
  }
  const rightSleeve=sleeve(root);
  const support=new THREE.Group(),open=complete?armHandSeed(THREE,true):sculptGrip(THREE,{open:true});support.add(open.mesh,...open.details);sleeve(support);support.scale.x=-1;root.userData.support=support;
+ root.userData.skinMaterials=[hand.mesh.material,open.mesh.material];
  if(skinMap)for(const mesh of [hand.mesh,open.mesh])if(mesh.geometry.userData.skinUV){mesh.material.map=skinMap;mesh.material.vertexColors=false;mesh.material.bumpMap.channel=1;mesh.material.needsUpdate=true;}
  if(articulated){
   const rig=createArmKinematics(THREE),arm=createSkinnedPlayerArm(THREE,{skin:hand.mesh.material,fabric});

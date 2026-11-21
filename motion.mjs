@@ -74,6 +74,12 @@ export function swingPose({elapsed=0,kind='clear',contact=null,contactTime=.095,
  if(kind==='drop'||kind==='slicedrop'){prep.rotation=[-.84,.18,-.78];prep.position=[.44,-.10,-.69];follow.rotation=[.46,.03,-.60];}
  if(slice){prep.rotation[1]+=.22;follow.position=[-.23,kind==='slicesmash'?-.48:-.33,-.92];follow.rotation=[kind==='slicesmash'?.95:.48,-.48,-.74];}
  if(kind==='netcross'){prep.rotation=[.12,.42,-.53];follow.position=[-.20,-.32,-.98];follow.rotation=[.34,-.52,-.40];}
+ if(kind==='push'){
+  const lane=backhand?-1:1;
+  prep.position=[lane*.28,-.28,-.78];prep.rotation=[.04,lane*.19,-lane*.24];
+  follow.position=[at[0]-x+lane*.025,at[1]-y+.025,at[2]-z-.15];
+  follow.rotation=[.22,-lane*.14,-lane*.38];
+ }
  if(power>.8){follow.position[1]-=.055;follow.rotation[0]+=.14;}
  const prepTime=contactTime<.07?Math.max(.012,contactTime*.48):.048;
  const hitTime=Math.max(prepTime+.01,contactTime);
