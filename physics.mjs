@@ -86,22 +86,53 @@ export function advance(p, v, dt) {
   return p;
 }
 
-function flight(origin, horizontal, up, dx, dz, record = false) {
+function flight(origin, horizontal, up, dx, dz, step = 1 / 180) {
   const p = { ...origin }, v = { x: dx * horizontal, y: up, z: dz * horizontal };
-  let netY = Infinity, previous = { ...p }, time = 0;
-  const points = [];
+  let netY = Infinity;
   for (let i = 0; i < 900; i++) {
-    previous = { ...p };
-    advance(p, v, 1 / 180);
-    time += 1 / 180;
+    const previous = { ...p };
+    advance(p, v, step);
     if (previous.z * p.z <= 0 && previous.z !== p.z) {
       const t = previous.z / (previous.z - p.z);
       netY = previous.y + (p.y - previous.y) * t;
     }
-    if (record && i % 6 === 0) points.push({ ...p, t: time, vy: v.y });
     if (p.y <= CONTACT_HEIGHT) { Object.assign(p, groundCrossing(previous, p)); break; }
   }
-  return { distance: Math.hypot(p.x - origin.x, p.z - origin.z), position: p, netY, time, points };
+  return { distance: Math.hypot(p.x - origin.x, p.z - origin.z), netY };
+}
+
+function attackVelocity(origin, dx, dz, distance, speed, step) {
+  const atSpeed = horizontal => {
+    let low = -85, high = 35;
+    for (let i = 0; i < 22; i++) {
+      const up = (low + high) / 2;
+      if (flight(origin, horizontal, up, dx, dz, step).distance < distance) low = up;
+      else high = up;
+    }
+    const up = (low + high) / 2;
+    const result = flight(origin, horizontal, up, dx, dz, step);
+    if (Math.abs(result.distance - distance) > .01 || result.netY < COURT.netHeight + .065) return null;
+    return { x: dx * horizontal, y: up, z: dz * horizontal };
+  };
+  let high = clamp(speed, 12, 110);
+  const full = atSpeed(high);
+  if (full) return full;
+  // Keep as much of the requested power as the tape and requested depth allow.
+  // Falling straight back to a fixed launch angle turns clean smashes into drops.
+  let low = high * .78, legal = atSpeed(low);
+  while (!legal && low > 5) {
+    high = low;
+    low *= .78;
+    legal = atSpeed(low);
+  }
+  if (!legal) return null;
+  for (let i = 0; i < 9; i++) {
+    const middle = (low + high) / 2;
+    const candidate = atSpeed(middle);
+    if (candidate) { low = middle; legal = candidate; }
+    else high = middle;
+  }
+  return legal;
 }
 
 export function solveShot(origin, target, type = 'clear',options={}) {
@@ -127,10 +158,8 @@ export function solveShot(origin, target, type = 'clear',options={}) {
     return {x:dx*horizontal,y:up,z:dz*horizontal};
   }
   if((type==='smash'||type==='slicesmash'||type==='netkill')&&Number.isFinite(options.speed)){
-    const horizontal=clamp(options.speed,12,110);let lo=-85,hi=35,up=0,result;
-    for(let i=0;i<28;i++){up=(lo+hi)/2;result=flight(origin,horizontal,up,dx,dz);if(result.distance<distance)lo=up;else hi=up;}
-    result=flight(origin,horizontal,up,dx,dz);
-    if(result.netY>=COURT.netHeight+.065)return {x:dx*horizontal,y:up,z:dz*horizontal};
+    const velocity = attackVelocity(origin, dx, dz, distance, options.speed, options.step ?? 1 / 120);
+    if (velocity) return velocity;
   }
   let up = ({ clear: 15.8, drive: 5.1, push:4.1,netkill:-3.8,drop: 6.1, smash: -6.5, slicesmash:-4.8, serve: 3.6, lift: 18 })[type] ?? 12;
   if(type==='serve'&&Number.isFinite(options.up))up=clamp(options.up,3.6,10);

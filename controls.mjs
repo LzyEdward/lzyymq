@@ -43,7 +43,9 @@ export function canContact({ position, velocity, player, active, lastHitter, ass
   const reach = (assisted ? (preparing ? 3.05 : 2.55) : (preparing ? 2.15 : 1.85))+Math.max(-.6,Math.min(.6,reachBonus));
   const front = -dx * Math.sin(yaw) - dz * Math.cos(yaw);
   return Math.hypot(dx, dz) <= reach && position.y >= .075 &&
-    position.y <= (assisted ? 3.15 : 2.95) + jump &&
+    // A clean standing overhead reaches above 2.95 m. Assistance widens the
+    // horizontal catch window, not the player's physical racket height.
+    position.y <= 3.15 + jump &&
     front >= (assisted ? -1.05 : -.55) &&
     // Let descending balls come down into the visible hitting zone.
     (!assisted || velocity.y < 1.8 || position.y < 1.75);

@@ -1,9 +1,9 @@
 const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
 export const cameraMode=value=>value==='first'?'first':'third';
 export const toggleCameraMode=value=>cameraMode(value)==='first'?'third':'first';
-export const thirdPersonDistance=value=>value==='wide'?6.2:3.9;
-export const THIRD_PERSON_PITCH=-.36;
-export const thirdPersonFov=lift=>77+4.25*clamp(lift,0,3.2);
+export const thirdPersonDistance=value=>value==='wide'?7.15:4.55;
+export const THIRD_PERSON_PITCH=-.32;
+export const thirdPersonFov=lift=>61+5.6*clamp(lift,0,3.2);
 export function orbitLook(view){
  return {yaw:clamp(view.yaw,-1.15,1.15),pitch:clamp(view.pitch,-.85,.32)};
 }
@@ -11,13 +11,13 @@ export function orbitLook(view){
 // reachable shuttle into a back-facing miss, or change a chosen landing point.
 export function thirdPersonPose({player,jump=0,yaw=0,pitch=THIRD_PERSON_PITCH,lift=0,framing='near'}={}){
  const view=orbitLook({yaw,pitch}),height=clamp(lift,0,3.2);
- const distance=thirdPersonDistance(framing)+height*.65;
+ const distance=thirdPersonDistance(framing)+height*.70;
  const sideX=Math.cos(view.yaw),sideZ=-Math.sin(view.yaw);
- const target={x:player.x+sideX*.52,y:1.12+jump*.42+height*1.28,z:player.z-.65+sideZ*.52};
+ const target={x:player.x+sideX*.37,y:1.24+jump*.38+height*1.24,z:player.z-.36+sideZ*.37};
  const horizontal=Math.cos(view.pitch)*distance;
- const position={x:clamp(target.x+Math.sin(view.yaw)*horizontal+sideX*.52,-7.4,7.4),
-  y:clamp(1.34+jump*.34+height*.7-Math.sin(view.pitch)*distance,2.4,10),
-  z:clamp(target.z+Math.cos(view.yaw)*horizontal+sideZ*.52,.7,13.2)};
+ const position={x:clamp(target.x+Math.sin(view.yaw)*horizontal+sideX*.63,-7.4,7.4),
+  y:clamp(1.58+jump*.34+height*.65-Math.sin(view.pitch)*distance,2.4,10),
+  z:clamp(target.z+Math.cos(view.yaw)*horizontal+sideZ*.40,.7,13.2)};
  return {position,target};
 }
 // Ray from shuttle to camera, checked against simple body volumes. The closest

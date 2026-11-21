@@ -83,7 +83,9 @@ export function techniqueTarget({position={x:0,z:3},aim=0,kind='clear',manual=nu
  const cross=['netcross','slicesmash','slicedrop'].includes(kind);
  const side=Math.abs(position.x)>.3?-Math.sign(position.x):Math.abs(aim)>.2?Math.sign(aim):-1;
  const straight=['net','drop'].includes(kind)&&Math.abs(aim)<.05?position.x*.94/2.45:aim;
- return shotTarget({aim:cross?side*.90:straight,kind});
+ const attack=kind==='smash'||kind==='slicesmash';
+ const depth=attack?SHOT_DEPTHS[kind]-clamp((position.z-3.35)*.66,0,1.7):null;
+ return shotTarget({aim:cross?side*.90:straight,depth,kind});
 }
 
 export function racketPowerBoost(style='control',kind='smash'){

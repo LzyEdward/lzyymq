@@ -37,6 +37,11 @@ test('assisted contact accepts imperfect positioning and does not require precis
   assert.equal(canContact(base),true);assert.equal(canContact({...base,assisted:false}),false);
   assert.equal(canContact({...base,position:{x:0,y:8,z:3.7}}),false);
 });
+test('a standing racket can reach a high smash contact without enabling movement assistance',()=>{
+ const overhead={position:{x:.2,y:3,z:3.2},velocity:{x:0,y:-.4,z:.1},player:{x:0,z:4},active:true,lastHitter:'opponent',assisted:false,yaw:0};
+ assert.equal(canContact(overhead),true);
+ assert.equal(canContact({...overhead,position:{...overhead.position,y:3.3}}),false);
+});
 test('receiving target stays behind the shuttle and inside reachable court limits',()=>{
   assert.deepEqual(receivingTarget({intercept:{x:1,z:4}},{x:0,z:4}),{x:.9,z:4.78});
   assert.deepEqual(receivingTarget({intercept:{x:-1,z:1.5}},{x:0,z:4}),{x:-1.1,z:1.92});

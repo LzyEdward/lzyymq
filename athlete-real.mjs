@@ -182,15 +182,29 @@ export function createAthlete(THREE, createRacket,{skinMap=null,mergeGeometries=
   const poleWorld=root.localToWorld(pole.clone()).sub(origin),bend=c.copy(poleWorld).addScaledVector(direction,-poleWorld.dot(direction)).normalize();
   const along=(L1*L1+distance*distance-L2*L2)/(2*distance),height=Math.sqrt(Math.max(0,L1*L1-along*along)),joint=d.copy(origin).addScaledVector(direction,along).addScaledVector(bend,height);
   const v1=e.copy(joint).sub(origin).normalize();upper.parent.getWorldQuaternion(parentQ);v1.applyQuaternion(parentQ.invert());upper.quaternion.setFromUnitVectors(r.v1.clone().normalize(),v1);
-  upper.updateWorldMatrix(true,true);const v2=end.sub(joint).normalize();upper.getWorldQuaternion(parentQ);v2.applyQuaternion(parentQ.invert());lower.quaternion.setFromUnitVectors(r.v2.clone().normalize(),v2);
+  upper.updateWorldMatrix(true,true);const v2=end.copy(origin).addScaledVector(direction,distance).sub(joint).normalize();upper.getWorldQuaternion(parentQ);v2.applyQuaternion(parentQ.invert());lower.quaternion.setFromUnitVectors(r.v2.clone().normalize(),v2);
  }
- let stride=0;const footPlants=[new FootPlant(),new FootPlant()];
- function update({speed=0,dt=1/60,time=0,swing=0,lateral=0,forward=0,shot='clear',anticipation=0,lookY=1.5,lookX=0,grip=1,split=0,crossover=false,contact=null,lunge=0,netVariant='',supportContact=null,jumpHeight=0}={}){
+ let stride=0,ready=0;const footPlants=[new FootPlant(),new FootPlant()];
+ const smooth=(t,lo,hi)=>{const u=clamp((t-lo)/(hi-lo),0,1);return u*u*(3-2*u);};
+ function update({speed=0,dt=1/60,time=0,swing=0,lateral=0,forward=0,shot='clear',anticipation=0,lookY=1.5,lookX=0,grip=1,split=0,crossover=false,contact=null,lunge=0,netVariant='',supportContact=null,jumpHeight=0,landing=0}={}){
   lunge=clamp(lunge,0,1);const netStroke=['net','netcross','push','netkill'].includes(shot),crossStep=crossover&&Math.abs(lateral)>.3;
-  stride+=Math.min(dt,.05)*speed*4.1;const run=clamp(speed/4,0,1),motion=Math.sin(stride),t=clamp(swing/.55,0,1),stroke=swing>0?Math.sin(t*Math.PI):0;
-  body.position.y=-.055-Math.abs(motion)*.018*run+Math.sin(time*2.2)*.002+anticipation*.009-Math.sin(split*Math.PI)*.032-lunge*.155;
-  bones.spine05.rotation.x=.035+run*.055+anticipation*.018+lunge*.16;bones.spine03.rotation.x=.04+run*.018+lunge*.075;bones.spine01.rotation.x=-.025-stroke*.035;bones.spine01.rotation.y=stroke*(t<.25?-.23:.25)*(netStroke?.35:1);bones.spine01.rotation.z=0;bones.spine03.rotation.y=0;bones.spine03.rotation.z=clamp(-lateral*.021,-.13,.13);
-  head.rotation.x=clamp((1.55-lookY)*.16,-.25,.25);head.rotation.y=clamp(lookX*.08,-.28,.28);root.updateWorldMatrix(true,true);
+  const overhead=['smash','slicesmash','clear','drop','slicedrop'].includes(shot),under=shot==='lift'||shot==='serve';
+  const power=shot==='smash'?1:shot==='slicesmash'?.83:shot==='clear'?.72:.48;
+  stride+=Math.min(dt,.05)*speed*4.1;
+  ready+=(anticipation-ready)*(1-Math.exp(-15*dt));
+  const run=clamp(speed/4,0,1),motion=Math.sin(stride),t=clamp(swing/.55,0,1),stroke=Math.sin(t*Math.PI);
+  const coil=smooth(t,0,.055)*(1-smooth(t,.19,.255)),drive=smooth(t,.14,.245)*(1-smooth(t,.30,.58));
+  const hips=smooth(t,.06,.19)*(1-smooth(t,.30,.72)),air=clamp(jumpHeight/.46,0,1);
+  const racketPower=shot==='smash'?1:shot==='slicesmash'?.82:shot==='clear'?.26:.48;
+  body.position.y=-.055-Math.abs(motion)*.022*run+Math.sin(time*2.2)*.002-ready*.035-Math.sin(split*Math.PI)*.032-lunge*.145-landing*.064;
+  bones.spine05.rotation.x=.035+run*.085+ready*.075+lunge*.16+landing*.075;
+  bones.spine05.rotation.y=overhead?power*(-coil*.18+hips*.27):0;
+  bones.spine03.rotation.x=.04+run*.03+lunge*.075+(overhead?power*(-coil*.09+drive*.20):0);
+  bones.spine01.rotation.x=-.025-stroke*.035;
+  bones.spine01.rotation.y=overhead?power*(-coil*.44+drive*.54):stroke*(netStroke?.06:.16);
+  bones.spine01.rotation.z=overhead?power*(coil*.13-drive*.16):0;
+  bones.spine03.rotation.y=0;bones.spine03.rotation.z=clamp(-lateral*.025,-.15,.15);
+  head.rotation.x=clamp((1.55-lookY)*.20,-.58,.32);head.rotation.y=clamp(lookX*.11,-.36,.36);root.updateWorldMatrix(true,true);
   const blinkPhase=(time+1.7)%4.6,blink=blinkPhase<.15?Math.sin(blinkPhase/.15*Math.PI):0;
   for(const eye of eyes){
    eye.white.scale.y=.006*(1-blink*.94);eye.iris.scale.y=.0049*(1-blink*.94);eye.pupil.scale.y=.0024*(1-blink*.94);
@@ -201,21 +215,35 @@ export function createAthlete(THREE, createRacket,{skinMap=null,mergeGeometries=
   for(let i=0;i<2;i++){
    const side=i?-1:1,suffix=i?'R':'L',cycle=((stride/(Math.PI*2)+i*.5)%1+1)%1,swingPhase=cycle<.5?0:(cycle-.5)*2,u=cycle<.5?cycle*2:swingPhase*swingPhase*(3-2*swingPhase),travel=(cycle<.5?.36-.72*u:-.36+.72*u)*run;
    const crossed=crossStep&&i===1,x=clamp(side*(.17+anticipation*.025+split*.035)+velocity.x*travel+(crossed?Math.sign(lateral)*.36:0),crossed?-.02:side<0?-.55:.02,crossed?.55:side<0?-.02:.55);
-   const ideal=vec(x,.064+Math.sin(swingPhase*Math.PI)*.11*run,velocity.z*travel+.012);
+   const ideal=vec(x,.064+Math.sin(swingPhase*Math.PI)*.13*run,velocity.z*travel+.012+side*(ready*.06+coil*.18-drive*.11));
    if(lunge>.03){footPlants[i].reset();ideal.lerp(vec(i?-.22:.19,.064,i?.55:-.29),lunge);}
-   if(jumpHeight>0)footPlants[i].reset();
-   const planted=footPlants[i].sample(root.localToWorld(ideal.clone()).toArray(),cycle,speed>.45);
+   if(jumpHeight>0){
+    footPlants[i].reset();
+    ideal.lerp(vec(side*.21,.064,side*(.22-drive*.34)-.08),air);
+   }
+   const planted=footPlants[i].sample(root.localToWorld(ideal.clone()).toArray(),cycle,speed>.45&&jumpHeight===0);
    const footTarget=root.worldToLocal(vec(...planted));
    limb('upperleg01.'+suffix,footTarget,vec(side*.17+velocity.x*.1,.48,.8));
    const foot=bones['foot.'+suffix];foot.parent.getWorldQuaternion(parentQ);const desired=new THREE.Quaternion();root.getWorldQuaternion(desired);foot.quaternion.copy(parentQ.invert().multiply(desired));
    const localFoot=root.worldToLocal(foot.getWorldPosition(new THREE.Vector3()));soleShadows[i].position.set(localFoot.x,.01-jumpHeight,localFoot.z+.055);soleShadows[i].material.opacity=.58*(1-clamp((localFoot.y-.064)/.13,0,.9));
   }
   shadow.position.y=.009-jumpHeight;shadow.material.opacity=.4/(1+jumpHeight);
-  const overhead=['smash','slicesmash','clear','drop','slicedrop'].includes(shot),under=shot==='lift'||shot==='serve';let hand=vec(-.24,1.24,.28),pole=vec(-.47,1.08,-.02);
-  if(swing>0){if(overhead){if(t<.25){const u=t/.25;hand.set(-.28-u*.03,1.27+u*.43,.16-u*.3);}else{const u=(t-.25)/.75;hand.set(-.30+u*.47,1.72-u*.66,-.14+Math.sin(u*Math.PI)*.5);}}else if(under){hand.set(-.27+stroke*.35,1.13-stroke*.32,.22+stroke*.3);pole.set(-.7,.95,.05);}else hand.set(-.29+stroke*.45,1.29+stroke*.08,.22+stroke*.32);}else{hand.y+=anticipation*.19;hand.x-=run*.025+motion*run*.025;hand.z+=Math.cos(stride)*run*.055;}
+  const hand=vec(-.24-run*.035-motion*run*.035,1.24+ready*.19,.28+Math.cos(stride)*run*.07);
+  const pole=vec(-.47,1.08,-.02);
+  if(overhead){
+   const load=smooth(t,0,.14),extend=smooth(t,.13,.245),follow=smooth(t,.255,.53),recover=smooth(t,.55,1);
+   const swingHand=vec(-.32,1.63,-.27).lerp(vec(-.28,1.86,.16),extend)
+    .lerp(vec(power*.42-.12,1.29-power*.27,.36),follow);
+   hand.lerp(swingHand,load*(1-recover));
+   pole.lerp(vec(-.63+drive*.23,1.48+extend*.15,-.18+follow*.28),load*(1-recover));
+  }else if(under){
+   hand.lerp(vec(-.27+stroke*.35,1.13-stroke*.32,.22+stroke*.30),stroke);pole.lerp(vec(-.7,.95,.05),stroke);
+  }else{
+   hand.lerp(vec(-.29+stroke*.45,1.29+stroke*.08,.22+stroke*.32),stroke);
+  }
   if(['slicesmash','slicedrop'].includes(shot)&&swing>0){bones.spine03.rotation.y+=stroke*.22;hand.x-=stroke*.13;pole.x-=stroke*.10;}
   let netWristRoll=0;
-  if(netStroke){
+  if(netStroke&&swing>0){
    const cross=netVariant.includes('对角'),backhand=netVariant.includes('反手'),push=netVariant.includes('推')||netVariant.includes('扑'),brush=netVariant.includes('搓');
    const brushSnap=brush?Math.sin(t*Math.PI*2):0,crossReach=cross?.24:0,attackDrive=push?.46:.13;
    // Each net technique has its own striking lane. The shoulder opens for a
@@ -223,19 +251,27 @@ export function createAthlete(THREE, createRacket,{skinMap=null,mergeGeometries=
    // the push/net kill drives through the shuttle.
    bones.spine03.rotation.y+=stroke*(backhand?-.15:cross?.19:.025);
    bones.spine01.rotation.z+=stroke*(backhand?.08:cross?.045:0)-lunge*.035;
-   hand.set((backhand?.12:-.25)+stroke*(backhand?-.24:.09+crossReach)+brushSnap*(brush?.085:0),.99-lunge*.08+stroke*.08,.40+lunge*.12+stroke*attackDrive);
-   pole.set(backhand?.42:cross?-.28:-.56,.76,.08);
+   const reach=smooth(t,0,.13)*(1-smooth(t,.53,1));
+   hand.lerp(vec((backhand?.12:-.25)+stroke*(backhand?-.24:.09+crossReach)+brushSnap*(brush?.085:0),.99-lunge*.08+stroke*.08,.40+lunge*.12+stroke*attackDrive),reach);
+   pole.lerp(vec(backhand?.42:cross?-.28:-.56,.76,.08),reach);
    netWristRoll=brush?brushSnap*.3:cross?stroke*.13:push?-stroke*.09:0;
   }
-  const racketY=netStroke?vec(-.06+stroke*(netVariant.includes('反手')?-.2:netVariant.includes('对角')?.27:netVariant.includes('推')?.32:netVariant.includes('搓')?.04:.14),.29+stroke*(netVariant.includes('扑')?.2:netVariant.includes('推')?.27:netVariant.includes('搓')?-.035:.09),.96).normalize():vec(-.08+stroke*.35,.86-stroke*.1,.30+stroke*.18).normalize(),handX=vec(-1,0,.2);handX.addScaledVector(racketY,-handX.dot(racketY)).normalize();
+  const racketY=vec(-.08,.86,.30);
+  if(netStroke){
+   racketY.lerp(vec(-.06+stroke*(netVariant.includes('反手')?-.2:netVariant.includes('对角')?.27:netVariant.includes('推')?.32:netVariant.includes('搓')?.04:.14),.29+stroke*(netVariant.includes('扑')?.2:netVariant.includes('推')?.27:netVariant.includes('搓')?-.035:.09),.96),smooth(t,0,.15)*(1-smooth(t,.58,1)));
+  }else if(overhead){
+   racketY.add(vec(-coil*.38+drive*.94*racketPower,-drive*1.06*racketPower,-coil*.72+drive*.57*racketPower));
+  }
+  racketY.normalize();const handX=vec(-1,0,.2);handX.addScaledVector(racketY,-handX.dot(racketY)).normalize();
   const handZ=handX.clone().cross(racketY).normalize(),worldWrist=new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().makeBasis(handX,racketY,handZ)).multiply(gripFrames.R.orientation.clone().invert());
   if(netWristRoll)worldWrist.multiply(new THREE.Quaternion().setFromAxisAngle(vec(0,1,0),netWristRoll));
   if(contact&&swing>0){
    const headOffset=racket.position.clone().applyQuaternion(worldWrist).addScaledVector(racketY,.51);
    const goal=vec(...contact).sub(headOffset),weight=clamp(1-Math.abs(swing-.135)/.135,0,1);
-   hand.lerp(goal,weight*weight*(3-2*weight));pole.set(hand.x<0?-.65:.3,netStroke?.76:1.25,netStroke?.05:-.12);
+   hand.lerp(goal,weight*weight*(3-2*weight));pole.lerp(vec(clamp(hand.x*1.15-.23,-.69,.30),netStroke?.76:1.25,netStroke?.05:-.12),weight);
   }
-  limb('upperarm01.R',hand,pole);limb('upperarm01.L',vec(.23+stroke*.15-motion*run*.105,1.07+stroke*.29-Math.abs(motion)*run*.018,.16+stroke*.06+Math.cos(stride)*run*.045-lunge*.28),vec(.28,.8,.04));
+  limb('upperarm01.R',hand,pole);
+  limb('upperarm01.L',vec(.23+stroke*.15-motion*run*.105+drive*.19,1.07+ready*.19+coil*.41+stroke*.12-drive*.17,.16+coil*.31-drive*.25+Math.cos(stride)*run*.045-lunge*.28),vec(.38,.8,.04));
   root.getWorldQuaternion(parentQ);worldWrist.premultiply(parentQ);bones['wrist.R'].parent.getWorldQuaternion(parentQ);bones['wrist.R'].quaternion.copy(parentQ.invert().multiply(worldWrist));bones['wrist.L'].rotation.set(-.1,0,.12);
   if(supportContact){const held=vec(...supportContact);held.x+=.015;held.y-=.09;limb('upperarm01.L',held,vec(.5,.7,.2));}
   bones['wrist.R'].updateWorldMatrix(true,false);const orientation=new THREE.Quaternion().setFromUnitVectors(vec(0,1,0),racketY);root.getWorldQuaternion(parentQ);orientation.premultiply(parentQ);bones['wrist.R'].getWorldQuaternion(parentQ);racket.quaternion.copy(parentQ.invert().multiply(orientation));
@@ -255,6 +291,6 @@ export function createAthlete(THREE, createRacket,{skinMap=null,mergeGeometries=
  }
  const kits={allround:['#e3e9df','#1c343c','#378683'],linDan08:['#c63b38','#1b2630','#d9bb68'],leeChongWei:['#e6c550','#172738','#d8e7ee'],chenLong:['#dfe8ed','#203344','#607e9d'],taufik:['#dce6d2','#243c31','#b48c56']};
  function setKit(key='allround'){const spec=key&&typeof key==='object'?key:null,[shirt,pants,accent]=kits[spec?.key||key]||kits.allround;jersey.color.set(spec?.shirt||shirt);shorts.color.set(spec?.pants||pants);trim.color.set(spec?.accent||accent);root.userData.kit=spec?.key||key;}
- update();return {root,body,torso,head,legs:[bones['upperleg01.L'],bones['upperleg01.R']],knees:[bones['lowerleg01.L'],bones['lowerleg01.R']],arms:[bones['upperarm01.L'],bones['upperarm01.R']],elbows:[bones['lowerarm01.L'],bones['lowerarm01.R']],wrists:[bones['wrist.L'],bones['wrist.R']],skeleton,meshes,bones,bind,shoes,racket,update,setKit,resetFeet:()=>footPlants.forEach(foot=>foot.reset())};
+ update();return {root,body,torso,head,legs:[bones['upperleg01.L'],bones['upperleg01.R']],knees:[bones['lowerleg01.L'],bones['lowerleg01.R']],arms:[bones['upperarm01.L'],bones['upperarm01.R']],elbows:[bones['lowerarm01.L'],bones['lowerarm01.R']],wrists:[bones['wrist.L'],bones['wrist.R']],skeleton,meshes,bones,bind,shoes,racket,update,setKit,resetFeet:()=>{footPlants.forEach(foot=>foot.reset());ready=0;}};
 }
 

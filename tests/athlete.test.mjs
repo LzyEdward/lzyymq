@@ -98,3 +98,19 @@ test('net drops, brushes, pushes and net kills use distinct torso and racket pos
   assert.ok(model.root.matrixWorld.elements.every(Number.isFinite));
  }finally{globalThis.document=previous;}
 });
+
+test('overhead avatar loads behind the head, releases through contact and follows through',()=>{
+ const previous=globalThis.document;
+ globalThis.document={createElement:()=>({width:0,height:0,getContext:()=>({fillRect(){}})})};
+ try{
+  const model=createAthlete(THREE,()=>new THREE.Group());
+  const samples=[.105,.135,.20].map(swing=>{
+   model.update({swing,shot:'smash'});
+   model.root.updateWorldMatrix(true,true);
+   return {chest:model.bones.spine01.rotation.y,hand:model.wrists[1].getWorldPosition(new THREE.Vector3()).toArray()};
+  });
+  assert.ok(samples[0].chest<samples[1].chest,'shoulder rotation must transfer into the strike');
+  assert.ok(samples[2].chest<samples[1].chest,'the strike should continue into recovery');
+  for(const pose of samples)assert.ok(pose.hand.every(Number.isFinite));
+ }finally{globalThis.document=previous;}
+});

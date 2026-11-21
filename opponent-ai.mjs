@@ -108,8 +108,8 @@ export function planOpponentStroke({level,position,player,playerVelocity={x:0,z:
  if(net){
   add('lift',openX,5.9,low?14:1.7,'挑后场');
   if(!low){
-   add('net',straight,1.05+(1-skill)*.65,1.25+skill*2.1,'正手放网');
-   if(tier>=3){add('netcross',cross,.85+(1-skill)*.5,1.1+skill*3.5,'勾对角');add('net',straight,.68+(1-skill)*.7,.85+skill*3.0,'搓网');}
+   add('net',straight,Math.max(1.65,1.05+(1-skill)*.65),1.25+skill*2.1,'正手放网');
+   if(tier>=3){add('netcross',cross,Math.max(2.05,.85+(1-skill)*.5),1.1+skill*3.5,'勾对角');add('net',straight,Math.max(1.65,.68+(1-skill)*.7),.85+skill*3.0,'搓网');}
    if(position.y>1.2){add('push',openX,5.05,1.0+skill*1.6,'推后场');add('push',bodyX,4.65,.35+skill*1.25,'推追身');}
    if(position.y>1.95&&tier>=3){add('netkill',openX,2.0,1.7+level.attack*5,'扑球');if(tier>=6)add('netkill',cross,1.2,.35+skill*2.2,'反手封网');}
   }

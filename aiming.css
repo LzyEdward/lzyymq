@@ -26,6 +26,11 @@ body.playing.third-person #hud #reticle{display:none}
 #contact-halo[data-timing="ready"]{border-color:#e1ffa7;border-block-color:transparent;border-width:2px}
 #contact-halo[data-timing="queued"]{border-color:#8fe5ff;border-inline-color:transparent;border-width:2px}
 body.focus #contact-halo{display:none}
+#receive-cue{
+ position:absolute;pointer-events:none;transform:translate(-50%,6px);
+ padding:3px 7px;border-radius:3px;color:#b6fff1;background:#0c2b2ad9;
+ font-size:11px;font-weight:650;font-variant-numeric:tabular-nums;white-space:nowrap;
+}
 #contact-halo[data-timing="track"]{
  width:23px;height:23px;border-width:2px;border-inline-color:#fff4bf;
  filter:drop-shadow(0 1px 2px #081d22) drop-shadow(0 0 1px #081d22);

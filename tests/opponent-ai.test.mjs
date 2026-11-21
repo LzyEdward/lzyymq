@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {OPPONENT_LEVELS} from '../competition.mjs';
 import {opponentFootwork,planOpponentStroke,recoveryBase,opponentReceiveMissChance,opponentStrokeExecution,opponentServeTarget,opponentWeaknessProfile,opponentWeaknessKey} from '../opponent-ai.mjs';
-import {advance,COURT,solveShot} from '../physics.mjs';
+import {advance,COURT,predict,solveShot} from '../physics.mjs';
 
 const level=key=>OPPONENT_LEVELS[key];
 
@@ -116,6 +116,20 @@ test('competent opponents visibly use both brush and cross-court net replies',()
  }
  assert.ok(actions.has('搓网'),'brush shot should appear on net contacts');
  assert.ok(actions.has('勾对角'),'cross-court hook should appear on net contacts');
+});
+
+test('low net contacts keep straight and diagonal brushes playable across the tape',()=>{
+ for(const levelKey of ['hard','expert','legend']){
+  for(const position of [{x:-1.1,y:1.3,z:-1.45},{x:1.1,y:1.3,z:-1.45}]){
+   for(const action of [0,.24,.48,.72,.96]){
+    const plan=planOpponentStroke({level:level(levelKey),position,player:{x:0,z:4.6},random:()=>action});
+    if(!['net','netcross'].includes(plan.type))continue;
+    const velocity=solveShot(position,plan.target,plan.type);
+    const landing=predict(position,velocity,1).landing;
+    assert.ok(landing?.z>0,JSON.stringify({levelKey,position,plan,landing}));
+   }
+  }
+ }
 });
 
 test('each of the ten opponent grades can return real, finite shots across the net',()=>{
