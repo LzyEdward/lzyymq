@@ -34,6 +34,8 @@ body:has(#lesson-card:not(.hidden)) #stance-readout{display:none!important}
  width:max-content; max-width:calc(100vw - 28px); margin:0; padding:8px 13px; border-radius:6px;
  background:#0c2824e8; border:1px solid #bde3cf54; color:#f2f5e9; font-size:13px; text-align:center;
 }
+body.playing.training-mode #hud > #training-hud:not(.hidden) { display:block!important; }
+body.training-mode.controls-visible #training-hud { bottom:245px; }
 #training-hud[data-result="true"]{color:#e3ffab}
 #training-hud[data-result="false"]{color:#ffe3b5}
 #training-result { background:#0d28256b; padding:14px; border:1px solid #bde3cf38; border-radius:8px; }
@@ -56,8 +58,12 @@ body:has(#lesson-card:not(.hidden)) #stance-readout{display:none!important}
 body .training-net-controls { display:none; }
 body.training-mode.controls-visible .training-net-controls { display:flex; }
 @media (pointer:coarse) {
+ body.playing.training-mode #hud > #control-dock,
+ body.playing.training-mode #hud > #mobile-controls { display:block!important; }
  body.training-mode .training-net-controls { display:flex; }
  body.training-mode #training-hud { inset:auto auto 12px 50%; }
+ body.training-mode #hud #control-dock { bottom:54px; }
+ body.training-mode #hud #joystick { bottom:227px; }
 }
 @media(max-height:750px) and (min-width:801px){.hero{top:15%}.hero h1{font-size:49px;margin:13px 0 10px}.hero .menu-actions{margin-top:15px}.hero .menu-options{margin-top:12px}.hero .showroom-link{margin-top:15px}.learn-launch{margin-top:13px;padding:10px 13px}.hero .intro{font-size:11px;line-height:1.9}#control-dock{bottom:87px}}
 @media(max-width:800px){#advanced-btn{top:72px;right:15px}#control-dock{bottom:84px;width:min(96vw,430px)}body:not(.advanced-controls) #stance-readout{top:112px;max-width:155px}#lesson-card{left:17px;top:112px;width:245px}.menu-screen .hero{margin-top:158px}.learn-launch{width:100%;gap:10px}.learn-launch span{font-size:9px}.learn-launch b{font-size:10px}.primary-controls>button,#control-dock #quick-hit{min-width:86px;height:62px;padding:8px}.primary-controls span{font-size:12px}.hero .menu-options{font-size:9px}.controls-strip{display:none}}
