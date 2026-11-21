@@ -43,12 +43,12 @@ export function thirdPersonLift({player,ball,enabled=false}={}){
  return clamp((ball.y-2.9)*.56,0,3.2)*clamp((12-range)/6,0,1);
 }
 
-// Camera-space depth can be negative. Divide by its absolute value so the
-// arrow still points the correct way when the shuttle is behind the camera.
+// Keep the lateral direction as the shuttle passes behind the camera.
+// Rear depth biases the arrow toward the bottom edge instead of mirroring it.
 export function shuttleScreenCue({x,y,z},fov,aspect){
  const depth=-z,tan=Math.tan(fov*Math.PI/360);
- const scale=(depth<0?-1:1)*Math.max(.01,Math.abs(depth))*tan;
- const px=x/(scale*aspect),py=y/scale;
+ const scale=Math.max(.01,Math.abs(depth))*tan;
+ const px=x/(scale*aspect),py=(y-Math.max(0,z)*1.3)/scale;
  if(depth>0&&Math.abs(px)<.96&&Math.abs(py)<.9)return {x:px,y:py,edge:false};
  if(depth<=0&&Math.hypot(px,py)<.18)return {x:0,y:-.76,angle:180,edge:true};
  const ratio=Math.max(Math.abs(px)/.89,Math.abs(py)/.76,.001);

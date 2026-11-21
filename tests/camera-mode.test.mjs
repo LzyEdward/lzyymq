@@ -74,8 +74,8 @@ test('an out-of-frame shuttle retains the correct side when it passes behind the
  const behindRight=shuttleScreenCue({x:3,y:1,z:2},77,16/9);
  const behindLeft=shuttleScreenCue({x:-3,y:1,z:2},77,16/9);
  assert.ok(behindRight.edge&&behindLeft.edge);
- assert.ok(behindRight.x<0&&behindLeft.x>0,'screen arrow reverses to point back toward the shuttle');
- assert.ok(behindRight.y<0&&behindLeft.y<0,'a shuttle behind the player points toward the bottom edge');
+ assert.ok(behindRight.x>0&&behindLeft.x<0,'the arrow stays on the shuttle side as it passes the camera');
+ assert.ok(behindRight.y<0&&behindLeft.y<0,'a low shuttle behind the camera points toward the bottom edge');
 });
 test('all player strokes visually contact at actual gameplay time and recover monotonically',()=>{
  for(const kind of ['auto','clear','drop','smash','net','push','netcross','slicesmash','slicedrop','serve']){
