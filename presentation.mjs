@@ -45,7 +45,7 @@ export class CourtPresentation {
   this.scene=new THREE.Scene();this.camera=new THREE.Camera();this.scene.add(new THREE.Mesh(new THREE.PlaneGeometry(2,2),this.material));
  }
  setSize(width,height){this.width=width;this.height=height;const ratio=this.renderer.getPixelRatio(),active=this.quality!=='balanced';this.target.setSize(active?Math.round(width*ratio):1,active?Math.round(height*ratio):1);this.uniforms.resolution.value.set(this.target.width,this.target.height);}
- setQuality(quality){this.quality=quality;this.uniforms.occlusion.value=quality==='balanced'?0:.7;const samples=quality==='ultra'?2:0;if(this.target.samples!==samples){this.target.dispose();this.target.samples=samples;}this.setSize(this.width||1,this.height||1);}
+ setQuality(quality){this.quality=quality;this.uniforms.occlusion.value=quality==='balanced'?0:.7;const samples=quality==='ultra'?2:0;if(this.target.samples!==samples){this.target.dispose();this.target.samples=samples;}}
  render(scene,camera){
   const r=this.renderer;
   if(this.quality==='balanced'){r.setRenderTarget(null);r.render(scene,camera);this.sceneInfo={...r.info.render};return;}

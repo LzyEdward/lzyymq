@@ -1929,9 +1929,11 @@ function setComfortable(value){
  if(state.comfortable)document.exitPointerLock?.();
 }
 function applyRenderProfile(){
- const profile=renderProfile(qualityMode,adaptiveResolution.scale,innerWidth,innerHeight,devicePixelRatio);
- renderer.setPixelRatio(profile.ratio);renderer.setSize(innerWidth,innerHeight);renderer.shadowMap.enabled=profile.shadows;renderer.shadowMap.needsUpdate=true;
- presentation.setQuality(profile.quality);renderBudget.invalidate();
+ const width=innerWidth,height=innerHeight;
+ camera.aspect=width/height;camera.updateProjectionMatrix();
+ const profile=renderProfile(qualityMode,adaptiveResolution.scale,width,height,devicePixelRatio);
+ renderer.setPixelRatio(profile.ratio);renderer.setSize(width,height);renderer.shadowMap.enabled=profile.shadows;renderer.shadowMap.needsUpdate=true;
+ presentation.setQuality(profile.quality);presentation.setSize(width,height);renderBudget.invalidate();
 }
 function applyQuality(quality){qualityMode=['auto','balanced','high','ultra'].includes(quality)?quality:'auto';adaptiveResolution.reset(performance.now());applyRenderProfile();}
 function savePreferences(){if(testing)return;try{localStorage.setItem('feather-court-3-settings',JSON.stringify({contactHint:state.contactHint,ballGuide:state.ballGuide,thirdFraming:state.thirdFraming,cameraMode:state.cameraMode,orbitYaw:state.orbitYaw,orbitPitch:state.orbitPitch,assistSettingsVersion:1,assists:$('#assist-toggle').checked,autoReturn:$('#auto-return-toggle').checked,comfortable:$('#comfortable-toggle').checked,difficulty:$('#difficulty').value,scheme:$('#control-scheme').value,profile:$('#opponent-profile').value,points:$('#match-points').value,quality:$('#quality').value,performanceVersion:1,focus:state.focus,motion:state.motion,sensitivity:state.sensitivity,lookSyncVersion:2,pace:state.pace,receivePace:state.receivePace,sprintAssist:state.sprintAssist,sound:state.sound,racketStyle:state.racketStyle,racketSkin:state.racketSkin,playerStyle:$('#player-style').value,opponentStyle:$('#opponent-style').value,playerStats:playerStatsFromInputs(),opponentStats:state.opponentStats,highBallAssist:$('#high-ball-toggle').checked,placementHint:$('#placement-hint').checked,eagleAuto:$('#eagle-auto').checked}));}catch{}}
@@ -2157,6 +2159,7 @@ async function init() {
       window.__game = {
         state, player, opponent, ball,
         start: startGame, serve, swing: beginSwing, pause: pauseGame, resume: resumeGame, setAssist, setShot,
+        renderSurface:()=>({viewport:[innerWidth,innerHeight],cameraAspect:camera.aspect,drawingBuffer:renderer.getDrawingBufferSize(new THREE.Vector2()).toArray(),postprocess:[presentation.target.width,presentation.target.height],quality:presentation.quality,pixelRatio:renderer.getPixelRatio()}),
         snapshot: () => ({ screen: state.screen, phase: state.phase, mode: state.mode, score: [...state.score], rally: state.rally, hits: state.hits, maxRally: state.maxRally, target: state.target, targetHits: state.targetHits, targetShots: state.targetShots, targetStreak: state.targetStreak, aim: state.aim, lastHitter: state.lastHitter, ball: ball.pos.toArray(), velocity: ball.vel.toArray(), player: player.pos.toArray(), opponent: opponent.pos.toArray(), prediction: state.prediction, fps: Math.round(fps), render: renderer.info.render }),
         placeIncoming: (pos, vel) => { state.screen = 'play'; state.phase = 'rally'; state.lastHitter = 'opponent'; ball.pos.fromArray(pos); ball.vel.fromArray(vel); ball.active = true; state.swing = 0; refreshPrediction(); },
       };
