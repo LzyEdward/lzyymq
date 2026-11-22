@@ -1,3 +1,9 @@
+// Readability is measured in CSS pixels. Near the racket, keep the real cork
+// size, then smoothly enlarge distant feathers without changing contact physics.
+export function shuttleVisualScale(depth,fov,height,third=false){
+ const pixels=third?17:19, metresPerPixel=2*Math.max(0,depth)*Math.tan(fov*Math.PI/360)/Math.max(1,height);
+ return Math.min(9,Math.max(1,pixels*metresPerPixel/.064));
+}
 // Sixteen individually curved feather vanes, merged into one lightweight mesh.
 export function createShuttleModel(T,mergeGeometries){
  const root=new T.Group(),v=(...a)=>new T.Vector3(...a),batches=new Map();

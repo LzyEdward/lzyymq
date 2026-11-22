@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {AutoReturnAssist,HitIntent,canContact,receivingTarget,swingWindow} from '../controls.mjs';
+import {AutoReturnAssist,HitIntent,canContact,receivingTarget,pursuitSprint,receiveIntercept,swingWindow} from '../controls.mjs';
 import {advance,solveShot} from '../physics.mjs';
 
 test('an early tap survives release and waits for the incoming shuttle',()=>{
@@ -80,4 +80,19 @@ test('holding a dedicated shot input preserves its shot type across rallies',()=
   const input=new HitIntent();input.press(0,'clear','KeyK');
   for(const time of [3,8,16]){assert.equal(input.armed(time),true);input.consume();assert.equal(input.kind,'clear');}
   input.release('KeyK');input.consume();assert.equal(input.kind,null);
+});
+
+test('pursuit sprint supports purposeful input and eases off near a return',()=>{
+ const feet={x:0,z:4},stance={x:2,z:4},move={x:1,z:0,magnitude:1};
+ assert.equal(pursuitSprint(move,feet,stance),1);
+ assert.equal(pursuitSprint({...move,x:-1},feet,stance),0);
+ assert.equal(pursuitSprint({...move,magnitude:.4},feet,stance),0);
+ assert.equal(pursuitSprint(move,{x:1.7,z:4},stance),0);
+ assert.equal(pursuitSprint(move,feet,null),0);
+});
+
+test('a flat diagonal is intercepted on the playable part of the receiving court',()=>{
+ const origin={x:-1,y:1.93,z:-2.4},velocity=solveShot(origin,{x:2.2,z:5.7},'push');
+ const spot=receiveIntercept(origin,velocity,{x:0,z:4.5},.74,7);
+ assert.ok(spot.z>2.0&&spot.z<5.8&&spot.y>.3);
 });

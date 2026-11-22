@@ -83,6 +83,34 @@ export function receivingTarget(prediction, current, preferLanding = false) {
   return { x: Math.max(-2.7, Math.min(2.7, p.x - .1)), z: Math.max(.85, Math.min(6.75, p.z + behind)) };
 }
 
+// During fast flat rallies the first intercept can be at the net, several
+// metres before the shuttle reaches the receiver. Pick a reachable stance
+// along this flight and allow a little time to plant before swinging.
+export function receiveIntercept(position, velocity, player, pace, speed, height=1.75){
+ const p={...position},v={...velocity},step=1/120;
+ let best=null,bestCost=Infinity;
+ for(let i=1;i<=600;i++){
+  advance(p,v,step*pace);
+  if(p.y<.20)break;
+  if(i%3||p.z<.55||p.z>7||p.y>height+.20||v.y>1.4)continue;
+  const stance=receivingTarget({intercept:p},player);
+  const distance=Math.hypot(stance.x-player.x,stance.z-player.z);
+  const time=i*step,travel=time-.09-distance/Math.max(speed,1);
+  const cost=Math.max(0,-travel)*8+Math.abs(p.y-height)*.42+distance*.14+time*.10;
+  if(cost<bestCost){bestCost=cost;best={...p,time:time*pace};}
+ }
+ return best;
+}
+
+// Boost only an intentional, full movement input towards a distant return.
+export function pursuitSprint(movement,player,stance){
+ if(!stance||movement.magnitude<.76)return 0;
+ const dx=stance.x-player.x,dz=stance.z-player.z,distance=Math.hypot(dx,dz);
+ if(distance<.55)return 0;
+ const alignment=(movement.x*dx-movement.z*dz)/distance;
+ return Math.max(0,Math.min(1,(alignment-.38)/.44))*Math.min(1,(distance-.55)/1.15);
+}
+
 // Queue a tap until the ball can actually meet the racket after its wind-up.
 export function swingWindow({position,velocity,player,playerVelocity={x:0,z:0},kind='clear',jump=0,assisted=true,age=1,pace=1,lookAhead=.075,...contact}){
  const anticipated={...position},v={...velocity};

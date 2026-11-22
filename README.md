@@ -1,4 +1,6 @@
-# 羽境 7.37 · 防守触拍与比赛球衣
+# 羽境 7.38 · 追球冲刺与接球节奏
+
+朝预计接球位置移动会自动提速，按住 Shift 加方向键可主动冲刺，点 Ctrl 跨步救球。第一人称放大远处的球。暂停可调整对方来球节奏及追球自动冲刺，两个视角共用设置。
 
 防守需要站到球的飞行线路上，提前按键会保留击球意图。6 或小键盘 6 推后场，高点击球更平快，低点击球需要留过网高度。每位选手的球衣有背印，人物在跨步、侧移和挥拍时通过髋部、腰腹和肩膀传力。球衣设计参考了[林丹的比赛照片](https://commons.wikimedia.org/wiki/File:Lin_Dan_(CHN).jpg)和[李宗伟的伦敦奥运会照片](https://commons.wikimedia.org/wiki/File:Lee_Chong_Wei_in_the_2012_Summer_Olympics_(3to4_portrait).jpg)。
 

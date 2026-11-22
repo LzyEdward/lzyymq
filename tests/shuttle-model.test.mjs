@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from 'three';
 import {mergeGeometries} from 'three/addons/utils/BufferGeometryUtils.js';
-import {createShuttleModel} from '../shuttle-model.mjs';
+import {createShuttleModel,shuttleVisualScale} from '../shuttle-model.mjs';
 
 test('sixteen curved feather vanes share five draws and stay in real shuttle dimensions',()=>{
  const model=createShuttleModel(THREE,mergeGeometries);
@@ -10,4 +10,12 @@ test('sixteen curved feather vanes share five draws and stay in real shuttle dim
  const bounds=new THREE.Box3().setFromObject(model),size=bounds.getSize(new THREE.Vector3());
  assert.ok(size.y>.08&&size.y<.105);assert.ok(size.x>.06&&size.x<.075);assert.ok(bounds.min.y<-.02,'cork points down along the collision axis');
  model.traverse(o=>{if(o.geometry)for(const n of o.geometry.attributes.position.array)assert.ok(Number.isFinite(n));});
+});
+
+test('the first-person shuttle reads at match distance and keeps a natural near contact',()=>{
+ const projection=720/(2*Math.tan(69*Math.PI/360));
+ for(const d of [5,9,13]){
+  assert.ok(Math.abs(shuttleVisualScale(d,69,720)*.064*projection/d-19)<.01);
+ }
+ assert.equal(shuttleVisualScale(.75,69,720),1);
 });

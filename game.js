@@ -4,7 +4,7 @@ import { mergeGeometries } from './vendor/three/addons/utils/BufferGeometryUtils
 import { COURT, advance, solveShot, predict, winnerOnLanding, clamp, damp, groundCrossing, createGroundMotion, stepGroundMotion } from './physics.mjs';
 import { TRAINING_NAMES, TRAINING_REPS, trainingRep, gradeTrainingRep } from './training.mjs';
 import { FlightRecorder, EagleEyeReview } from './eagle-eye.mjs';
-import { AutoReturnAssist, HitIntent, canContact, defensiveReach, crossesStrings, receivingTarget, swingWindow, strokeTiming } from './controls.mjs';
+import { AutoReturnAssist, HitIntent, canContact, defensiveReach, crossesStrings, receivingTarget, receiveIntercept, pursuitSprint, swingWindow, strokeTiming } from './controls.mjs';
 import { JumpMotion, MovementOwnership, keyCommand, pointerCommand } from './interaction.mjs';
 import { freeLook, landingFromMap, moveLanding, normalizeLanding, landingName, LANDING_PRESETS } from './aiming.mjs';
 import { createAthlete } from './athlete.mjs';
@@ -29,7 +29,7 @@ import {createArenaBowl} from './arena-bowl.mjs';
 import {RACKET_SKINS,racketSkin} from './racket-catalog.mjs';
 import {createRacketGallery} from './racket-gallery.mjs';
 import { roofGeometry } from './roof-structure.mjs';
-import { createShuttleModel } from './shuttle-model.mjs';
+import { createShuttleModel, shuttleVisualScale } from './shuttle-model.mjs';
 import { createCourtNet, NET_HALF_WIDTH } from './court-net.mjs';
 import { createTechniquePanel } from './technique-panel.mjs';
 import { PLAYER_STYLES, OPPONENT_STYLES, effectiveOpponentLevel, playerStatsFromInputs, playerStatsForStyle, normalizeSkills } from './player-styles.mjs';
@@ -56,7 +56,7 @@ const state = {
   hitstop: 0, impact: 0, jump: 0, jumpV: 0, lastMove: -10,
   lastLook: -10, yaw: 0, pitch: 0, sensitivity: 1, finished: false,
   returnDelay: 0, audioInitialized: false, countdown: 0,
-  aim: 0, depth: -4.7, comfortable: false, coach: true, cue: '', pace: 1, profile: 'balanced',motion:.35,focus:false,controlsVisible:false,manualLanding:false,shotCueUntil:0,
+  aim: 0, depth: -4.7, comfortable: false, coach: true, cue: '', pace: 1, receivePace:.74, sprintAssist:true, profile: 'balanced',motion:.35,focus:false,controlsVisible:false,manualLanding:false,shotCueUntil:0,
   targetIndex: -1, target: null, targetArmed: false, targetHits: 0, targetShots: 0, targetStreak: 0, targetBest: 0,
   matchPoints:11,server:'player',matchId:'',ratingDelta:null,smashes:0,winners:0,errors:0,lastShot:null,
   directionMode:'natural',tacticMessage:'',
@@ -844,13 +844,18 @@ function updateTrainingResult() {
 
 function lunge() {
   if (state.screen !== 'play') return;
-  let x = (keys.has('KeyD') ? 1 : 0) - (keys.has('KeyA') ? 1 : 0) + touchMove.x;
-  let z = (keys.has('KeyS') ? 1 : 0) - (keys.has('KeyW') ? 1 : 0) + touchMove.y;
-  if (Math.hypot(x, z) < .1 && player.speed > .5) { x = player.vel.x; z = player.vel.z; }
-  if (Math.hypot(x, z) < .1 && state.lastHitter === 'opponent' && ball.active) {
-    x = ball.pos.x - player.pos.x; z = ball.pos.z - player.pos.z;
-  }
-  if (!dash.start(x, z, state.stamina)) return;
+  const move=movementVector({
+    left:keys.has('KeyA')||keys.has('ArrowLeft'),right:keys.has('KeyD')||keys.has('ArrowRight'),
+    forward:keys.has('KeyW')||keys.has('ArrowUp'),back:keys.has('KeyS')||keys.has('ArrowDown'),
+    axisX:touchMove.x,axisY:-touchMove.y
+  });
+  let x=move.x,z=-move.z,maxDistance=Infinity;
+  if(!move.active&&state.lastHitter==='opponent'&&ball.active&&state.prediction?.intercept){
+    const stance=receivingTarget(state.prediction,player.pos);
+    x=stance.x-player.pos.x;z=stance.z-player.pos.z;maxDistance=Math.hypot(x,z);
+    if(maxDistance<.24)return;
+  }else if(!move.active&&player.speed>.5){x=player.vel.x;z=player.vel.z;}
+  if (!dash.start(x, z, state.stamina,maxDistance)) return;
   state.stamina = Math.max(0, state.stamina - 14); state.lastMove = state.timer + .7;
   haptic(.62,.3,48);
   noise(.1, 380, .08, 'highpass');
@@ -888,6 +893,12 @@ function releaseServe(){
 function refreshPrediction() {
   const level=currentOpponentLevel(),opponentHeight=level.rating>=1350?2.8:2.3;
   state.prediction = predict(ball.pos, ball.vel, state.lastHitter === 'player' ? -1 : 1, state.lastHitter === 'player' ? opponentHeight : ['smash','slicesmash','drop','slicedrop'].includes(state.shot)?2.98:2.05);
+  if(state.lastHitter==='opponent'){
+    const overhead=['smash','slicesmash','drop','slicedrop'].includes(state.shot);
+    const height=overhead?2.78:1.78;
+    const spot=receiveIntercept(ball.pos,ball.vel,player.pos,ballTimeScale(),7*state.playerStats.speed,height);
+    if(spot)state.prediction.intercept=spot;
+  }
   if(state.lastHitter==='player'&&!training&&state.mode!=='targets'){
     const lane=defensiveIntercept(ball.pos,ball.vel,opponent.pos,level,ballTimeScale());
     if(lane)state.prediction.intercept=lane;
@@ -1027,7 +1038,7 @@ function tryPlayerHit() {
   const shot=strokeOutcome({position:ball.pos,player:player.pos,kind:type,target,speed:player.speed,jump:state.jump,stamina:state.stamina*(.72+.28*state.playerStats.stamina),assisted:state.assists,attackBonus:Math.max(0,state.playerStats.attack-1),qualityBonus:(state.playerStats.control-1)*.30+(['drop','slicedrop','net','netcross','lift'].includes(type)?(state.playerStats.net-1)*.25:0)});
   if(shot.speedMps!==null)shot.speedMps=clamp((shot.speedMps+racketPowerBoost(state.racketStyle,type))*(.4+.6*state.playerStats.attack),16,110);
   state.contactPoint=ball.pos.clone();state.contactElapsed=state.swing;state.impactFrame='player';
-  ball.vel.copy(solveShot(ball.pos, shot.target, type,{speed:shot.speedMps,touch:state.playerStats.net,quality:shot.quality,step:ballTimeScale()/120}));
+  ball.vel.copy(solveShot(ball.pos, shot.target, type,{speed:shot.speedMps,touch:state.playerStats.net,quality:shot.quality,step:ballTimeScale('player')/120}));
   if(shot.fault==='net')ball.vel.y-=5.8;
   if(training)training.shot={type,kmh:Math.round(ball.vel.length()*3.6),launchY:ball.vel.y};
   if(attacking){
@@ -1072,7 +1083,7 @@ function opponentHit() {
     shot.target=execution.target;shot.fault=shot.fault||execution.fault;
     const spread=(.035+(1-level.accuracy)*.95)*(1+(1-opponent.energy/100)*.85)+(1-shot.quality)*.35;shot.target.x+=normalRandom()*spread;shot.target.z+=normalRandom()*spread;
   }
-  ball.vel.copy(solveShot(ball.pos,shot?.target||plan.target,type,{speed:['smash','slicesmash'].includes(type)?level.power*(type==='slicesmash'?.73:1)+(shot?.heavy?8:0):type==='netkill'?level.power*.65:null,touch:.6+level.netSkill,quality:shot?.quality??1,step:ballTimeScale()/120}));
+  ball.vel.copy(solveShot(ball.pos,shot?.target||plan.target,type,{speed:['smash','slicesmash'].includes(type)?level.power*(type==='slicesmash'?.73:1)+(shot?.heavy?8:0):type==='netkill'?level.power*.65:null,touch:.6+level.netSkill,quality:shot?.quality??1,step:ballTimeScale('opponent')/120}));
   // Do not rescale a solved trajectory: it changes the called landing and net clearance.
   if(shot?.fault==='net')ball.vel.y-=5.8;
   state.lastShot=null;state.lastFault=null;state.lastHitter='opponent';state.rally++;
@@ -1170,9 +1181,13 @@ function updatePlayer(dt, pad = null) {
   let { x: mx, z: mz } = movement;
   const manual = movement.active;
   state.manualOverride=movementOwner.step({active:manual,rally:state.rally,lastHitter:state.lastHitter,phase:state.phase});
-  const sprint = (keys.has('ShiftLeft')||keys.has('ShiftRight')) && state.stamina > 8;
+  const incoming=ball.active&&state.phase==='rally'&&state.lastHitter==='opponent'&&state.prediction?.intercept;
+  const receive=incoming?receivingTarget(state.prediction,player.pos):null;
+  const heldSprint=keys.has('ShiftLeft')||keys.has('ShiftRight');
+  const chase=state.sprintAssist?pursuitSprint(movement,player.pos,receive):0;
+  const sprint=state.stamina>8?(heldSprint?1:chase):0;
   const energyFactor=.80+.20*clamp(state.stamina/35,0,1);
-  const speed = (sprint ? 7.1 : 5.25) * state.playerStats.speed*energyFactor;
+  const speed=(5.65+2.65*sprint)*state.playerStats.speed*energyFactor;
   if (manual) {
     // The doubles court is the compass: forward is always toward the net.
     const vx = mx * speed * movement.magnitude, vz = -mz * speed * movement.magnitude;
@@ -1180,17 +1195,13 @@ function updatePlayer(dt, pad = null) {
     player.pos.addScaledVector(player.vel, dt); state.lastMove = state.timer + .55;
     player.pos.x = clamp(player.pos.x, -3.4, 3.4); player.pos.z = clamp(player.pos.z, .65, 7.35);
   } else if (state.assists && !state.manualOverride && state.jump===0 && state.timer - state.lastMove > .13 && state.phase === 'rally') {
-    const intercept = state.prediction?.intercept;
-    const incoming = state.lastHitter === 'opponent' && intercept;
-    const receivingServe=state.lastShot?.type==='serve'&&state.rally===1;
-    const receive = receivingTarget(state.prediction, player.pos, receivingServe);
     const target = incoming ? V(receive.x, 0, receive.z) : V(player.pos.x * .3, 0, 4.0);
-    moveCharacter(player, target, (incoming ? 6.6 * state.playerStats.defense * state.playerStats.speed : 2.6 * state.playerStats.speed)*energyFactor, dt, true);
+    moveCharacter(player, target, (incoming ? (state.sprintAssist?8.0:6.6) * state.playerStats.defense * state.playerStats.speed : 2.6 * state.playerStats.speed)*energyFactor, dt, true);
   } else {
     player.vel.x=moveVelocity(player.vel.x,0,dt);player.vel.z=moveVelocity(player.vel.z,0,dt);player.pos.addScaledVector(player.vel,dt);
   }
   player.speed = Math.hypot(player.vel.x, player.vel.z);
-  state.stamina=clamp(state.stamina+movementEnergyRate({speed:player.speed,sprinting:manual&&sprint,staminaSkill:state.playerStats.stamina,resting:state.phase!=='rally'})*dt,0,100);
+  state.stamina=clamp(state.stamina+movementEnergyRate({speed:player.speed,sprinting:manual&&sprint>.55,staminaSkill:state.playerStats.stamina,resting:state.phase!=='rally'})*dt,0,100);
   const jumpFrame=jumping.step(dt,state.stamina);state.jump=jumpFrame.height;state.jumpV=jumpFrame.velocity;state.stamina-=jumpFrame.cost;state.jumpPeak=Math.max(state.jumpPeak,state.jump);
   if(jumpFrame.launched){noise(.045,420,.04,'highpass');haptic(.18,.05,24);}
   if(jumpFrame.landed){noise(.09,170,.095);haptic(.25,.12,28);if(state.tutorial&&state.tutorialStage===1)setLessonStage(2);}
@@ -1467,7 +1478,7 @@ function updateCamera(dt) {
   state.impact*=Math.exp(-18*dt);camera.rotation.order='YXZ';camera.rotation.y=state.yaw;camera.rotation.x=state.pitch+Math.sin(state.timer*85)*state.impact;
   camera.rotation.z=damp(camera.rotation.z,gait.roll,16,dt);
   state.cameraPeak=Math.max(state.cameraPeak||0,camera.position.y);
-  const fov=69+(keys.has('ShiftLeft')&&player.speed>4.5?1.5:0)+(dash.remaining>0?1.5:0);
+  const fov=69;
   camera.fov=damp(camera.fov,fov,9,dt);camera.updateProjectionMatrix();camera.updateMatrixWorld(true);
   let contact=null;if(state.swing>0&&state.contactPoint){const p=camera.worldToLocal(state.contactPoint.clone());contact=p.toArray();}
   const pose=swingPose({elapsed:state.impactFrame==='player'?state.contactElapsed:state.swing,kind:state.swingKind,contact,contactTime:state.contactElapsed||.095,armed:hitIntent.armed(state.timer),time:state.timer,speed:player.speed,power:state.lastShot?.heavy?1:0});
@@ -1561,18 +1572,15 @@ function updateEffects(dt) {
     if(ball.spin>0){shuttleSpin.setFromAxisAngle(UP,Math.min(18,ball.spin*9*spinAge));q.multiply(shuttleSpin);}
     shuttle.quaternion.slerp(q, 1 - Math.exp(-25 * dt));
   } else shuttle.rotation.set(0, state.timer * .6, .2);
-  const d = camera.position.distanceTo(ball.pos);
-  // Preserve a readable feather silhouette at distance without changing physics.
-  const third=state.cameraMode==='third';
-  const readableScale=d*2*Math.tan(camera.fov*Math.PI/360)*(third?14:9)/Math.max(1,innerHeight)/.064;
-  shuttle.scale.setScalar(groundMotion ? 1 : clamp(Math.max(1+d*.025,readableScale),1,third?3:2.2));
+  const depth=-tmp.copy(ball.renderPos).applyMatrix4(camera.matrixWorldInverse).z;
+  shuttle.scale.setScalar(groundMotion?1:shuttleVisualScale(depth,camera.fov,innerHeight,state.cameraMode==='third'));
   shuttleShadow.position.set(ball.renderPos.x, .016, ball.renderPos.z); shuttleShadow.scale.setScalar(.7 + ball.pos.y * .18); shuttleShadow.material.opacity = clamp(.28 - ball.pos.y * .022, .04, .26);
   if (ball.active) {
     ball.trail.unshift(ball.renderPos.clone()); if (ball.trail.length > (state.focus?5:9)) ball.trail.pop();
     const count = ball.trail.length, positions = trailLine.geometry.attributes.position.array;
     for (let i = 0; i < count; i++) ball.trail[i].toArray(positions, i * 3);
     trailLine.geometry.setDrawRange(0, count); trailLine.geometry.attributes.position.needsUpdate = true; trailLine.visible = true;
-    trailLine.material.opacity = state.focus?.075:.16;
+    trailLine.material.opacity = state.lastHitter==='opponent'?(state.focus?.17:.27):(state.focus?.075:.16);
   } else trailLine.visible = false;
   const land = state.prediction?.landing;
   landingMarker.visible = state.screen === 'play' && state.assists && !state.focus && state.lastHitter === 'opponent' && ball.active && land?.z > 0;
@@ -1716,7 +1724,10 @@ function pollGamepad() {
   return pad;
 }
 
-function ballTimeScale(){return state.pace*(state.comfortable&&state.difficulty==='easy'?.92:1);}
+function ballTimeScale(hitter=state.lastHitter){
+ const tempo=state.pace*(state.comfortable&&state.difficulty==='easy'?.92:1);
+ return hitter==='opponent'&&state.phase==='rally'?tempo*state.receivePace:tempo;
+}
 function fixedUpdate(dt) {
   if (state.screen !== 'play') return;
   for(const entity of [player,opponent,ball])entity.previous.copy(entity.pos);
@@ -1910,7 +1921,7 @@ function applyRenderProfile(){
  presentation.setQuality(profile.quality);renderBudget.invalidate();
 }
 function applyQuality(quality){qualityMode=['auto','balanced','high','ultra'].includes(quality)?quality:'auto';adaptiveResolution.reset(performance.now());applyRenderProfile();}
-function savePreferences(){if(testing)return;try{localStorage.setItem('feather-court-3-settings',JSON.stringify({contactHint:state.contactHint,ballGuide:state.ballGuide,thirdFraming:state.thirdFraming,cameraMode:state.cameraMode,orbitYaw:state.orbitYaw,orbitPitch:state.orbitPitch,assistSettingsVersion:1,assists:$('#assist-toggle').checked,autoReturn:$('#auto-return-toggle').checked,comfortable:$('#comfortable-toggle').checked,difficulty:$('#difficulty').value,scheme:$('#control-scheme').value,profile:$('#opponent-profile').value,points:$('#match-points').value,quality:$('#quality').value,performanceVersion:1,focus:state.focus,motion:state.motion,sensitivity:state.sensitivity,lookSyncVersion:2,pace:state.pace,sound:state.sound,racketStyle:state.racketStyle,racketSkin:state.racketSkin,playerStyle:$('#player-style').value,opponentStyle:$('#opponent-style').value,playerStats:playerStatsFromInputs(),opponentStats:state.opponentStats,highBallAssist:$('#high-ball-toggle').checked,placementHint:$('#placement-hint').checked,eagleAuto:$('#eagle-auto').checked}));}catch{}}
+function savePreferences(){if(testing)return;try{localStorage.setItem('feather-court-3-settings',JSON.stringify({contactHint:state.contactHint,ballGuide:state.ballGuide,thirdFraming:state.thirdFraming,cameraMode:state.cameraMode,orbitYaw:state.orbitYaw,orbitPitch:state.orbitPitch,assistSettingsVersion:1,assists:$('#assist-toggle').checked,autoReturn:$('#auto-return-toggle').checked,comfortable:$('#comfortable-toggle').checked,difficulty:$('#difficulty').value,scheme:$('#control-scheme').value,profile:$('#opponent-profile').value,points:$('#match-points').value,quality:$('#quality').value,performanceVersion:1,focus:state.focus,motion:state.motion,sensitivity:state.sensitivity,lookSyncVersion:2,pace:state.pace,receivePace:state.receivePace,sprintAssist:state.sprintAssist,sound:state.sound,racketStyle:state.racketStyle,racketSkin:state.racketSkin,playerStyle:$('#player-style').value,opponentStyle:$('#opponent-style').value,playerStats:playerStatsFromInputs(),opponentStats:state.opponentStats,highBallAssist:$('#high-ball-toggle').checked,placementHint:$('#placement-hint').checked,eagleAuto:$('#eagle-auto').checked}));}catch{}}
 function restorePreferences(){
   try { const settings=JSON.parse(localStorage.getItem('feather-court-3-settings')||'{}');$('#eagle-auto').checked=settings.eagleAuto!==false; } catch {}
   $('#eagle-auto').addEventListener('change',savePreferences);
@@ -1923,6 +1934,9 @@ function restorePreferences(){
   const oldSensitivity=Number.isFinite(prefs.sensitivity)?clamp(prefs.sensitivity,.25,2):1;state.sensitivity=prefs.lookSyncVersion===2?oldSensitivity:clamp(oldSensitivity*1.35,.25,2);$('#sensitivity').value=state.sensitivity;
   if(prefs.lookSyncVersion!==2&&!testing){prefs.sensitivity=state.sensitivity;prefs.lookSyncVersion=2;try{localStorage.setItem('feather-court-3-settings',JSON.stringify(prefs));}catch{}}
   state.pace=[.8,1,1.2].includes(prefs.pace)?prefs.pace:1;$('#pace').value=state.pace;if(typeof prefs.sound==='boolean')state.sound=prefs.sound;
+  state.receivePace=[.60,.74,1].includes(prefs.receivePace)?prefs.receivePace:.74;
+  $('#receive-pace').value=state.receivePace;
+  state.sprintAssist=$('#sprint-assist').checked=prefs.sprintAssist!==false;
   applyRacketStyle(prefs.racketStyle||'attack');applyRacketSkin(prefs.racketSkin||'astrox100zz');
   if(prefs.playerStats&&prefs.playerStyle==='custom')for(const key of ['attack','speed','defense','net','control','stamina']){const n=Number(prefs.playerStats[key]);if(Number.isFinite(n))$('#player-'+key).value=Math.round(clamp(n*100,40,160));}
   const restoredCustom=playerStatsFromInputs();applyPlayerStyle($('#player-style').value);if(prefs.playerStyle==='custom'){techniquePanel.write('player',restoredCustom);refreshPlayerStats();}
@@ -1999,8 +2013,10 @@ function bindEvents() {
   $('#comfortable-toggle').addEventListener('change', e => setComfortable(e.target.checked));
   $('#aim-left').addEventListener('click', () => state.aim = clamp(state.aim - .32, -1, 1));
   $('#aim-right').addEventListener('click', () => state.aim = clamp(state.aim + .32, -1, 1));
+  $('#receive-pace').addEventListener('change',e=>{state.receivePace=Number(e.target.value);if(ball.active)refreshPrediction();savePreferences();});
+  $('#sprint-assist').addEventListener('change',e=>{state.sprintAssist=e.target.checked;savePreferences();});
   $('#dash-btn').addEventListener('click', lunge);
-  $('#pace').addEventListener('change', event => state.pace = Number(event.target.value));
+  $('#pace').addEventListener('change', event=>{state.pace=Number(event.target.value);if(ball.active)refreshPrediction();savePreferences();});
   const aimCourt = $('#court-aim');
   const aimOnMap = event => {
     const bounds = aimCourt.getBoundingClientRect();

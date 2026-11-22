@@ -105,12 +105,12 @@ export function shotTarget({ aim = 0, depth = null, kind = 'clear' } = {}) {
 export class Dash {
   constructor() { this.reset(); }
   reset() { this.remaining = 0; this.cooldown = 0; this.x = 0; this.z = 0; }
-  start(x, z, stamina = 100) {
+  start(x, z, stamina = 100, maxDistance = Infinity) {
     if (this.cooldown > 0 || stamina < 14) return false;
     const length = Math.hypot(x, z);
     if (length < .01) { x = 0; z = -1; }
     else { x /= length; z /= length; }
-    this.x = x; this.z = z; this.remaining = .19; this.cooldown = 1.15;
+    this.x = x; this.z = z; this.remaining = Math.min(.19,maxDistance/8.5); this.cooldown = 1.15;
     return true;
   }
   step(dt) {
