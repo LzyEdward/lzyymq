@@ -5,12 +5,12 @@ const freeze = value => Object.freeze(value);
 // to the existing physics and opponent decision system.
 export const TOUR_STARS = freeze({
   linDan: freeze({id:'linDan',name:'林丹',latin:'Lin Dan',country:'中国',era:'2004–2020',profile:'attack',style:'linDan08',kit:'linDan08',difficulty:'legend',seed:1,signature:'高点重杀与连续突击'}),
-  leeChongWei: freeze({id:'leeChongWei',name:'李宗伟',latin:'Lee Chong Wei',country:'马来西亚',era:'2002–2019',profile:'counter',style:'leeChongWei',kit:'leeChongWei',difficulty:'national',seed:2,signature:'速度、劈杀与反复变线'}),
-  peterGade: freeze({id:'peterGade',name:'彼得·盖德',latin:'Peter Gade',country:'丹麦',era:'1994–2012',profile:'balanced',style:'allround',kit:'allround',difficulty:'advanced',seed:3,signature:'节奏变化与前场假动作'}),
-  taufik: freeze({id:'taufik',name:'陶菲克',latin:'Taufik Hidayat',country:'印度尼西亚',era:'1998–2016',profile:'netpress',style:'taufik',kit:'taufik',difficulty:'advanced',seed:4,signature:'反手高球与网前手感'}),
-  chenLong: freeze({id:'chenLong',name:'谌龙',latin:'Chen Long',country:'中国',era:'2008–2021',profile:'defend',style:'chenLong',kit:'chenLong',difficulty:'pro',seed:5,signature:'耐心防守与多拍控制'}),
-  momota: freeze({id:'momota',name:'桃田贤斗',latin:'Kento Momota',country:'日本',era:'2013–2024',profile:'defend',style:'chenLong',kit:'chenLong',difficulty:'pro',seed:6,signature:'落点精确、压迫后场'}),
-  shiYuqi: freeze({id:'shiYuqi',name:'石宇奇',latin:'Shi Yuqi',country:'中国',era:'2016–至今',profile:'attack',style:'linDan08',kit:'linDan08',difficulty:'pro',seed:7,signature:'左手突击与直线下压'}),
+  leeChongWei: freeze({id:'leeChongWei',name:'李宗伟',latin:'Lee Chong Wei',country:'马来西亚',era:'2002–2019',profile:'counter',style:'leeChongWei',kit:'leeChongWei',difficulty:'legend',seed:2,signature:'速度、劈杀与反复变线'}),
+  peterGade: freeze({id:'peterGade',name:'彼得·盖德',latin:'Peter Gade',country:'丹麦',era:'1994–2012',profile:'balanced',style:'allround',kit:'allround',difficulty:'national',seed:3,signature:'节奏变化与前场假动作'}),
+  taufik: freeze({id:'taufik',name:'陶菲克',latin:'Taufik Hidayat',country:'印度尼西亚',era:'1998–2016',profile:'netpress',style:'taufik',kit:'taufik',difficulty:'legend',seed:4,signature:'反手高球与网前手感'}),
+  chenLong: freeze({id:'chenLong',name:'谌龙',latin:'Chen Long',country:'中国',era:'2008–2021',profile:'defend',style:'chenLong',kit:'chenLong',difficulty:'legend',seed:5,signature:'耐心防守与多拍控制'}),
+  momota: freeze({id:'momota',name:'桃田贤斗',latin:'Kento Momota',country:'日本',era:'2013–2024',profile:'defend',style:'chenLong',kit:'chenLong',difficulty:'legend',seed:6,signature:'落点精确、压迫后场'}),
+  shiYuqi: freeze({id:'shiYuqi',name:'石宇奇',latin:'Shi Yuqi',country:'中国',era:'2016–至今',profile:'attack',style:'linDan08',kit:'linDan08',difficulty:'legend',seed:7,signature:'变速突击与直线下压'}),
   viktorAxelsen: freeze({id:'viktorAxelsen',name:'安赛龙',latin:'Viktor Axelsen',country:'丹麦',era:'2011–至今',profile:'attack',style:'linDan08',kit:'linDan08',difficulty:'legend',seed:8,signature:'高点身高优势与重杀'}),
   ginting: freeze({id:'ginting',name:'金廷',latin:'Anthony Ginting',country:'印度尼西亚',era:'2015–至今',profile:'netpress',style:'taufik',kit:'taufik',difficulty:'national',seed:9,signature:'快速启动与扑网'}),
   chou: freeze({id:'chou',name:'周天成',latin:'Chou Tien-chen',country:'中国台北',era:'2012–至今',profile:'counter',style:'chenLong',kit:'chenLong',difficulty:'national',seed:10,signature:'顽强防守与反击'}),
@@ -23,7 +23,7 @@ export const TOUR_STARS = freeze({
   kunlavut: freeze({id:'kunlavut',name:'昆拉武特',latin:'Kunlavut Vitidsarn',country:'泰国',era:'2018–至今',profile:'defend',style:'chenLong',kit:'chenLong',difficulty:'pro',seed:17,signature:'网前细腻与多拍耐心'}),
   lakshya: freeze({id:'lakshya',name:'拉克什亚',latin:'Lakshya Sen',country:'印度',era:'2018–至今',profile:'attack',style:'leeChongWei',kit:'leeChongWei',difficulty:'advanced',seed:18,signature:'前场抢点与连续进攻'}),
   kodai: freeze({id:'kodai',name:'奈良冈功大',latin:'Kodai Naraoka',country:'日本',era:'2018–至今',profile:'defend',style:'chenLong',kit:'chenLong',difficulty:'pro',seed:19,signature:'极限防守与高质量拉吊'}),
-  axelsenOld: freeze({id:'axelsenOld',name:'维克多·阿克塞尔森',latin:'Viktor Axelsen',country:'丹麦',era:'2016–至今',profile:'attack',style:'linDan08',kit:'linDan08',difficulty:'legend',seed:20,signature:'后场重压与高点控制'}),
+  lohKeanYew: freeze({id:'lohKeanYew',name:'骆建佑',latin:'Loh Kean Yew',country:'新加坡',era:'2021 世锦赛',profile:'attack',style:'leeChongWei',kit:'leeChongWei',difficulty:'national',seed:20,signature:'快启动抢点，突击后跟进封网'}),
   wongChoongHan: freeze({id:'wongChoongHan',name:'黄综翰',latin:'Wong Choong Hann',country:'马来西亚',era:'1998–2010',profile:'balanced',style:'allround',kit:'allround',difficulty:'expert',seed:21,signature:'全场均衡与线路耐心'}),
   ponsana: freeze({id:'ponsana',name:'波萨那',latin:'Boonsak Ponsana',country:'泰国',era:'2001–2016',profile:'netpress',style:'taufik',kit:'taufik',difficulty:'expert',seed:22,signature:'网前手感与突击'}),
   darenLiew: freeze({id:'darenLiew',name:'刘达伦',latin:'Liew Daren',country:'马来西亚',era:'2008–2020',profile:'counter',style:'leeChongWei',kit:'leeChongWei',difficulty:'advanced',seed:23,signature:'变线反击与快速平抽'}),
@@ -52,11 +52,25 @@ export const TOUR_STARS = freeze({
   saiPraneeth: freeze({id:'saiPraneeth',name:'赛·普拉尼斯',latin:'B. Sai Praneeth',country:'印度',era:'2009–2022',profile:'attack',style:'leeChongWei',kit:'leeChongWei',difficulty:'advanced',seed:46,signature:'快速抢攻与连续提速'}),
   leeDongKeun: freeze({id:'leeDongKeun',name:'李东根',latin:'Lee Dong-keun',country:'韩国',era:'2007–2018',profile:'counter',style:'chenLong',kit:'chenLong',difficulty:'advanced',seed:47,signature:'防守反击与网前变化'}),
   zhaoJianHua: freeze({id:'zhaoJianHua',name:'赵剑华',latin:'Zhao Jianhua',country:'中国',era:'1983–1992',profile:'attack',style:'taufik',kit:'taufik',difficulty:'expert',seed:48,signature:'手腕突击与网前细节'}),
+  yangYang: freeze({id:'yangYang',name:'杨阳',latin:'Yang Yang',country:'中国',era:'1987、1989 世锦赛',profile:'attack',style:'linDan08',kit:'linDan08',difficulty:'legend',seed:49,signature:'快速下压，连续进攻两侧空当'}),
+  hendrawan: freeze({id:'hendrawan',name:'叶诚万',latin:'Hendrawan',country:'印度尼西亚',era:'2001 世锦赛',profile:'counter',style:'taufik',kit:'taufik',difficulty:'national',seed:50,signature:'网前变速，拉开空当后突击'}),
+  wiranata: freeze({id:'wiranata',name:'阿尔迪',latin:'Ardy Wiranata',country:'印度尼西亚',era:'1992 奥运会',profile:'defend',style:'chenLong',kit:'chenLong',difficulty:'pro',seed:51,signature:'底线相持，耐心等对手起球'}),
+  hariyanto: freeze({id:'hariyanto',name:'阿尔比',latin:'Hariyanto Arbi',country:'印度尼西亚',era:'1995 世锦赛',profile:'attack',style:'linDan08',kit:'linDan08',difficulty:'national',seed:52,signature:'后场跳杀，连续压低回球'}),
+  alanBudikusuma: freeze({id:'alanBudikusuma',name:'魏仁芳',latin:'Alan Budikusuma',country:'印度尼西亚',era:'1992 奥运会',profile:'balanced',style:'allround',kit:'allround',difficulty:'national',seed:53,signature:'四角调动与后场抢攻'}),
+  xiaXuanze: freeze({id:'xiaXuanze',name:'夏煊泽',latin:'Xia Xuanze',country:'中国',era:'2003 世锦赛',profile:'attack',style:'linDan08',kit:'linDan08',difficulty:'national',seed:54,signature:'头顶抢攻，直线点杀后上网'}),
+  jiXinpeng: freeze({id:'jiXinpeng',name:'吉新鹏',latin:'Ji Xinpeng',country:'中国',era:'2000 奥运会',profile:'counter',style:'chenLong',kit:'chenLong',difficulty:'national',seed:55,signature:'拉吊调动，抓对手回位空当'}),
+  liShifeng: freeze({id:'liShifeng',name:'李诗沣',latin:'Li Shifeng',country:'中国',era:'2023 全英公开赛',profile:'attack',style:'linDan08',kit:'linDan08',difficulty:'pro',seed:56,signature:'后场起跳下压，衔接下一拍'}),
 });
 
 // Guest rivals enlarge exhibition matchmaking without changing the 32-slot event format.
 export const TOUR_ROSTER = freeze(Object.values(TOUR_STARS).filter(p=>p.seed<=32).sort((a,b)=>a.seed-b.seed).map(p=>p.id));
 export const EXHIBITION_ROSTER = freeze(Object.values(TOUR_STARS).sort((a,b)=>a.seed-b.seed).map(p=>p.id));
+
+export const FEATURED_STARS = freeze([
+  'linDan','leeChongWei','momota','shiYuqi','viktorAxelsen','chenLong','taufik','peterGade',
+  'kunlavut','lohKeanYew','liShifeng','ginting','yangYang','zhaoJianHua','xiaXuanze','jiXinpeng',
+  'hariyanto','alanBudikusuma','hendrawan',
+]);
 
 export const TOUR_EVENTS = freeze([
   freeze({id:'allEngland',name:'全英公开赛',english:'YONEX All England Open',city:'伯明翰',venue:'Utilita Arena Birmingham',surface:'传统木地板',crowd:'经典满场',accent:'#d8bf74',courtTone:'#2b6658',runoffTone:'#214b43',rounds:['32强','16强','8强','半决赛','决赛'],draw:TOUR_ROSTER}),
@@ -67,7 +81,7 @@ export const TOUR_EVENTS = freeze([
   freeze({id:'olympics',name:'巴黎奥运会羽毛球赛',english:'Paris 2024 Olympic Badminton',city:'巴黎',venue:'Arena Porte de la Chapelle',surface:'奥运赛时场地',crowd:'巴黎奥运满场',accent:'#c6a7f2',courtTone:'#8ccaba',runoffTone:'#41494a',rounds:['32强','16强','8强','半决赛','决赛'],draw:TOUR_ROSTER}),
 ]);
 
-export function star(id){return TOUR_STARS[id]||TOUR_STARS.peterGade;}
+export function star(id){return TOUR_STARS[id==='axelsenOld'?'viktorAxelsen':id]||TOUR_STARS.peterGade;}
 export function event(id){return TOUR_EVENTS.find(item=>item.id===id)||TOUR_EVENTS[0];}
 
 const SEED_ORDER=[1,32,16,17,8,25,9,24,4,29,13,20,5,28,12,21,2,31,15,18,7,26,10,23,3,30,14,19,6,27,11,22];

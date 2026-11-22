@@ -136,6 +136,7 @@ function attackVelocity(origin, dx, dz, distance, speed, step) {
 }
 
 export function solveShot(origin, target, type = 'clear',options={}) {
+  const step=options.step??1/120;
   const distance = Math.hypot(target.x - origin.x, target.z - origin.z);
   const dx = (target.x - origin.x) / Math.max(distance, 0.01);
   const dz = (target.z - origin.z) / Math.max(distance, 0.01);
@@ -151,8 +152,8 @@ export function solveShot(origin, target, type = 'clear',options={}) {
     let lowUp=-16,highUp=24,up=0,horizontal=0;
     for(let pass=0;pass<22;pass++){
       up=(lowUp+highUp)/2;let low=.1,high=100;
-      for(let i=0;i<22;i++){horizontal=(low+high)/2;const f=flight(origin,horizontal,up,dx,dz);if(f.distance<distance)low=horizontal;else high=horizontal;}
-      const result=flight(origin,horizontal,up,dx,dz);
+      for(let i=0;i<22;i++){horizontal=(low+high)/2;const f=flight(origin,horizontal,up,dx,dz,step);if(f.distance<distance)low=horizontal;else high=horizontal;}
+      const result=flight(origin,horizontal,up,dx,dz,step);
       if(result.netY<COURT.netHeight+clearance)lowUp=up;else highUp=up;
     }
     return {x:dx*horizontal,y:up,z:dz*horizontal};
@@ -161,11 +162,11 @@ export function solveShot(origin, target, type = 'clear',options={}) {
     const height=clamp((origin.y-1.26)/.75,0,1);
     const quality=clamp(options.quality??1,0,1);
     const pace=(13+height*12)*(.79+.21*quality);
-    const push=attackVelocity(origin,dx,dz,distance,pace,options.step??1/120);
+    const push=attackVelocity(origin,dx,dz,distance,pace,step);
     if(push)return push;
   }
   if((type==='smash'||type==='slicesmash'||type==='netkill')&&Number.isFinite(options.speed)){
-    const velocity = attackVelocity(origin, dx, dz, distance, options.speed, options.step ?? 1 / 120);
+    const velocity = attackVelocity(origin, dx, dz, distance, options.speed, step);
     if (velocity) return velocity;
   }
   let up = ({ clear: 15.8, drive: 5.1, push:4.1,netkill:-3.8,drop: 6.1, smash: -6.5, slicesmash:-4.8, serve: 3.6, lift: 18 })[type] ?? 12;
@@ -176,11 +177,11 @@ export function solveShot(origin, target, type = 'clear',options={}) {
     let lo = 0.5, hi = 155;
     for (let i = 0; i < 20; i++) {
       horizontal = (lo + hi) / 2;
-      result = flight(origin, horizontal, up, dx, dz);
+      result = flight(origin, horizontal, up, dx, dz,step);
       if (result.distance < distance) lo = horizontal;
       else hi = horizontal;
     }
-    result = flight(origin, horizontal, up, dx, dz);
+    result = flight(origin, horizontal, up, dx, dz,step);
     if (result.netY >= COURT.netHeight + (type === 'clear' ? 0.55 : type==='serve'?.045:.12)) break;
     up += type==='serve' ? .35 : 2.2;
   }

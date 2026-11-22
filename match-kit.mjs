@@ -7,6 +7,10 @@ const palettes=[
  ['#422b65','#241b3b','#ea8093'],['#e16938','#253244','#ffe6ac']
 ];
 const known={
+ liShifeng:['LI S F','CHN',1,'crew','#ffeada'],lohKeanYew:['LOH K Y','SGP',0,'crop','#ffe9da'],
+ xiaXuanze:['XIA X Z','CHN',1,'crew','#ffe9d8'],jiXinpeng:['JI X P','CHN',2,'part','#ffe9dc'],
+ yangYang:['YANG Y','CHN',1,'part','#ffeadc'],hendrawan:['HENDRAWAN','INA',4,'crew','#f3d8c3'],
+ alanBudikusuma:['BUDIKUSUMA A','INA',7,'part','#f3d7bf'],hariyanto:['ARBI H','INA',4,'crop','#f1d5c1'],
  linDan:['LIN D','CHN',1,'crop','#fff0dd'],leeChongWei:['LEE C W','MAS',2,'sweep','#ffecd7'],
  chenLong:['CHEN L','CHN',5,'crew','#fff2e6'],taufik:['HIDAYAT T','INA',4,'part','#ebccb7'],
  momota:['MOMOTA K','JPN',3,'part','#fff3e8'],shiYuqi:['SHI Y Q','CHN',1,'sweep','#ffe8d5'],
@@ -26,7 +30,7 @@ export function matchKit(input='custom'){
  const [shirt,pants,accent]=palettes[entry?.[2]??(seed%palettes.length)];
  return {key:star?.id||input,shirt,pants,accent,pattern:(entry?.[2]??seed)%4,
   lettering:entry?.[0]||star?.latin?.toUpperCase()||'FEATHER',team:entry?.[1]||codes[star?.country]||'COURT',
-  build:({linDan:[1.045,.975,1.025],leeChongWei:[.945,1.03,.98],chenLong:[1.035,1.065,1.02],peterGade:[.98,1.045,.96],viktorAxelsen:[1.025,1.075,1.035],taufik:[1.025,.98,1.04]})[key]||[1,1,1],cut:entry?.[3]||cuts[seed%cuts.length],skin:entry?.[4]||'#fff0e2',hair:entry?.[5]||'#292019'};
+  build:({linDan:[1.045,.975,1.025],leeChongWei:[.945,.966,.98],momota:[1.02,.985,1.015],shiYuqi:[.975,1.039,.98],liShifeng:[.975,1.035,.98],lohKeanYew:[1.015,.99,1.02],chenLong:[1.035,1.065,1.02],peterGade:[.98,1.045,.96],viktorAxelsen:[1.025,1.075,1.035],taufik:[1.025,.98,1.04]})[key]||[1,1,1],cut:entry?.[3]||cuts[seed%cuts.length],skin:entry?.[4]||'#fff0e2',hair:entry?.[5]||'#292019'};
 }
 
 export function hairCutOffset(cut,x,y,z){

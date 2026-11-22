@@ -34,17 +34,26 @@ export function opponentReceiveBase({serverX=.45,high=false}={}){
 }
 // Choose a playable point along the descent. A defender covering the back
 // half can wait for a drive instead of chasing its first crossing near the net.
+// At shoulder height leave space for a defensive swing. For an overhead,
+// get under the cork with the racket shoulder slightly behind it.
+export function opponentStance(point){
+ const overhead=clamp((point.y-1.85)/.65,0,1);
+ return {x:clamp(point.x+.13,-3.1,3.1),z:clamp(point.z-.61+overhead*.35,-7.05,-.7)};
+}
 export function defensiveIntercept(origin,velocity,feet,level,pace=1){
  const p={...origin},v={...velocity},dt=1/120;
+ const preferredHeight=1.63+level.anticipation*1.05;
  let best=null,bestCost=Infinity;
  for(let i=1;i<=480;i++){
   advance(p,v,dt*pace);
   if(p.y<.34)break;
-  if(i%3||p.z>-.55||p.z<-6.8||v.y>1||p.y>2.54)continue;
-  const distance=Math.hypot(p.x-(feet.x-.1),p.z-(feet.z+.45));
+  if(i%3||p.z>-.55||p.z<-6.8||v.y>1||p.y>preferredHeight+.14)continue;
+  const stance=opponentStance(p);
+  const distance=Math.hypot(stance.x-feet.x,stance.z-feet.z);
   const time=i*dt,available=Math.max(0,time-level.reaction*.50);
-  const travel=Math.min(available*level.speed,.5*level.acceleration*available**2);
-  const cost=Math.max(0,distance-.66-travel)*2.3+distance*.16+Math.abs(p.y-1.62)*.27+time*.16;
+  const accelerating=Math.min(available,level.speed/level.acceleration);
+  const travel=.5*level.acceleration*accelerating**2+(available-accelerating)*level.speed;
+  const cost=Math.max(0,distance-.42-travel)*3+distance*.12+Math.abs(p.y-preferredHeight)*(.28+level.anticipation*.56)+time*.16;
   if(cost<bestCost){bestCost=cost;best={...p,time};}
  }
  return best;
@@ -96,7 +105,7 @@ export function opponentReceiveMissChance({level,shot='clear',position,distance,
  // A steep, fast, well-positioned attack creates a real defensive problem.
  // The pressure is bounded so low contact or a poor line never becomes a free point.
  const attack=clamp(Number(attackPressure)||0,0,1);
- chance+=attack*(.055+.12*(1-level.reaction))*(.72+clamp(incomingSpeed/80,0,1)*.28);
+ chance+=attack*(.042+.18*clamp(level.reaction/.56,0,1))*(.72+clamp(incomingSpeed/80,0,1)*.28);
  return clamp(chance,0,.72);
 }
 
@@ -165,6 +174,10 @@ export function planOpponentStroke({level,position,player,playerVelocity={x:0,z:
   if(tactic==='angle'&&['slicesmash','slicedrop','netcross','drop','net'].includes(candidate.type)&&Math.abs(candidate.target.x-position.x)>1.1)candidate.weight*=1.8;
   if(tactic==='rally'&&['clear','drive'].includes(candidate.type))candidate.weight*=1.28;
   if(tactic==='touch'&&['net','drop','push'].includes(candidate.type))candidate.weight*=1.58;
+  const attacking=['smash','slicesmash','netkill'].includes(candidate.type);
+  if(attacking&&pressure<.3&&position.y>(net?1.95:2.3)){
+   candidate.weight*=1+level.anticipation*level.attack*(net?2.6:2.1);
+  }
   if(energy<28&&['smash','slicesmash'].includes(candidate.type))candidate.weight*=.25;
   // Build a point over successive strokes: clear to the back then change
   // pace, or show the net then push behind a player who has committed.

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {TOUR_EVENTS,TOUR_ROSTER,EXHIBITION_ROSTER,TOUR_STARS,chooseRandomOpponent,freshTour,currentTourMatch,advanceTour,tourStatus} from '../tournament.mjs';
+import {TOUR_EVENTS,TOUR_ROSTER,EXHIBITION_ROSTER,FEATURED_STARS,star,TOUR_STARS,chooseRandomOpponent,freshTour,currentTourMatch,advanceTour,tourStatus} from '../tournament.mjs';
 
 test('six events expose five playable rounds and a 32-player cross-era roster',()=>{
   assert.equal(TOUR_EVENTS.length,6);
@@ -18,7 +18,11 @@ test('each career save contains a complete 32-slot knockout bracket',()=>{
 });
 
 test('exhibition pool expands beyond the tournament roster and rotates away from recent rivals',()=>{
-  assert.equal(EXHIBITION_ROSTER.length,48);
+  assert.equal(new Set(EXHIBITION_ROSTER.map(id=>star(id).latin)).size,EXHIBITION_ROSTER.length);
+  assert.equal(star('axelsenOld').id,'viktorAxelsen');
+  for(const id of ['linDan','momota','shiYuqi','liShifeng','lohKeanYew','xiaXuanze','yangYang']){
+    assert.ok(EXHIBITION_ROSTER.includes(id)&&FEATURED_STARS.includes(id));
+  }
   const sample=chooseRandomOpponent(EXHIBITION_ROSTER,['linDan','leeChongWei'],()=>0);
   assert.notEqual(sample,'linDan');
   assert.notEqual(sample,'leeChongWei');

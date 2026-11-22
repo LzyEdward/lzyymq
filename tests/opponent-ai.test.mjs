@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {OPPONENT_LEVELS} from '../competition.mjs';
-import {opponentFootwork,planOpponentStroke,recoveryBase,opponentReceiveMissChance,opponentStrokeExecution,opponentServeTarget,opponentWeaknessProfile,opponentWeaknessKey} from '../opponent-ai.mjs';
+import {opponentFootwork,planOpponentStroke,recoveryBase,opponentReceiveMissChance,opponentStrokeExecution,opponentServeTarget,defensiveIntercept,opponentWeaknessProfile,opponentWeaknessKey} from '../opponent-ai.mjs';
 import {advance,COURT,predict,solveShot} from '../physics.mjs';
 
 const level=key=>OPPONENT_LEVELS[key];
@@ -187,4 +187,20 @@ test('a steep heavy smash raises defensive error chance, while ordinary pressure
  const setup={level:level('easy'),shot:'smash',position:{x:0,y:2.6,z:-4},distance:1,reach:1,energy:95,incomingSpeed:75};
  const ordinary=opponentReceiveMissChance(setup),heavy=opponentReceiveMissChance({...setup,attackPressure:1});
  assert.ok(heavy>ordinary+.07);assert.ok(heavy<=.72);
+});
+
+test('better anticipation takes a reachable clear higher and earlier',()=>{
+ const origin={x:0,y:2.6,z:5},velocity=solveShot(origin,{x:1.3,z:-5.7},'clear'),feet={x:.2,z:-4.3};
+ const picks=['easy','master','legend'].map(key=>defensiveIntercept(origin,velocity,feet,level(key)));
+ assert.ok(picks.every(Boolean));
+ assert.ok(picks[2].y>picks[1].y&&picks[1].y>picks[0].y+.25);
+ assert.ok(picks[2].time<picks[1].time&&picks[1].time<picks[0].time);
+});
+test('faster reactions reduce the added risk from a smash',()=>{
+ const context={shot:'smash',position:{x:0,y:1.4,z:-4},distance:.6,reach:1.3,incomingSpeed:65};
+ const penalty=reaction=>{
+  const input={...context,level:{...level('master'),reaction}};
+  return opponentReceiveMissChance({...input,attackPressure:1})-opponentReceiveMissChance(input);
+ };
+ assert.ok(penalty(.065)<penalty(.56)*.45);
 });

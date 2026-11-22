@@ -215,9 +215,18 @@ export function createAthlete(THREE, createRacket,{skinMap=null,mergeGeometries=
   const v1=e.copy(joint).sub(origin).normalize();upper.parent.getWorldQuaternion(parentQ);v1.applyQuaternion(parentQ.invert());upper.quaternion.setFromUnitVectors(r.v1.clone().normalize(),v1);
   upper.updateWorldMatrix(true,true);const v2=end.copy(origin).addScaledVector(direction,distance).sub(joint).normalize();upper.getWorldQuaternion(parentQ);v2.applyQuaternion(parentQ.invert());lower.quaternion.setFromUnitVectors(r.v2.clone().normalize(),v2);
  }
- let stride=0,ready=0;const footPlants=[new FootPlant(),new FootPlant()];
+ let stride=0,ready=0,carriedX=0,carriedZ=0;const footPlants=[new FootPlant(),new FootPlant()];
  const smooth=(t,lo,hi)=>{const u=clamp((t-lo)/(hi-lo),0,1);return u*u*(3-2*u);};
  function update({speed=0,dt=1/60,time=0,swing=0,lateral=0,forward=0,shot='clear',anticipation=0,lookY=1.5,lookX=0,grip=1,split=0,crossover=false,contact=null,lunge=0,netVariant='',supportContact=null,jumpHeight=0,landing=0,impactOnly=false}={}){
+  // The callers supply court-space velocity. Lean, crossover and feet
+  // must all use the same body frame, including when facing the far baseline.
+  const velocity=vec(lateral,0,forward);
+  root.getWorldQuaternion(parentQ);velocity.applyQuaternion(parentQ.invert());
+  lateral=velocity.x;forward=velocity.z;
+  const transfer=1-Math.exp(-9*dt);
+  carriedX+=(lateral-carriedX)*transfer;carriedZ+=(forward-carriedZ)*transfer;
+  const loadX=clamp((lateral-carriedX)*.055,-.14,.14),loadZ=clamp((forward-carriedZ)*.05,-.12,.12);
+  const splitLoad=Math.sin(clamp(split,0,1)*Math.PI);
   lunge=clamp(lunge,0,1);const netStroke=['net','netcross','push','netkill'].includes(shot),crossStep=crossover&&Math.abs(lateral)>.3;
   const overhead=['smash','slicesmash','clear','drop','slicedrop'].includes(shot),under=shot==='lift'||shot==='serve';
   const power=shot==='smash'?1:shot==='slicesmash'?.83:shot==='clear'?.72:.48;
@@ -227,16 +236,16 @@ export function createAthlete(THREE, createRacket,{skinMap=null,mergeGeometries=
   const coil=smooth(t,0,.055)*(1-smooth(t,.19,.255)),drive=smooth(t,.14,.245)*(1-smooth(t,.30,.58));
   const hips=smooth(t,.06,.19)*(1-smooth(t,.30,.72)),air=clamp(jumpHeight/.46,0,1);
   const racketPower=shot==='smash'?1:shot==='slicesmash'?.82:shot==='clear'?.26:.48;
-  body.position.y=-.055-Math.abs(motion)*.022*run+Math.sin(time*2.2)*.002-ready*.035-Math.sin(split*Math.PI)*.032-lunge*.145-landing*.064;
+  body.position.y=-.055-Math.abs(motion)*.022*run+Math.sin(time*2.2)*.002-ready*.035-splitLoad*.052-lunge*.145-landing*.064;
   const weightShift=run*Math.sin(stride),breath=Math.sin(time*2.65)*(1-run*.65);
   const impact=contact&&swing>0?1-smooth(Math.abs(swing-.135),.012,.135):0;
   const dip=impact*clamp((1.29-(contact?.[1]??1.29))*.54,0,.46);
   const reachSide=impact*clamp((contact?.[0]??0)+.15,-.95,.95);
-  body.position.x=.026*weightShift+reachSide*.11;body.position.y-=dip;
+  body.position.x=.034*weightShift+reachSide*.11+loadX*.22;body.position.y-=dip;
   body.position.z=impact*clamp((contact?.[2]??0)*.16,-.07,.15);
-  bones.root.rotation.y=weightShift*.075+hips*(overhead?.10:.055);
-  bones.root.rotation.z=-weightShift*.032-reachSide*.07;
-  bones.spine05.rotation.x=.035+run*.085+ready*.075+lunge*.16+landing*.075;
+  bones.root.rotation.y=weightShift*.095+clamp(lateral*.035,-.19,.19)*run+hips*(overhead?.16:.075);
+  bones.root.rotation.z=-weightShift*.04-reachSide*.07-loadX*.40;
+  bones.spine05.rotation.x=.035+run*.075+ready*.075+lunge*.16+landing*.075+splitLoad*.08+loadZ;
   bones.spine05.rotation.y=overhead?power*(-coil*.18+hips*.27):0;
   bones.spine03.rotation.x=.04+run*.03+lunge*.075+(overhead?power*(-coil*.09+drive*.20):0);
   bones.spine01.rotation.x=-.025-stroke*.035;
@@ -244,7 +253,7 @@ export function createAthlete(THREE, createRacket,{skinMap=null,mergeGeometries=
   bones.spine01.rotation.z=overhead?power*(coil*.13-drive*.16):0;
   bones.spine05.rotation.x+=dip*.35+breath*.009;
   bones.spine03.rotation.y=weightShift*-.092+(overhead?power*(-coil*.15+drive*.19):impact*.105);
-  bones.spine03.rotation.z=clamp(-lateral*.018,-.10,.10)-reachSide*.17+weightShift*.035;
+  bones.spine03.rotation.z=clamp(-lateral*.018,-.10,.10)-loadX*.55-reachSide*.17+weightShift*.035;
   bones.spine01.rotation.x+=breath*.014+dip*.16;
   head.rotation.x=clamp((1.55-lookY)*.20,-.58,.32);head.rotation.y=clamp(lookX*.11,-.36,.36);root.updateWorldMatrix(true,true);
   const blinkPhase=(time+1.7)%4.6,blink=blinkPhase<.15?Math.sin(blinkPhase/.15*Math.PI):0;
@@ -253,10 +262,10 @@ export function createAthlete(THREE, createRacket,{skinMap=null,mergeGeometries=
    const gazeX=clamp(lookX*.0006,-.002,.002),gazeY=clamp((lookY-1.55)*.0011,-.0015,.0015);
    for(const [part,offset] of [[eye.iris,0],[eye.pupil,0],[eye.glint,-.0018]]){part.position.x=eye.center.x+gazeX+offset;part.position.y=eye.center.y+gazeY+(part===eye.glint?.0021:-.0002);part.visible=blink<.8;}
   }
-  const velocity=vec(lateral,0,forward);root.getWorldQuaternion(parentQ);velocity.applyQuaternion(parentQ.invert());if(velocity.lengthSq()<.01)velocity.set(0,0,1);velocity.normalize();
+  if(velocity.lengthSq()<.01)velocity.set(0,0,1);velocity.normalize();
   if(!impactOnly)for(let i=0;i<2;i++){
    const side=i?-1:1,suffix=i?'R':'L',cycle=((stride/(Math.PI*2)+i*.5)%1+1)%1,swingPhase=cycle<.5?0:(cycle-.5)*2,u=cycle<.5?cycle*2:swingPhase*swingPhase*(3-2*swingPhase),travel=(cycle<.5?.36-.72*u:-.36+.72*u)*run;
-   const crossed=crossStep&&i===1,x=clamp(side*(.17+anticipation*.025+split*.035)+velocity.x*travel+(crossed?Math.sign(lateral)*.36:0),crossed?-.02:side<0?-.55:.02,crossed?.55:side<0?-.02:.55);
+   const crossed=crossStep&&i===(lateral>0?1:0),x=clamp(side*(.17+anticipation*.025+splitLoad*.038)+velocity.x*travel+(crossed?Math.sign(lateral)*.36:0),crossed?(lateral>0?-.02:-.55):side<0?-.55:.02,crossed?(lateral>0?.55:.02):side<0?-.02:.55);
    const ideal=vec(x,.064+Math.sin(swingPhase*Math.PI)*.13*run,velocity.z*travel+.012+side*(ready*.06+coil*.18-drive*.11));
    if(lunge>.03){footPlants[i].reset();ideal.lerp(vec(i?-.22:.19,.064,i?.55:-.29),lunge);}
    if(jumpHeight>0){
@@ -347,7 +356,7 @@ export function createAthlete(THREE, createRacket,{skinMap=null,mergeGeometries=
   skin.emissive.set('#bc8e74').multiply(skin.color);skin.emissiveIntensity=.085;
   hair.color.set(kit.hair);printPattern.value=kit.pattern;
   sleeveTone.value.set(kit.pattern===1?'#f8eee0':kit.accent);
-  head.scale.fromArray(kit.build);
+  head.scale.set(1+(kit.build[0]-1)*.45,1,1+(kit.build[2]-1)*.45);
   for(const [mat,base] of faceTints)mat.color.set(base).multiply(skin.color);
   if(printContext.clearRect){
    printContext.clearRect(0,0,512,256);printContext.textAlign='center';
@@ -368,6 +377,6 @@ export function createAthlete(THREE, createRacket,{skinMap=null,mergeGeometries=
   root.userData.kit=kit.key;
  }
  setKit();
- update();return {root,body,torso,head,legs:[bones['upperleg01.L'],bones['upperleg01.R']],knees:[bones['lowerleg01.L'],bones['lowerleg01.R']],arms:[bones['upperarm01.L'],bones['upperarm01.R']],elbows:[bones['lowerarm01.L'],bones['lowerarm01.R']],wrists:[bones['wrist.L'],bones['wrist.R']],skeleton,meshes,bones,bind,shoes,racket,update,setKit,resetFeet:()=>{footPlants.forEach(foot=>foot.reset());ready=0;}};
+ update();return {root,body,torso,head,legs:[bones['upperleg01.L'],bones['upperleg01.R']],knees:[bones['lowerleg01.L'],bones['lowerleg01.R']],arms:[bones['upperarm01.L'],bones['upperarm01.R']],elbows:[bones['lowerarm01.L'],bones['lowerarm01.R']],wrists:[bones['wrist.L'],bones['wrist.R']],skeleton,meshes,bones,bind,shoes,racket,update,setKit,resetFeet:()=>{footPlants.forEach(foot=>foot.reset());ready=0;carriedX=0;carriedZ=0;}};
 }
 
