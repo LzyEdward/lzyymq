@@ -12,10 +12,11 @@ test('sixteen curved feather vanes share five draws and stay in real shuttle dim
  model.traverse(o=>{if(o.geometry)for(const n of o.geometry.attributes.position.array)assert.ok(Number.isFinite(n));});
 });
 
-test('the first-person shuttle reads at match distance and keeps a natural near contact',()=>{
- const projection=720/(2*Math.tan(69*Math.PI/360));
- for(const d of [5,9,13]){
-  assert.ok(Math.abs(shuttleVisualScale(d,69,720)*.064*projection/d-19)<.01);
- }
- assert.equal(shuttleVisualScale(.75,69,720),1);
+test('contact stays life-size and apparent width decreases across the full flight',()=>{
+ assert.equal(shuttleVisualScale(.75),1);
+ const focalLength=720/(2*Math.tan(69*Math.PI/360));
+ const width=depth=>shuttleVisualScale(depth)*.064*focalLength/depth;
+ for(let depth=1;depth<20;depth+=.25)assert.ok(width(depth)>width(depth+.25));
+ assert.ok(width(5)>2*width(13),'the midcourt and baseline silhouettes must differ');
+ assert.ok(width(13)>4,'preserve the far silhouette at 720p');
 });

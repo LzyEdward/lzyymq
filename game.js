@@ -393,13 +393,21 @@ function createShuttle() {
 
 function createEffects() {
   shuttle = createShuttle();
-  shuttleShadow = mesh(new THREE.CircleGeometry(.15, 24), new THREE.MeshBasicMaterial({ color: '#0c352b', transparent: true, opacity: .25, depthWrite: false })); shuttleShadow.rotation.x = -Math.PI / 2;
-  shuttleFootprint=mesh(new THREE.RingGeometry(.115,.155,24),new THREE.MeshBasicMaterial({color:'#f5e6ab',transparent:true,opacity:.66,depthWrite:false,toneMapped:false}));
+  const shadowMap=texture(64,64,ctx=>{
+    const falloff=ctx.createRadialGradient(32,32,0,32,32,32);
+    falloff.addColorStop(0,'#102c24');
+    falloff.addColorStop(.45,'#102c2499');
+    falloff.addColorStop(1,'#102c2400');
+    ctx.fillStyle=falloff;ctx.fillRect(0,0,64,64);
+  });
+  shuttleShadow=mesh(new THREE.PlaneGeometry(.26,.26),new THREE.MeshBasicMaterial({map:shadowMap,transparent:true,depthWrite:false}));
+  shuttleShadow.rotation.x=-Math.PI/2;
+  shuttleFootprint=mesh(new THREE.RingGeometry(.115,.155,24),new THREE.MeshBasicMaterial({color:'#f5e6ab',transparent:true,opacity:.42,depthWrite:false,toneMapped:false}));
   shuttleFootprint.rotation.x=-Math.PI/2;shuttleFootprint.visible=false;
   receiveMarker=mesh(new THREE.RingGeometry(.21,.25,32,1,Math.PI*.16,Math.PI*1.68),new THREE.MeshBasicMaterial({color:'#89ebdf',transparent:true,opacity:.76,depthWrite:false,toneMapped:false}));
   receiveMarker.rotation.x=-Math.PI/2;receiveMarker.visible=false;
   const heightGeometry=new THREE.BufferGeometry().setFromPoints([V(),V(0,1,0)]);
-  shuttleHeightLine=new THREE.Line(heightGeometry,new THREE.LineDashedMaterial({color:'#f1ecd1',transparent:true,opacity:.38,depthWrite:false,toneMapped:false,dashSize:.085,gapSize:.11}));
+  shuttleHeightLine=new THREE.Line(heightGeometry,new THREE.LineDashedMaterial({color:'#f1ecd1',transparent:true,opacity:.22,depthWrite:false,toneMapped:false,dashSize:.12,gapSize:.18}));
   shuttleHeightLine.computeLineDistances();shuttleHeightLine.visible=false;scene.add(shuttleHeightLine);
   landingMarker = new THREE.Group(); scene.add(landingMarker);
   const ring = mesh(new THREE.RingGeometry(.29, .305, 48), new THREE.MeshBasicMaterial({ color: '#e7f8b5', transparent: true, opacity: .38, side: THREE.DoubleSide, depthWrite: false }), 0, .015, 0, landingMarker); ring.rotation.x = -Math.PI / 2;
@@ -1501,24 +1509,26 @@ function updateOpponentModel(dt,impactOnly=false) {
 
 function updateContactHint(){
  const halo=$('#contact-halo'),edge=$('#shuttle-indicator'),depthCue=$('#receive-cue');
- const playing=state.screen==='play'&&state.cameraMode==='third'&&!state.focus;
+ const playing=state.screen==='play'&&!state.focus;
+ const thirdPerson=state.cameraMode==='third';
  const live=playing&&ball.active&&state.phase==='rally';
  const located=playing&&(live||['serve','serving','opponentServe'].includes(state.phase));
  const guide=located&&state.ballGuide;
  const receiving=live&&state.lastHitter==='opponent'&&ball.pos.z>=.38;
- const timingEnabled=receiving&&state.contactHint&&!state.aiming&&!state.aimAlt;
+ const timingEnabled=thirdPerson&&receiving&&state.contactHint&&!state.aiming&&!state.aimAlt;
  const near=timingEnabled&&Math.hypot(ball.pos.x-player.pos.x,ball.pos.z-player.pos.z)<3.15&&ball.pos.y<3.7+state.jump;
  shuttleFootprint.visible=guide&&live&&ball.renderPos.y>.16&&Math.abs(ball.renderPos.x)<24&&Math.abs(ball.renderPos.z)<31;
  if(shuttleFootprint.visible){
   const height=clamp(ball.renderPos.y,0,9);
   shuttleFootprint.position.set(ball.renderPos.x,.014,ball.renderPos.z);
   shuttleFootprint.scale.setScalar(1+height*.105);
-  shuttleFootprint.material.opacity=.56+height*.02;
+  shuttleFootprint.material.opacity=.42+height*.008;
  }
  shuttleHeightLine.visible=shuttleFootprint.visible&&receiving&&ball.renderPos.y>.65;
  if(shuttleHeightLine.visible){
   shuttleHeightLine.position.set(ball.renderPos.x,.018,ball.renderPos.z);
   shuttleHeightLine.scale.y=ball.renderPos.y-.06;
+  shuttleHeightLine.material.scale=shuttleHeightLine.scale.y;
  }
  const intercept=state.prediction?.intercept;
  receiveMarker.visible=Boolean(guide&&live&&state.lastHitter==='opponent'&&intercept&&Math.abs(intercept.x)<3.1&&intercept.z<7.1&&
@@ -1534,7 +1544,7 @@ function updateContactHint(){
    depthCue.textContent=`${depth>0?'后退':'上前'} ${Math.abs(depth).toFixed(1)} m`;
   }
  }else depthCue.classList.add('hidden');
- if(!guide&&!near){
+ if(!thirdPerson||(!guide&&!near)){
   halo.classList.add('hidden');
   if(state.cameraMode==='third')edge.classList.add('hidden');
   return;
@@ -1545,14 +1555,14 @@ function updateContactHint(){
   edge.style.left=(cue.x*.5+.5)*100+'%';edge.style.top=(-cue.y*.5+.5)*100+'%';
   edge.style.setProperty('--shuttle-arrow',cue.angle+'deg');
  }
- if(cue.edge){halo.classList.add('hidden');return;}
+ if(cue.edge||!near){halo.classList.add('hidden');return;}
  const queued=near&&(hitIntent.armed(state.timer)||(state.swing>0&&!state.swingMissed&&!state.swingContact));
  let ready=false;
  if(near&&!queued&&state.swing===0&&contactReady(true)){
   const kind=selectedSwingKind('auto');
   ready=!!playerSwingWindow(kind,0,playerContactDelay(kind));
  }
- const timing=queued?'queued':ready?'ready':near?'near':'track';
+ const timing=queued?'queued':ready?'ready':'near';
  if(halo.dataset.timing!==timing)halo.dataset.timing=timing;
  halo.style.left=(cue.x*.5+.5)*100+'%';halo.style.top=(-cue.y*.5+.5)*100+'%';
  halo.classList.remove('hidden');
@@ -1573,14 +1583,17 @@ function updateEffects(dt) {
     shuttle.quaternion.slerp(q, 1 - Math.exp(-25 * dt));
   } else shuttle.rotation.set(0, state.timer * .6, .2);
   const depth=-tmp.copy(ball.renderPos).applyMatrix4(camera.matrixWorldInverse).z;
-  shuttle.scale.setScalar(groundMotion?1:shuttleVisualScale(depth,camera.fov,innerHeight,state.cameraMode==='third'));
-  shuttleShadow.position.set(ball.renderPos.x, .016, ball.renderPos.z); shuttleShadow.scale.setScalar(.7 + ball.pos.y * .18); shuttleShadow.material.opacity = clamp(.28 - ball.pos.y * .022, .04, .26);
+  shuttle.scale.setScalar(groundMotion?1:shuttleVisualScale(depth));
+  const height=clamp(ball.renderPos.y,0,10);
+  shuttleShadow.position.set(ball.renderPos.x,.016,ball.renderPos.z);
+  shuttleShadow.scale.setScalar(.65+height*.27);
+  shuttleShadow.material.opacity=.52/(1+height*.34);
   if (ball.active) {
     ball.trail.unshift(ball.renderPos.clone()); if (ball.trail.length > (state.focus?5:9)) ball.trail.pop();
     const count = ball.trail.length, positions = trailLine.geometry.attributes.position.array;
     for (let i = 0; i < count; i++) ball.trail[i].toArray(positions, i * 3);
     trailLine.geometry.setDrawRange(0, count); trailLine.geometry.attributes.position.needsUpdate = true; trailLine.visible = true;
-    trailLine.material.opacity = state.lastHitter==='opponent'?(state.focus?.17:.27):(state.focus?.075:.16);
+    trailLine.material.opacity = state.focus?.075:.16;
   } else trailLine.visible = false;
   const land = state.prediction?.landing;
   landingMarker.visible = state.screen === 'play' && state.assists && !state.focus && state.lastHitter === 'opponent' && ball.active && land?.z > 0;
@@ -2666,7 +2679,7 @@ async function init() {
        hitIntent.press(state.timer,'auto','selftest');updateContactHint();
        checks.push({name:'armed-input-shows-queued-cue',pass:halo.dataset.timing==='queued'});hitIntent.clear();
        const savedHint=state.contactHint;state.contactHint=false;updateContactHint();
-       checks.push({name:'contact-cue-can-be-disabled',pass:halo.dataset.timing==='track'});state.contactHint=savedHint;
+       checks.push({name:'contact-cue-can-be-disabled',pass:halo.classList.contains('hidden')});state.contactHint=savedHint;
        ball.pos.x=player.pos.x+2.5;ball.renderPos.copy(ball.pos);for(let i=0;i<60;i++)updateCamera(1/60);updateContactHint();
        checks.push({name:'avatar-recovers-and-out-of-reach-ball-is-not-ready',pass:playerAvatar.coverage===1&&halo.dataset.timing==='near'});
        for(const kind of ['clear','drop','smash','net','push','netcross','slicesmash','slicedrop','serve']){
@@ -2690,6 +2703,9 @@ async function init() {
        ball.pos.set(.2,3.4,2.3);ball.renderPos.copy(ball.pos);state.prediction={intercept:{x:.6,y:2,z:3.1}};
        updateContactHint();
        checks.push({name:'estimated-contact-is-distinct-from-the-live-shuttle-shadow',pass:receiveMarker.visible&&shuttleHeightLine.visible&&receiveMarker.position.z===3.1&&shuttleFootprint.position.z===2.3});
+        setCameraMode('first');updateCamera(0);updateContactHint();
+        checks.push({name:'first-person-also-shows-shuttle-depth-guides',pass:shuttleFootprint.visible&&shuttleHeightLine.visible&&receiveMarker.visible&&halo.classList.contains('hidden')});
+        setCameraMode('third');updateCamera(0);updateContactHint();
        state.ballGuide=false;updateContactHint();
        checks.push({name:'all-shuttle-depth-guides-can-be-disabled',pass:!shuttleFootprint.visible&&!receiveMarker.visible&&!shuttleHeightLine.visible&&$('#receive-cue').classList.contains('hidden')&&$('#shuttle-indicator').classList.contains('hidden')});
        state.ballGuide=true;state.phase='serve';ball.active=false;ball.pos.set(.2,1.2,3.8);ball.renderPos.copy(ball.pos);updateContactHint();

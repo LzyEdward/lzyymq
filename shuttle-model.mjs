@@ -1,8 +1,8 @@
-// Readability is measured in CSS pixels. Near the racket, keep the real cork
-// size, then smoothly enlarge distant feathers without changing contact physics.
-export function shuttleVisualScale(depth,fov,height,third=false){
- const pixels=third?17:19, metresPerPixel=2*Math.max(0,depth)*Math.tan(fov*Math.PI/360)/Math.max(1,height);
- return Math.min(9,Math.max(1,pixels*metresPerPixel/.064));
+// Preserve the real contact silhouette. Beyond arm's length, compensate for
+// feather detail lost to rasterization without imposing a minimum screen size.
+export function shuttleVisualScale(depth){
+ const beyondReach = Math.max(0, depth - 1);
+ return 1 + 1.2 * beyondReach / (beyondReach + 4);
 }
 // Sixteen individually curved feather vanes, merged into one lightweight mesh.
 export function createShuttleModel(T,mergeGeometries){
@@ -14,8 +14,8 @@ export function createShuttleModel(T,mergeGeometries){
  const corkGrain=new Uint8Array(64*64*4);let seed=1287;
  for(let i=0;i<64*64;i++){seed=(Math.imul(seed,1664525)+1013904223)>>>0;const pore=seed%97===0?-.22:(seed/4294967296-.5)*.045;for(let k=0;k<3;k++)corkGrain[i*4+k]=Math.round(255*Math.max(0,Math.min(1,1+pore)));corkGrain[i*4+3]=255;}
  const corkMap=new T.DataTexture(corkGrain,64,64,T.RGBAFormat);corkMap.needsUpdate=true;
- const cork=new T.MeshStandardMaterial({color:'#e0d4bb',map:corkMap,roughness:.9,emissive:'#ded1b3',emissiveIntensity:.04});
- const feathers=new T.MeshStandardMaterial({vertexColors:true,roughness:.8,side:T.DoubleSide,emissive:'#d3d5ca',emissiveIntensity:.1});
+ const cork=new T.MeshStandardMaterial({color:'#eee7d9',map:corkMap,roughness:.9,emissive:'#ded6c7',emissiveIntensity:.14});
+ const feathers=new T.MeshStandardMaterial({vertexColors:true,roughness:.8,side:T.DoubleSide,emissive:'#efeee8',emissiveIntensity:.27});
  const stems=new T.MeshStandardMaterial({color:'#d1c7a9',roughness:.88});
  const green=new T.MeshStandardMaterial({color:'#345a45',roughness:.7});
  const tip=new T.SphereGeometry(.013,16,10);tip.scale(1,.9,1);part(tip,cork,[0,-.012,0]);
