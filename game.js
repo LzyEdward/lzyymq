@@ -1906,10 +1906,10 @@ function pauseGame(finished = false) {
     $('#result-player-name').textContent=PLAYER_NAME;$('#result-opponent-name').textContent=opponentName;
     $('#result-score').textContent=`${state.score[0]}  :  ${state.score[1]}`;
     $('#result-rating').textContent=`${state.ratingDelta>=0?'+':''}${state.ratingDelta}`;
-    $('#result-smashes').textContent=`${state.smashes} / ${state.winners}`;$('#result-hits').textContent=String(state.hits);$('#result-errors').textContent=String(state.errors);
+    $('#result-smashes').textContent=String(state.winners);$('#result-hits').textContent=String(state.hits);$('#result-errors').textContent=String(state.errors);
     $('#result-rally').textContent=String(Math.max(state.maxRally,state.rally));$('#result-speed').textContent=String(state.maxSpeed);
-    $('#result-accolade').textContent=champion?`五轮连胜 · ${tourEvent(tour.eventId).name} 冠军 · 奖杯已收入荣誉馆`:won?`连胜 ${career.streak} 场 · ${rankName(career.rating)} ${career.rating} 分 · 这场打得漂亮。`:'胜负已记入生涯。调整战术，再回来把比分打回来。';
-    $('#result-detail').textContent=`当前段位 ${rankName(career.rating)} · 生涯 ${career.wins} 胜 ${career.played-career.wins} 负 · 最长连胜 ${career.bestStreak}`;
+    $('#result-accolade').textContent=champion?`${tourEvent(tour.eventId).name} · 五轮夺冠`:won?`连胜 ${career.streak} 场 · ${rankName(career.rating)} ${career.rating} 分`:`本场已记入生涯 · ${rankName(career.rating)} ${career.rating} 分`;
+    $('#result-detail').textContent=`生涯 ${career.wins} 胜 ${career.played-career.wins} 负 · 最长连胜 ${career.bestStreak}`;
   }
   const next=$('#tour-next');if(next){const tournamentMatch=Boolean(state.tournamentId);next.classList.toggle('hidden',!finished||!tournamentMatch);document.body.classList.toggle('tournament-finished',finished&&tournamentMatch);next.textContent=tour?.completed?'返回赛事中心':tour?.eliminated?'重新报名':'进入下一轮';}
   $('#stat-rally').textContent = Math.max(state.maxRally, state.rally); $('#stat-hits').textContent = state.hits; $('#stat-speed').textContent = state.maxSpeed;
@@ -1924,7 +1924,7 @@ function pauseGame(finished = false) {
     $('#tactical-report').classList.remove('hidden');
   }
   $('#resume-btn').innerHTML = trainingComplete ? '再练一组 <span>↗</span>' : training ? '继续训练 <span>→</span>' : finished ? '再来一场 <span>↗</span>' : '继续比赛 <span>→</span>';
-  $('#resume-btn').classList.toggle('hidden', trainingComplete);
+  $('#resume-btn').classList.toggle('hidden', trainingComplete || (finished && Boolean(state.tournamentId)));
   $('#restart-btn').classList.toggle('hidden', trainingComplete);
   $('#pause-overlay').classList.remove('hidden');
   if (trainingComplete) $('.pause-modal').scrollTop = 0;
@@ -2231,6 +2231,12 @@ async function init() {
       const panel=document.createElement('div');panel.id='test-panel';panel.style.cssText='position:fixed;left:20px;top:115px;z-index:50;background:#12382f;padding:12px;max-width:350px;font:12px sans-serif;border:1px solid #dcf49a';
       panel.innerHTML='<button id="run-play-test">运行长按 60 秒对打测试</button><button id="run-input-suite">验证左右球路与提前点击</button><button id="run-target-test">验证打点挑战</button><button id="run-v2-test">验证手动操作与比赛</button><button id="inspect-model">查看人物近景</button><button id="run-perf-test">测量 180 帧实际表现</button><button id="run-scene-test">检查当前场景坐标</button><pre id="test-result">等待测试</pre>';document.body.append(panel);
       panel.style.zIndex = '45';
+      const resultPreview=document.createElement('button');resultPreview.id='preview-result-test';resultPreview.textContent='预览赛后结算';panel.prepend(resultPreview);
+      resultPreview.addEventListener('click',()=>{
+        startGame('match');state.sound=false;state.score=[state.matchPoints,state.matchPoints-3];state.finished=true;state.ratingDelta=24;
+        state.winners=4;state.smashes=6;state.hits=72;state.errors=3;state.maxRally=19;state.rally=6;state.maxSpeed=386;
+        pauseGame(true);
+      });
       const tacticsProof=document.createElement('button');tacticsProof.id='run-tactics-test';tacticsProof.textContent='验证战术球实飞、鼠标方向与辅助接管';panel.prepend(tacticsProof);
       tacticsProof.onclick=()=>{
         const checks=[],savedLevel=$('#difficulty').value,savedAuto=$('#eagle-auto').checked,careerBefore=career;

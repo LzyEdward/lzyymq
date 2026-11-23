@@ -30,3 +30,30 @@ body.focus #stance-readout{display:none!important}
   .career-card .note-top,.career-eyebrow,.career-bar,#career-history,.career-note{display:none}#career-record{font-size:9px;line-height:1.7;margin:0 0 0 auto}
   .menu-screen .menu-footer{position:relative;left:auto;right:auto;bottom:auto;margin:36px 8% 0;padding-bottom:25px}
 }
+
+/* 7.44 result pass: show the decision first and keep supporting numbers quiet. */
+.match-finished .pause-modal{width:min(100%,560px)}
+.match-finished .pause-modal>.eyebrow{display:none}
+.match-finished #match-result{margin:16px 0 18px;padding:18px 18px 15px;border:1px solid #ebd17f55;border-radius:9px;background:linear-gradient(145deg,#b7973916,#eadca604)}
+.match-finished #tactical-report{display:none}
+.match-finished .result-hero{justify-content:flex-start;gap:13px;padding:0 0 14px}
+.match-finished .result-cup{width:58px;height:58px;flex:0 0 58px}
+.match-finished .result-cup svg{width:45px;height:45px}
+.match-finished .result-hero #result-outcome{font-size:25px;line-height:1.15;margin-top:5px}
+.match-finished .result-scoreline{margin:0 -2px;padding:13px 4px;background:#050f1424;border-color:#e6d48b2e}
+.match-finished .result-scoreline b{font-size:32px}
+.match-finished .result-grid{grid-template-columns:repeat(3,1fr);gap:7px;margin-top:10px}
+.match-finished .result-grid>div{min-height:58px;padding:9px 4px;display:flex;flex-direction:column;justify-content:center}
+.match-finished .result-grid b{font-size:20px}
+.match-finished .result-grid>div:first-child b{font-size:23px}
+.result-secondary{margin:10px 0 0;text-align:center;color:#e2ebd29c;font-size:10px;letter-spacing:.15px}
+.result-secondary b{color:#f0e6bd;font-variant-numeric:tabular-nums;font-weight:600}
+.result-secondary i{font-style:normal;color:#e2ebd24d;padding:0 5px}
+.match-finished #result-accolade{margin:12px 0 0;font-size:11px!important}
+.match-finished #result-detail{display:block;margin-top:7px;text-align:center;font-size:9px;line-height:1.6}
+.match-finished #resume-btn{margin-top:4px}
+@media(max-width:480px){
+  .match-finished #match-result{padding:16px 13px 14px}
+  .match-finished .result-scoreline b{font-size:29px}
+  .match-finished .result-scoreline span{font-size:10px}
+}
