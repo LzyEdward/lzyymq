@@ -19,9 +19,9 @@ test('pause stops redrawing and hiding stops rendering; resuming discards hidden
  for(let t=2000;t<3000;t+=17)assert.equal(b.take(t,{screen:'play',hidden:true}),null);
  assert.ok(b.take(30000,{screen:'play'})<17,'returning must not fast-forward the rally');
 });
-test('menu runs at 15 FPS and same-screen static inspector invalidation draws once',()=>{
+test('illustrated menu draws once and same-screen static inspector invalidation draws once',()=>{
  const b=new RenderBudget();let frames=0;for(let i=0;i<600;i++)if(b.take(i*1000/60,{screen:'menu'})!==null)frames++;
- assert.ok(frames<=151&&frames>=149);
+ assert.equal(frames,1);
  assert.ok(b.take(11000,{screen:'hand-inspect'})!==null);assert.equal(b.take(12000,{screen:'hand-inspect'}),null);b.invalidate();assert.ok(b.take(12001,{screen:'hand-inspect'})!==null);
 });
 test('automatic rendering has bounded pixels even on 4K retina displays',()=>{

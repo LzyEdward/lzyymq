@@ -11,11 +11,11 @@ export function createTechniquePanel({onPlayerChange,onOpponentChange,onResetPla
  const dialog=document.createElement('dialog');dialog.id='technique-dialog';
  dialog.setAttribute('aria-labelledby','technique-title');
  const rows=(side,values)=>SKILL_KEYS.map(key=>`<label class="technique-row"><span><b>${SKILL_LABELS[key][0]}</b><small>${SKILL_LABELS[key][1]}</small></span><input aria-label="${side==='player'?'我的':'对手'}${SKILL_LABELS[key][0]}" id="${side}-${key}" type="range" min="40" max="160" step="1" value="${Math.round((values[key]??1)*100)}"><output for="${side}-${key}">${Math.round((values[key]??1)*100)}%</output></label>`).join('');
- dialog.innerHTML=`<div class="technique-header"><div><span>BUILD YOUR MATCH</span><h2 id="technique-title">双方实力，自己定。</h2></div><button id="close-technique" aria-label="关闭实力调节">×</button></div>
- <p class="technique-intro">我的 100% 是标准球员；球星模式会给出不同参数。对手 100% 是所选等级与球星的基础实力。每项独立调整，即时生效。</p>
- <div class="technique-columns"><section aria-label="我的实力"><header><div><h3>我的实力</h3><p id="player-skill-preset">林丹模式</p></div><button id="reset-player-skills">重置球星参数</button></header><div class="player-stat-grid">${rows('player',{attack:1.32,defense:1.03,control:1.04,net:1.08,speed:1.12,stamina:1.12})}</div></section>
- <section aria-label="对手实力"><header><div><h3>对手实力</h3><p id="opponent-skill-preset">以当前等级为基础</p></div><button id="reset-opponent-skills">重置六项为 100%</button></header><div class="opponent-stat-grid">${rows('opponent',{})}</div></section></div>
- <p class="technique-summary" id="opponent-skill-summary"></p><p class="technique-note">进攻不会让低点击球变成重杀；网前与控球影响贴网和精准度。调低防守、步法后，对手更容易被吊球和对角调动。</p>
+ dialog.innerHTML=`<div class="technique-header"><div><h2 id="technique-title">实力调节</h2></div><button id="close-technique" aria-label="关闭实力调节">×</button></div>
+ <p class="technique-intro">拖动滑杆即可调整，100% 为基准。</p>
+ <div class="technique-columns"><section aria-label="我的实力"><header><div><h3>我的实力</h3><p>林楠</p></div><button id="reset-player-skills">恢复 100%</button></header><div class="player-stat-grid">${rows('player',{})}</div></section>
+ <section aria-label="对手实力"><header><div><h3>对手实力</h3><p id="opponent-skill-preset">以当前等级为基础</p></div><button id="reset-opponent-skills">恢复 100%</button></header><div class="opponent-stat-grid">${rows('opponent',{})}</div></section></div>
+
  <button class="technique-done" id="done-technique">完成调整 →</button>`;
  document.body.append(dialog);
  const updateOutputs=()=>{for(const input of dialog.querySelectorAll('input'))input.nextElementSibling.value=`${input.value}%`;};

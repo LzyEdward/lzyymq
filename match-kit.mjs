@@ -7,6 +7,7 @@ const palettes=[
  ['#422b65','#241b3b','#ea8093'],['#e16938','#253244','#ffe6ac']
 ];
 const known={
+ linNan:['LIN N','LZYYMQ',0,'crop','#ffe9d7'],
  liShifeng:['LI S F','CHN',1,'crew','#ffeada'],lohKeanYew:['LOH K Y','SGP',0,'crop','#ffe9da'],
  xiaXuanze:['XIA X Z','CHN',1,'crew','#ffe9d8'],jiXinpeng:['JI X P','CHN',2,'part','#ffe9dc'],
  yangYang:['YANG Y','CHN',1,'part','#ffeadc'],hendrawan:['HENDRAWAN','INA',4,'crew','#f3d8c3'],

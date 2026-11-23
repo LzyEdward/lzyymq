@@ -40,7 +40,7 @@ export class EagleEyeReview {
     this.element.id = 'eagle-eye'; this.element.className = 'hidden';
     this.element.setAttribute('role', 'dialog'); this.element.setAttribute('aria-modal', 'true');
     this.element.setAttribute('aria-labelledby', 'eagle-title');
-    this.element.innerHTML = `<div class="eagle-panel"><header><div><span class="eagle-eyebrow">FEATHER COURT / LINE REVIEW</span><h2 id="eagle-title">鹰眼 · 落点回放</h2></div><button id="eagle-close" aria-label="关闭鹰眼回放">返回球场 <kbd>Esc</kbd></button></header>
+    this.element.innerHTML = `<div class="eagle-panel"><header><div><span class="eagle-eyebrow">LZYYMQ / LINE REVIEW</span><h2 id="eagle-title">鹰眼 · 落点回放</h2></div><button id="eagle-close" aria-label="关闭鹰眼回放">返回球场 <kbd>Esc</kbd></button></header>
       <div class="eagle-verdict" aria-live="polite"><strong id="eagle-call">回放中</strong><span id="eagle-detail"></span></div>
       <canvas id="eagle-canvas" role="img" aria-label="首次触地轨迹、球头接触范围和球场边线"></canvas>
       <div class="eagle-timeline"><span id="eagle-time">0.00 s</span><input id="eagle-scrub" type="range" min="0" max="1000" value="0" aria-label="拖动查看落地慢动作"><span>首次触地</span></div>

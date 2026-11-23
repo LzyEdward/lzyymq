@@ -4,9 +4,10 @@ import {FootPlant} from './footwork.mjs';
 import {createCourtShoe} from './court-shoe.mjs';
 import {necklineDistances} from './garment-surfaces.mjs';
 import {shortHairProfile,HAIRLINE_GLSL} from './hair-surface.mjs';
+import {createPortraitHead,createPortraitNeck} from './portrait-head.mjs';
 
 // A continuous CC0 anatomical mesh, 48-bone skin, and two-bone limb IK.
-export function createAthlete(THREE, createRacket,{skinMap=null,mergeGeometries=null}={}) {
+export function createAthlete(THREE, createRacket,{skinMap=null,mergeGeometries=null,portraitMap=null}={}) {
  const root=new THREE.Group(),body=new THREE.Group();root.name='Athlete · anatomical skin · 1.81m';root.add(body);
  const vec=(...v)=>new THREE.Vector3(...v),clamp=THREE.MathUtils.clamp,bones={},bind={};
  for(const spec of data.bones){const bone=new THREE.Bone();bone.name=spec.name;bones[spec.name]=bone;bind[spec.name]=vec(...spec.position);}
@@ -90,7 +91,15 @@ export function createAthlete(THREE, createRacket,{skinMap=null,mergeGeometries=
  function geometry(indices){const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(data.positions,3));g.setAttribute('uv',new THREE.Float32BufferAttribute(data.uvs,2));g.setAttribute('color',new THREE.Float32BufferAttribute(data.colors,3));g.setAttribute('skinIndex',new THREE.Uint16BufferAttribute(data.skinIndex,4));g.setAttribute('skinWeight',new THREE.Float32BufferAttribute(data.skinWeight,4));g.setIndex(new THREE.Uint16BufferAttribute(indices,1));g.computeVertexNormals();return g;}
  const allNormals=new THREE.Float32BufferAttribute(data.normals,3);
  function skinMesh(indices,material){const g=geometry(indices);g.setAttribute('normal',allNormals.clone());const m=new THREE.SkinnedMesh(g,material);m.castShadow=m.receiveShadow=true;m.frustumCulled=false;body.add(m);m.bind(skeleton);meshes.push(m);return m;}
- const torso=skinMesh(data.indices1,jersey),anatomySkin=skinMesh(data.indices0,skin);skinMesh(data.indices2,shorts);skinMesh(data.indices3,sock);
+ let skinIndices=data.indices0;
+ if(portraitMap){
+  skinIndices=[];
+  for(let i=0;i<data.indices0.length;i+=3){
+   const triangle=data.indices0.slice(i,i+3);
+   if(triangle.some(id=>data.positions[id*3+1]<1.48))skinIndices.push(...triangle);
+  }
+ }
+ const torso=skinMesh(data.indices1,jersey),anatomySkin=skinMesh(skinIndices,skin);skinMesh(data.indices2,shorts);skinMesh(data.indices3,sock);
  torso.geometry.setAttribute('necklineDistance',new THREE.Float32BufferAttribute(necklineDistances(data.positions,data.indices1).distances,1));
  // Cloth bridges the small anatomical hollows instead of painting a shirt
  // directly on the chest. Keep shoulder and sleeve seams in the original rig.
@@ -117,6 +126,15 @@ export function createAthlete(THREE, createRacket,{skinMap=null,mergeGeometries=
  for(const normal of normalGroups.values())normal.normalize();
  for(const [i,key] of clothKeys){const normal=normalGroups.get(key);clothNormals.setXYZ(i,normal.x,normal.y,normal.z);}
  smoothCloth.dispose();
+ const head=bones.head,eyes=[],faceTints=[];
+ function add(geo,mat,parent=body){const m=new THREE.Mesh(geo,mat);m.castShadow=m.receiveShadow=true;parent.add(m);return m;}
+ const adjustHair=portraitMap?null:createStandardHead();
+ if(portraitMap){
+  head.add(createPortraitHead(THREE,portraitMap,bind.head));
+  const neck=createPortraitNeck(THREE,torso,skeleton.bones.indexOf(bones.neck01),skeleton.bones.indexOf(head));
+  body.add(neck);neck.bind(skeleton);neck.frustumCulled=false;neck.castShadow=true;meshes.push(neck);
+ }
+ function createStandardHead(){
  const scalp=[];
  for(let i=0;i<data.indices0.length;i+=3){const vs=data.indices0.slice(i,i+3),y=vs.reduce((s,v)=>s+data.positions[v*3+1]/3,0);if(y>1.66)scalp.push(...vs);}
  const scalpMesh=skinMesh(scalp,hair),sp=scalpMesh.geometry.attributes.position,ns=scalpMesh.geometry.attributes.normal;
@@ -143,11 +161,9 @@ export function createAthlete(THREE, createRacket,{skinMap=null,mergeGeometries=
  }
  const tuftGeometry=new THREE.BufferGeometry();tuftGeometry.setAttribute('position',new THREE.Float32BufferAttribute(tuftPosition,3));tuftGeometry.setAttribute('color',new THREE.Float32BufferAttribute(tuftColor,3));tuftGeometry.setIndex(tuftIndex);tuftGeometry.computeVertexNormals();
  const shortHair=new THREE.Mesh(tuftGeometry,new THREE.MeshStandardMaterial({vertexColors:true,roughness:.84,side:THREE.DoubleSide}));shortHair.name='Short anatomical hair clumps';bones.head.add(shortHair);
- function add(geo,mat,parent=body){const m=new THREE.Mesh(geo,mat);m.castShadow=m.receiveShadow=true;parent.add(m);return m;}
  function oval(parent,mat,p,s){const m=add(new THREE.SphereGeometry(1,24,16),mat,parent);m.position.copy(p);m.scale.set(...s);return m;}
  function tube(parent,mat,points,r=.002){return add(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(points),Math.max(8,points.length*4),r,5,false),mat,parent);}
- const faceTints=[];
- const head=bones.head,eyes=[],restSurface=new THREE.Mesh(anatomySkin.geometry,skin),browMat=new THREE.MeshStandardMaterial({color:'#302820',roughness:.94,alphaToCoverage:true});
+ const restSurface=new THREE.Mesh(anatomySkin.geometry,skin),browMat=new THREE.MeshStandardMaterial({color:'#302820',roughness:.94,alphaToCoverage:true});
  browMat.onBeforeCompile=shader=>{
   shader.vertexShader=shader.vertexShader.replace('#include <common>','#include <common>\nvarying vec2 vBrow;').replace('#include <begin_vertex>','#include <begin_vertex>\nvBrow=uv;');
   shader.fragmentShader=shader.fragmentShader.replace('#include <common>','#include <common>\nvarying vec2 vBrow;').replace('#include <color_fragment>',`#include <color_fragment>
@@ -191,6 +207,19 @@ export function createAthlete(THREE, createRacket,{skinMap=null,mergeGeometries=
  oval(head,noseMat,vec(0,1.675,.147).sub(bind.head),[.009,.014,.014]);
  const nostrilMat=new THREE.MeshBasicMaterial({color:'#6e4038'});
  for(const side of [-1,1])oval(head,nostrilMat,vec(side*.0038,1.671,.158).sub(bind.head),[.0018,.0014,.001]);
+ const scalpRest=sp.array.slice(),tufts=tuftGeometry.attributes.position,tuftRest=tufts.array.slice();
+ const scalpIds=[...new Set(scalp)];
+ return cut=>{
+  const reshape=(attr,original,i,origin)=>{
+   const j=i*3,x=original[j],y=original[j+1],z=original[j+2];
+   const d=hairCutOffset(cut,x+origin.x,y+origin.y,z+origin.z);
+   attr.setXYZ(i,x+d[0],y+d[1],z+d[2]);
+  };
+  const zero=vec();for(const i of scalpIds)reshape(sp,scalpRest,i,zero);
+  for(let i=0;i<tufts.count;i++)reshape(tufts,tuftRest,i,bind.head);
+  sp.needsUpdate=tufts.needsUpdate=true;tuftGeometry.computeBoundingSphere();
+ };
+ }
  const shoes=[];
  for(const suffix of ['L','R']){
   const foot=bones['foot.'+suffix],g=createCourtShoe(THREE,{upper:new THREE.MeshPhysicalMaterial({color:'#e7ebe4',roughness:.84,bumpMap:weave,bumpScale:.00042}),sole:new THREE.MeshStandardMaterial({color:'#c6bda2',roughness:.9}),trim,lace:sock,mergeGeometries});foot.add(g);shoes.push(g);
@@ -346,8 +375,6 @@ export function createAthlete(THREE, createRacket,{skinMap=null,mergeGeometries=
   }
   skeleton.update();
  }
- const scalpRest=sp.array.slice(),tufts=tuftGeometry.attributes.position,tuftRest=tufts.array.slice();
- const scalpIds=[...new Set(scalp)];
  let currentCut='';
  function setKit(input='custom'){
   const kit=matchKit(input);if(root.userData.kit===kit.key)return;
@@ -365,14 +392,7 @@ export function createAthlete(THREE, createRacket,{skinMap=null,mergeGeometries=
    printContext.font='bold 86px Arial';printContext.fillText(kit.team,256,193,405);printMap.needsUpdate=true;
   }
   if(currentCut!==kit.cut){
-   const reshape=(attr,original,i,origin)=>{
-    const j=i*3,x=original[j],y=original[j+1],z=original[j+2];
-    const d=hairCutOffset(kit.cut,x+origin.x,y+origin.y,z+origin.z);
-    attr.setXYZ(i,x+d[0],y+d[1],z+d[2]);
-   };
-   const zero=vec();for(const i of scalpIds)reshape(sp,scalpRest,i,zero);
-   for(let i=0;i<tufts.count;i++)reshape(tufts,tuftRest,i,bind.head);
-   sp.needsUpdate=tufts.needsUpdate=true;tuftGeometry.computeBoundingSphere();currentCut=kit.cut;
+   adjustHair?.(kit.cut);currentCut=kit.cut;
   }
   root.userData.kit=kit.key;
  }

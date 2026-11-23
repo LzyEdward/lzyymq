@@ -32,7 +32,7 @@ import { roofGeometry } from './roof-structure.mjs';
 import { createShuttleModel, shuttleVisualScale } from './shuttle-model.mjs';
 import { createCourtNet, NET_HALF_WIDTH } from './court-net.mjs';
 import { createTechniquePanel } from './technique-panel.mjs';
-import { PLAYER_STYLES, OPPONENT_STYLES, effectiveOpponentLevel, playerStatsFromInputs, playerStatsForStyle, normalizeSkills } from './player-styles.mjs';
+import { OPPONENT_STYLES, effectiveOpponentLevel, playerStatsFromInputs, playerStatsForStyle, normalizeSkills } from './player-styles.mjs';
 import {OPPONENT_CHARACTERS,matchIntent,characterRecovery,resolveCharacter,strokeSoundProfile} from './match-mind.mjs';
 import {OpponentMemory,MatchTactics,MATCH_OBJECTIVES,TACTICAL_LABELS,movementEnergyRate,directionalTarget,contactPressure} from './tactics.mjs';
 import {TOUR_EVENTS,TOUR_STARS,EXHIBITION_ROSTER,FEATURED_STARS,chooseRandomOpponent,event as tourEvent,star as tourStar,freshTour,buildBracket,currentTourMatch,advanceTour,tourStatus} from './tournament.mjs';
@@ -40,6 +40,7 @@ import {TOUR_EVENTS,TOUR_STARS,EXHIBITION_ROSTER,FEATURED_STARS,chooseRandomOppo
 const $ = (s) => document.querySelector(s);
 const canvas = $('#court');
 const params = new URLSearchParams(location.search);
+const PLAYER_NAME='林楠';
 const testing = params.get('test') === '1';
 const safeBoot = params.get('safe') === '1';
 const boot = detail => window.dispatchEvent(new CustomEvent('court-boot',{detail}));
@@ -61,7 +62,7 @@ const state = {
   matchPoints:11,server:'player',matchId:'',ratingDelta:null,smashes:0,winners:0,errors:0,lastShot:null,
   directionMode:'natural',tacticMessage:'',
   advanced:false,manualOverride:false,tutorial:false,tutorialStage:0,jumpPeak:0,
-  aiming:false,aimAlt:false,swingTarget:null,serveTarget:null,serveStyle:'low',lastLanding:null,racketStyle:'attack',racketSkin:'astrox100zz',playerStyle:'linDan08',opponentStyle:'allround',playerStats:playerStatsForStyle('linDan08'),opponentStats:normalizeSkills(),highBallAssist:true,manualPitch:-.03,autoPitchOffset:0,
+  aiming:false,aimAlt:false,swingTarget:null,serveTarget:null,serveStyle:'low',lastLanding:null,racketStyle:'attack',racketSkin:'astrox100zz',opponentStyle:'allround',playerStats:normalizeSkills(),opponentStats:normalizeSkills(),highBallAssist:true,manualPitch:-.03,autoPitchOffset:0,
   tournamentId:'',tournamentRound:0,tournamentOpponent:'',tournamentVenue:'',tournamentAccent:'#d8bf74',
   currentOpponentId:'',cameraMode:'first',orbitYaw:0,orbitPitch:THIRD_PERSON_PITCH,thirdFraming:'near',thirdLift:0,avatarFade:0,contactHint:true,ballGuide:true,firstView:null,
 };
@@ -117,6 +118,7 @@ let audio, master, trailLine, shuttleNoise, shuttleFilter, shuttleGain, shuttleP
 let lastHud = 0, previousCameraPos = V(), pointerDown = false, touchMove = { x: 0, y: 0 };
 let previousManual = false;
 let gamepadHitHeld = false, gamepadJumpHeld = false, gamepadDashHeld = false;
+const inspectCenter=V();
 let inspectDrag=null,frameProbe=null,lastFrameTime=performance.now(),lastEffectsUI=-1;
 const renderBudget=new RenderBudget(),adaptiveResolution=new AdaptiveResolution();let qualityMode='auto';
 const renderLoop=new RenderLoop(animate);let graphicsLost=false,environmentTarget=null;
@@ -261,7 +263,7 @@ function createHall() {
   const banner = textPanel('PARIS 2024  ·  BADMINTON', 8, .48, { bg: '#243330', color: '#d7c89d', size: 48, weight: 600 }); banner.position.set(0, 18.2, -31.52); scene.add(banner);venueSign=banner;
   const no = textPanel('01', 3, 3, { bg: '#203e3c', color: '#a6b5a2', size: 180, weight: 300 }); no.position.set(18, 7.2, -31.57); scene.add(no);
   const backBrand = textPanel('MOVE  WITH  THE  MOMENT.', 9, 1, { bg: '#24443e', color: '#93a796', size: 51 }); backBrand.position.set(0, 3.4, -31.6); scene.add(backBrand);
-  const sideBrand = textPanel('羽 境  /  FEATHER COURT', 9, 1.2, { bg: '#24443e', color: '#9fb49e', size: 58 }); sideBrand.position.set(-23.45, 2.1, -3); sideBrand.rotation.y = Math.PI / 2; scene.add(sideBrand);
+  const sideBrand = textPanel('来拍！  /  LZYYMQ', 9, 1.2, { bg: '#24443e', color: '#9fb49e', size: 58 }); sideBrand.position.set(-23.45, 2.1, -3); sideBrand.rotation.y = Math.PI / 2; scene.add(sideBrand);
   const door = material('#1b302e');
   for (const x of [-18, 18]) {
     box(1.8, 3.1, .1, steel, x, 1.55, -31.54); box(1.65, 3, .12, door, x, 1.5, -31.45);
@@ -277,7 +279,7 @@ function createHall() {
   }
   bench(-5.8, -10.5); bench(5.8, -10.5); bench(5.8, 10.5);
   createAudience();createNet();dressHall(THREE,scene);createHallContext(THREE,scene);
-  courtScore = textPanel('YOU   00  :  00   LIN', 4.2, .9, { bg: '#102823', color: '#def6a3', size: 70 });
+  courtScore = textPanel('林楠   00  :  00   对手', 4.2, .9, { bg: '#102823', color: '#def6a3', size: 70 });
   courtScore.position.set(0, 11.7, -31.5); scene.add(courtScore);
 }
 
@@ -355,7 +357,7 @@ function createOpponent() {
 
 function applyOpponentIdentity(id){
   if(!bot)return;const rival=id?tourStar(id):null;
-  if(!rival){bot.setKit($('#opponent-style').value);bot.root.scale.set(1,1,1);bot.headband.visible=false;bot.wristbands.forEach(b=>b.visible=false);return;}
+  if(!rival){bot.setKit(state.opponentStyle);bot.root.scale.set(1,1,1);bot.headband.visible=false;bot.wristbands.forEach(b=>b.visible=false);return;}
   const {accent,build}=matchKit(rival);bot.setKit(rival);
   const width=.94+(rival.seed%7)*.018,height=.955+(rival.seed%8)*.013,depth=.96+((rival.seed*3)%6)*.016;
   if(build.some(n=>n!==1))bot.root.scale.fromArray(build);else bot.root.scale.set(width,height,depth);
@@ -501,7 +503,7 @@ function renderTourHub(){
   const list=$('#tour-event-list');if(!list)return;const chosen=list.dataset.selected||tour?.eventId||TOUR_EVENTS[0].id;list.replaceChildren();
   for(const item of TOUR_EVENTS){const button=document.createElement('button');button.type='button';button.className='tour-event';button.dataset.event=item.id;button.style.setProperty('--event-accent',item.accent);button.setAttribute('aria-selected',String(item.id===chosen));button.innerHTML=`<i></i><span><strong>${item.name}</strong><small>${item.city} · ${item.venue}</small></span><em>${item.rounds.length} 轮</em>`;button.addEventListener('click',()=>{list.dataset.selected=item.id;renderTourHub();});list.append(button);}
   list.dataset.selected=chosen;const selected=tourEvent(chosen),current=tour&&tour.eventId===chosen?currentTourMatch(tour):null;const info=$('#tour-selected-info');info.style.setProperty('--event-accent',selected.accent);info.innerHTML=`<b>${selected.name} · ${selected.english}</b><span>${selected.city} · ${selected.venue} · ${selected.surface} · ${selected.crowd}</span><span>${current?`当前：${tourStatus(tour)}`:'报名后从 32 强开打，五场胜利夺冠。'}</span>`;$('#tour-career-record').textContent=tour?`${selected.name}：${tour.wins||0} 胜 · ${tour.completed?'已夺冠':tour.eliminated?'本届已出局':'正在征战 '+(current?.round||'')}`:'选择赛事后报名，赛事进度会保存在本机。';
-  const bracket=$('#tour-bracket');if(bracket){bracket.replaceChildren();const draw=tour&&tour.eventId===chosen&&tour.bracket?tour.bracket:buildBracket(selected,TOUR_EVENTS.indexOf(selected)+2026);const title=document.createElement('b');title.textContent=tour&&tour.eventId===chosen?'完整淘汰签表 · 其余比赛已按种子模拟':'32 强签表预览 · 玩家占 1 号种子';bracket.append(title);const grid=document.createElement('div');grid.className='tour-bracket-grid';draw.forEach((round,index)=>{const col=document.createElement('div');col.className='tour-round';const heading=document.createElement('strong');heading.textContent=selected.rounds[index];col.append(heading);round.forEach(match=>{const card=document.createElement('div');card.className='tour-bracket-match'+(match.player?' is-player':'');const a=document.createElement('span');a.textContent=(match.winner===match.a?'✓ ':'')+(match.a==='player'?'我':tourStar(match.a)?.name||'待定');const b=document.createElement('span');b.textContent=(match.winner===match.b?'✓ ':'')+(match.b==='player'?'我':tourStar(match.b)?.name||'待定');card.append(a,b);col.append(card);});grid.append(col);});bracket.append(grid);}
+  const bracket=$('#tour-bracket');if(bracket){bracket.replaceChildren();const draw=tour&&tour.eventId===chosen&&tour.bracket?tour.bracket:buildBracket(selected,TOUR_EVENTS.indexOf(selected)+2026);const title=document.createElement('b');title.textContent=tour&&tour.eventId===chosen?'完整淘汰签表 · 其余比赛已按种子模拟':'32 强签表预览 · 玩家占 1 号种子';bracket.append(title);const grid=document.createElement('div');grid.className='tour-bracket-grid';draw.forEach((round,index)=>{const col=document.createElement('div');col.className='tour-round';const heading=document.createElement('strong');heading.textContent=selected.rounds[index];col.append(heading);round.forEach(match=>{const card=document.createElement('div');card.className='tour-bracket-match'+(match.player?' is-player':'');const a=document.createElement('span');a.textContent=(match.winner===match.a?'✓ ':'')+(match.a==='player'?PLAYER_NAME:tourStar(match.a)?.name||'待定');const b=document.createElement('span');b.textContent=(match.winner===match.b?'✓ ':'')+(match.b==='player'?PLAYER_NAME:tourStar(match.b)?.name||'待定');card.append(a,b);col.append(card);});grid.append(col);});bracket.append(grid);}
 }
 function openTourHub(){loadTour();const list=$('#tour-event-list');if(!list.dataset.selected)list.dataset.selected=tour?.eventId||TOUR_EVENTS[0].id;$('#tournament-hub').classList.remove('hidden');renderTourHub();}
 function closeTourHub(){$('#tournament-hub').classList.add('hidden');}
@@ -525,8 +527,8 @@ function populateOpponentStars(){
 }
 function showMatchIntro(mode='match'){
   const current=mode==='tournament'?currentTourMatch(tour):null,rival=current?.opponent||tourStar(state.currentOpponentId||'peterGade'),e=current?.event||tourEvent('olympics');
-  const playerName=PLAYER_STYLES[state.playerStyle]?.name||'自定义球员';
-  $('#intro-kicker').textContent=current?`WORLD TOUR · ${current.round}`:'OLYMPIC CENTER COURT · EXHIBITION';$('#intro-event-name').textContent=current?e.name:'巴黎奥运会羽毛球赛';$('#intro-venue').textContent=`${e.city} · ${e.venue}`;$('#intro-player-name').textContent=playerName;$('#intro-player-style').textContent=PLAYER_STYLES[state.playerStyle]?.tactic==='power'?'08 爆发进攻':PLAYER_STYLES[state.playerStyle]?.name||'自定义打法';$('#intro-rival-name').textContent=rival.name;$('#intro-rival-rank').textContent=`SEED ${String(rival.seed).padStart(2,'0')}`;$('#intro-rival-meta').textContent=`${rival.country} · ${opponentLevel(matchDifficulty(rival,!!current)).tier} 级 · ${rival.signature}`;$('#intro-rival-signature').textContent=`${rival.latin} · ${rival.era}`;$('#intro-round').textContent=current?.round||'单场挑战';$('#intro-surface').textContent=e.surface;$('#intro-crowd').textContent=e.crowd;$('#intro-story').textContent=current?'巨幅赛场屏亮起，满场观众迎来登场。签表对手已经就位，把这一轮打下来。':'巴黎奥运主赛场灯光全开，满场观众正在等你登场。';$('#match-intro-overlay').classList.remove('hidden');pendingMatchMode=mode;}
+  const playerName=PLAYER_NAME;
+  $('#intro-kicker').textContent=current?`WORLD TOUR · ${current.round}`:'OLYMPIC CENTER COURT · EXHIBITION';$('#intro-event-name').textContent=current?e.name:'巴黎奥运会羽毛球赛';$('#intro-venue').textContent=`${e.city} · ${e.venue}`;$('#intro-player-name').textContent=playerName;$('#intro-player-style').textContent='单打选手';$('#intro-rival-name').textContent=rival.name;$('#intro-rival-rank').textContent=`SEED ${String(rival.seed).padStart(2,'0')}`;$('#intro-rival-meta').textContent=`${rival.country} · ${opponentLevel(matchDifficulty(rival,!!current)).tier} 级 · ${rival.signature}`;$('#intro-rival-signature').textContent=`${rival.latin} · ${rival.era}`;$('#intro-round').textContent=current?.round||'单场挑战';$('#intro-surface').textContent=e.surface;$('#intro-crowd').textContent=e.crowd;$('#intro-story').textContent=current?'巨幅赛场屏亮起，满场观众迎来登场。签表对手已经就位，把这一轮打下来。':'巴黎奥运主赛场灯光全开，满场观众正在等你登场。';$('#match-intro-overlay').classList.remove('hidden');pendingMatchMode=mode;}
 let pendingMatchMode='match';
 function launchMatch(mode='match'){
   if(mode==='tournament'&&!configureTournamentMatch())return;
@@ -559,7 +561,7 @@ function updateCourtScore() {
   const drill = training || state.mode === 'targets';
   const left = training ? training.completed.filter(rep => rep.success).length : drill ? state.targetHits : state.score[0];
   const right = training ? training.completed.length : drill ? state.targetShots : state.score[1];
-  c.fillText(`${drill ? 'HIT' : 'YOU'}   ${String(left).padStart(2, '0')}  :  ${String(right).padStart(2, '0')}   ${drill ? 'TRY' : (tourStar(state.currentOpponentId)?.latin?.split(' ').filter(Boolean).pop()?.toUpperCase()||'RIVAL')}`, 512, 128); tex.needsUpdate = true;
+  c.fillText(`${drill ? 'HIT' : PLAYER_NAME}   ${String(left).padStart(2, '0')}  :  ${String(right).padStart(2, '0')}   ${drill ? 'TRY' : (tourStar(state.currentOpponentId)?.latin?.split(' ').filter(Boolean).pop()?.toUpperCase()||'RIVAL')}`, 512, 128); tex.needsUpdate = true;
 }
 const SHOT_NAMES={auto:'智能回球',clear:'高远球',drop:'吊球',smash:'杀球',drive:'平抽球',lift:'挑球',net:'网前搓球',push:'推后场',netcross:'勾对角',netkill:'扑球',slicesmash:'劈杀斜线',slicedrop:'劈吊对角'};
 function showShotCue(type){
@@ -594,22 +596,7 @@ function cycleShotDirection(){
   showShotCue(state.shot);updateTactics();
 }
 function currentOpponentLevel(){return effectiveOpponentLevel(opponentLevel(state.difficulty),state.opponentStyle,state.opponentStats);}
-function applyPlayerStyle(key){
-  const stats=playerStatsForStyle(key);state.playerStyle=PLAYER_STYLES[key]?key:'custom';
-  for(const [name,value] of Object.entries(stats)){const input=$(`#player-${name}`);if(input){input.value=Math.round(value*100);input.parentElement.querySelector('output').value=`${input.value}%`;input.parentElement.querySelector('output').textContent=`${input.value}%`;}}
-  state.playerStats=stats;
-  const kit=matchKit(state.playerStyle);
-  if(racket?.userData.fabric)racket.userData.fabric.color.set(kit.shirt);
-  for(const material of racket?.userData.skinMaterials||[])material.color.set(kit.skin);
-  playerAvatar?.setKit(state.playerStyle);
-  if(techniquePanel)techniquePanel.write('player',stats);
-  $('#player-style').value=state.playerStyle;
-  document.querySelectorAll('[data-player-style]').forEach(button=>{const active=button.dataset.playerStyle===state.playerStyle;button.classList.toggle('active',active);button.setAttribute('aria-pressed',String(active));});
-}
-function refreshPlayerStats(){
-  state.playerStats=playerStatsFromInputs();
-  for(const input of document.querySelectorAll('.player-stat-grid input')){const out=input.parentElement.querySelector('output');if(out){out.value=`${input.value}%`;out.textContent=`${input.value}%`;}}
-}
+function refreshPlayerStats(){state.playerStats=playerStatsFromInputs();}
 function chooseLanding(target){
   const p=normalizeLanding(target);state.aim=p.x/2.45;state.depth=p.z;state.manualLanding=true;state.landingKind=state.shot;
   updateTactics();
@@ -635,32 +622,32 @@ function applyMouseLook(dx,dy){
 function previewOpponentLevel(){
   if(state.screen==='play'||state.screen==='pause')return currentOpponentLevel();
   const rival=selectedRival();
-  const style=$('#opponent-style').value==='auto'?rival?.style:$('#opponent-style').value;
+  const style=rival?.style;
   return effectiveOpponentLevel(opponentLevel(matchDifficulty(rival)),style||'allround',state.opponentStats);
 }
 function updateTechniqueSummary(){
   if(!techniquePanel)return;
   const level=previewOpponentLevel();
-  $('#player-skill-preset').textContent=state.playerStyle==='custom'?'自定义六项能力':PLAYER_STYLES[state.playerStyle]?.name;
-  $('#opponent-skill-preset').textContent=`${level.tier} 级 · ${$('#opponent-style').value==='auto'?'随随机球星打法':(OPPONENT_STYLES[$('#opponent-style').value]||OPPONENT_STYLES.allround).name}`;
-  $('#opponent-skill-summary').textContent=`当前对手：移动 ${level.speed.toFixed(1)} m/s · 反应 ${Math.round(level.reaction*1000)} ms · 覆盖 ${level.reach.toFixed(2)} m · 稳定 ${Math.round(level.accuracy*100)}% · 进攻球速基准 ${Math.round(level.power*3.6)} km/h。球速还取决于站位、触球高度与过网条件。`;
+  const randomPeak=state.screen==='menu'&&$('#difficulty').value==='auto'&&!selectedRival();
+  $('#opponent-skill-preset').textContent=randomPeak?'100% 为抽中球员的基础实力':`基础等级 · ${level.tier} 级`;
+
 }
 function initTechniquePanel(){
   techniquePanel=createTechniquePanel({
-    onPlayerChange:()=>{$('#player-style').value='custom';state.playerStyle='custom';refreshPlayerStats();document.querySelectorAll('[data-player-style]').forEach(b=>{b.classList.remove('active');b.setAttribute('aria-pressed','false');});updateTechniqueSummary();savePreferences();},
+    onPlayerChange:stats=>{state.playerStats=stats;savePreferences();},
     onOpponentChange:stats=>{state.opponentStats=stats;updateDifficultyUI();savePreferences();},
-    onResetPlayer:()=>{applyPlayerStyle(state.playerStyle==='custom'?'linDan08':state.playerStyle);savePreferences();},
+    onResetPlayer:()=>{techniquePanel.write('player',{});refreshPlayerStats();savePreferences();},
     onResetOpponent:()=>{state.opponentStats=normalizeSkills();updateDifficultyUI();savePreferences();},
     onOpen:updateTechniqueSummary,
   });
 }
 function updateDifficultyUI(){
-  if(state.screen==='menu')bot?.setKit?.(selectedRival()||$('#opponent-style').value);renderBudget.invalidate();
+  if(state.screen==='menu')bot?.setKit?.(selectedRival()||'allround');renderBudget.invalidate();
   const level=previewOpponentLevel();
   updateTechniqueSummary();
-  const style=OPPONENT_STYLES[$('#opponent-style')?.value]||OPPONENT_STYLES.allround;
+
   if($('#difficulty').value==='auto'&&!selectedRival()&&state.screen==='menu'){$('#difficulty-detail').textContent='单场挑战按抽到的球星取巅峰等级，开场显示实际级别。自由对打默认 5 级。';return;}
-  $('#difficulty-detail').textContent=`参考：${LEVEL_REFERENCES[level.tier]}。${LEVEL_DESCRIPTIONS[level.tier]}。${style.name} · 移动 ${level.speed.toFixed(1)} m/s · 反应 ${(level.reaction*1000).toFixed(0)} ms · 覆盖 ${level.reach.toFixed(2)} m · 稳定 ${Math.round(level.accuracy*100)}%。`;
+  $('#difficulty-detail').textContent=`参考：${LEVEL_REFERENCES[level.tier]}。${LEVEL_DESCRIPTIONS[level.tier]}。移动 ${level.speed.toFixed(1)} m/s · 反应 ${(level.reaction*1000).toFixed(0)} ms · 覆盖 ${level.reach.toFixed(2)} m · 稳定 ${Math.round(level.accuracy*100)}%。`;
 }
 function updateCareerUI(){
   $('#career-rank').textContent=rankName(career.rating);$('#career-rating').textContent=career.rating;
@@ -716,10 +703,10 @@ function startGame(mode = 'match', preserveSettings = false) {
   const tournament=mode==='match'&&Boolean(state.tournamentId);
   const rival=mode==='match'?tourStar(state.currentOpponentId):selectedRival();
   state.difficulty=matchDifficulty(rival,tournament);
-  state.opponentStyle=tournament||$('#opponent-style').value==='auto'?rival?.style||'allround':$('#opponent-style').value;
-  state.profile=tournament||$('#opponent-profile').value==='auto'?rival?.profile||'balanced':$('#opponent-profile').value;
+  state.opponentStyle=rival?.style||'allround';
+  state.profile=rival?.profile||'balanced';
   if(mode==='match')rememberOpponent(state.currentOpponentId);
-  state.playerStyle=$('#player-style').value;state.playerStats=playerStatsFromInputs();state.highBallAssist=$('#high-ball-toggle').checked;
+  state.playerStats=playerStatsFromInputs();state.highBallAssist=$('#high-ball-toggle').checked;
   applyOpponentIdentity(mode==='match'?state.currentOpponentId:'');
   document.body.classList.remove('match-finished','match-victory','match-champion','tournament-finished');
   Object.assign(state, { screen: 'play', phase: 'serve', score: [0, 0], rally: 0, maxRally: 0, hits: 0, maxSpeed: 0, finished: false, stamina: 100, swing: 0, swingContact: false, swingMissed: false, jump: 0, jumpV: 0, timer: 0, serveCount: 0, yaw: 0, pitch: -.03,manualPitch:-.03,autoPitchOffset:0, aim: 0, countdown: 0, pointDelay: 0, charge: 0, hitstop: 0, lastMove: -10, lastLook: -10, targetIndex: -1, target: null, targetArmed: false, targetHits: 0, targetShots: 0, targetStreak: 0, directionMode:'natural',tacticMessage:'' });
@@ -741,7 +728,7 @@ function startGame(mode = 'match', preserveSettings = false) {
   $('#menu').classList.add('hidden'); $('#pause-overlay').classList.add('hidden'); $('#help-overlay').classList.add('hidden'); $('#hud').classList.remove('hidden'); document.body.classList.add('playing');
   const modeNames = { match: '单打比赛', practice: '自由对打', targets: '打点挑战', training: '专项训练' };
   $('#game-mode').textContent = modeNames[mode] || modeNames.match;
-  $('#player-score-name').textContent = training ? '达标' : mode === 'targets' ? '命中' : '你';
+  $('#player-score-name').textContent = training ? '达标' : mode === 'targets' ? '命中' : PLAYER_NAME;
   $('#opponent-score-name').textContent = training ? '已练' : mode === 'targets' ? '出手' : (mode==='match'?tourStar(state.currentOpponentId).name:OPPONENT_STYLES[state.opponentStyle].name);
   $('#score-status').textContent = training ? '达标 / 已练' : mode === 'practice' ? '保持节奏' : mode === 'targets' ? '瞄准场地区域' : `${state.matchPoints} 分制`;
   $('#point-toast').classList.add('hidden'); $('#resume-btn').innerHTML = '继续比赛 <span>→</span>';
@@ -1443,7 +1430,8 @@ function positionServeHand(cork,pose){
 }
 function ensurePlayerAvatar(){
  if(playerAvatar)return playerAvatar;
- playerAvatar=createAthlete(THREE,()=>{const mount=new THREE.Group(),model=createRacket(true);mount.add(model);mount.userData.racketModel=model;return mount;},{skinMap:surfaceMaps?.athleteSkin,mergeGeometries});
+ const portraitMap=new THREE.TextureLoader().load(new URL('./assets/lin-nan-head.webp',import.meta.url).href,()=>renderBudget.invalidate());
+ playerAvatar=createAthlete(THREE,()=>{const mount=new THREE.Group(),model=createRacket(true);mount.add(model);mount.userData.racketModel=model;return mount;},{skinMap:surfaceMaps?.athleteSkin,mergeGeometries,portraitMap});
  // Dither coverage in the opaque pass to keep normal depth sorting.
  const fadeMaterials=new Map();
  playerAvatar.body.traverse(object=>{
@@ -1454,7 +1442,7 @@ function ensurePlayerAvatar(){
   }
  });
  playerAvatar.fadeMaterials=fadeMaterials;
- playerAvatar.root.name='Player · third person';playerAvatar.root.visible=false;playerAvatar.setKit(state.playerStyle);scene.add(playerAvatar.root);
+ playerAvatar.root.name='Player · third person';playerAvatar.root.visible=false;playerAvatar.setKit('linNan');scene.add(playerAvatar.root);
  return playerAvatar;
 }
 function setCameraMode(value){
@@ -1478,7 +1466,7 @@ function setCameraMode(value){
 }
 function syncPlayerVisibility(){
  const third=state.cameraMode==='third'&&['play','pause','overhead-preview'].includes(state.screen);
- if(playerAvatar)playerAvatar.root.visible=third;
+ if(playerAvatar)playerAvatar.root.visible=third||state.screen==='inspect';
  if(third){racket.visible=false;if(racket.userData.support)racket.userData.support.visible=false;}
 }
 function updatePlayerAvatar(dt,impactOnly=false){
@@ -1849,10 +1837,14 @@ function animate() {
     shuttle.position.set(.3, 1.3 + Math.sin(menuTime * 1.7) * .08, 4.2); shuttle.rotation.set(.2, menuTime * .25, -.3); shuttleShadow.position.set(.3, .012, 4.2); shuttleShadow.scale.setScalar(1); landingMarker.visible = false; targetMarker.visible = false;aimMarker.visible=false; racket.visible = false;
   } else if(state.screen==='inspect'){
     state.inspectTime=(state.inspectTime||0)+dt;const time=state.inspectTime,pose=state.inspectPose||'idle';
-    bot.root.position.set(0,0,2.8);bot.root.rotation.y=0;bot.label.visible=false;
-    bot.update({time,dt,speed:pose==='run'?3.5:0,swing:pose==='swing'&&time%1.4<.55?Math.max(.001,time%1.4):0,shot:'clear'});
+    const avatar=ensurePlayerAvatar();avatar.root.position.set(0,0,2.8);avatar.root.rotation.y=0;
+    avatar.update({time,dt,speed:pose==='run'?3.5:0,swing:pose==='swing'&&time%1.4<.55?Math.max(.001,time%1.4):0,shot:'clear'});
     const yaw=state.inspectYaw??.30,distance=state.inspectDistance||3.1,pitch=state.inspectPitch||.12;
-    camera.position.set(Math.sin(yaw)*distance,1.10+pitch*distance,2.8+Math.cos(yaw)*distance);camera.fov=42;camera.lookAt(-.28,1.02,2.8);camera.updateProjectionMatrix();
+    const focus=avatar.head.getWorldPosition(inspectCenter);
+    const wide=clamp((distance-1)/2.6,0,1);
+    focus.lerp(avatar.root.position,wide*.37);
+    camera.position.set(focus.x+Math.sin(yaw)*distance,focus.y+pitch*distance,focus.z+Math.cos(yaw)*distance);
+    camera.fov=42;camera.lookAt(focus);camera.updateProjectionMatrix();
     racket.visible=false;if(racket.userData.support)racket.userData.support.visible=false;landingMarker.visible=targetMarker.visible=aimMarker.visible=false;shuttleShadow.visible=false;
   } else if(state.screen==='hand-inspect'){
     racket.visible=true;bot.label.visible=false;landingMarker.visible=targetMarker.visible=aimMarker.visible=shuttleShadow.visible=false;
@@ -1911,7 +1903,7 @@ function pauseGame(finished = false) {
   if(finished){
     $('#result-cup-label').textContent=champion?'TOURNAMENT CHAMPION':won?'MATCH VICTORY':'MATCH COMPLETE';
     $('#result-outcome').textContent=champion?'赛事总冠军！':won?'本场胜利！':'下一场继续冲！';
-    $('#result-player-name').textContent=PLAYER_STYLES[state.playerStyle]?.name||'我';$('#result-opponent-name').textContent=opponentName;
+    $('#result-player-name').textContent=PLAYER_NAME;$('#result-opponent-name').textContent=opponentName;
     $('#result-score').textContent=`${state.score[0]}  :  ${state.score[1]}`;
     $('#result-rating').textContent=`${state.ratingDelta>=0?'+':''}${state.ratingDelta}`;
     $('#result-smashes').textContent=`${state.smashes} / ${state.winners}`;$('#result-hits').textContent=String(state.hits);$('#result-errors').textContent=String(state.errors);
@@ -1964,6 +1956,7 @@ function resumeGame() {
   state.screen = 'play'; $('#pause-overlay').classList.add('hidden'); $('#help-overlay').classList.add('hidden'); accumulator = 0; clock.getDelta();canvas.focus({preventScroll:true}); requestLock(); initAudio();
 }
 function exitGame() {
+  if(bot)bot.root.visible=true;
   state.screen = 'menu'; training = null; ball.active = false; keys.clear(); pointerDown = false;hitIntent.clear();
   $('#placement-cue').classList.add('hidden');$('#shot-cue').classList.remove('visible');
   document.exitPointerLock?.(); document.body.classList.remove('playing','training-mode'); $('#pause-overlay').classList.add('hidden'); $('#help-overlay').classList.add('hidden'); $('#hud').classList.add('hidden'); $('#menu').classList.remove('hidden');
@@ -1990,14 +1983,14 @@ function applyRenderProfile(){
  presentation.setQuality(profile.quality);presentation.setSize(width,height);renderBudget.invalidate();
 }
 function applyQuality(quality){qualityMode=['auto','balanced','high','ultra'].includes(quality)?quality:'auto';adaptiveResolution.reset(performance.now());applyRenderProfile();}
-function savePreferences(){if(testing)return;try{localStorage.setItem('feather-court-3-settings',JSON.stringify({contactHint:state.contactHint,ballGuide:state.ballGuide,thirdFraming:state.thirdFraming,cameraMode:state.cameraMode,orbitYaw:state.orbitYaw,orbitPitch:state.orbitPitch,assistSettingsVersion:1,assists:$('#assist-toggle').checked,autoReturn:$('#auto-return-toggle').checked,comfortable:$('#comfortable-toggle').checked,difficulty:$('#difficulty').value,scheme:$('#control-scheme').value,profile:$('#opponent-profile').value,points:$('#match-points').value,quality:$('#quality').value,performanceVersion:1,focus:state.focus,motion:state.motion,sensitivity:state.sensitivity,lookSyncVersion:2,pace:state.pace,receivePaceVersion:2,receivePace:state.receivePace,sprintAssist:state.sprintAssist,sound:state.sound,racketStyle:state.racketStyle,racketSkin:state.racketSkin,playerStyle:$('#player-style').value,opponentStyle:$('#opponent-style').value,playerStats:playerStatsFromInputs(),opponentStats:state.opponentStats,highBallAssist:$('#high-ball-toggle').checked,placementHint:$('#placement-hint').checked,eagleAuto:$('#eagle-auto').checked}));}catch{}}
+function savePreferences(){if(testing)return;try{localStorage.setItem('feather-court-3-settings',JSON.stringify({contactHint:state.contactHint,ballGuide:state.ballGuide,thirdFraming:state.thirdFraming,cameraMode:state.cameraMode,orbitYaw:state.orbitYaw,orbitPitch:state.orbitPitch,assistSettingsVersion:1,assists:$('#assist-toggle').checked,autoReturn:$('#auto-return-toggle').checked,comfortable:$('#comfortable-toggle').checked,difficulty:$('#difficulty').value,scheme:$('#control-scheme').value,points:$('#match-points').value,quality:$('#quality').value,performanceVersion:1,focus:state.focus,motion:state.motion,sensitivity:state.sensitivity,lookSyncVersion:2,pace:state.pace,receivePaceVersion:2,receivePace:state.receivePace,sprintAssist:state.sprintAssist,sound:state.sound,racketStyle:state.racketStyle,racketSkin:state.racketSkin,playerStats:playerStatsFromInputs(),opponentStats:state.opponentStats,highBallAssist:$('#high-ball-toggle').checked,placementHint:$('#placement-hint').checked,eagleAuto:$('#eagle-auto').checked}));}catch{}}
 function restorePreferences(){
   try { const settings=JSON.parse(localStorage.getItem('feather-court-3-settings')||'{}');$('#eagle-auto').checked=settings.eagleAuto!==false; } catch {}
   $('#eagle-auto').addEventListener('change',savePreferences);
   try{if(!testing)career=parseCareer(localStorage.getItem(CAREER_KEY));}catch{}loadTour();updateCareerUI();let prefs={};
   try{if(!testing)prefs=JSON.parse(localStorage.getItem('feather-court-3-settings')||'{}');}catch{}
   if(prefs.assistSettingsVersion!==1){prefs.assists=false;prefs.comfortable=false;prefs.highBallAssist=true;prefs.scheme='manual';$('#control-scheme').value='manual';}
-  for(const [key,id] of [['points','match-points'],['difficulty','difficulty'],['scheme','control-scheme'],['profile','opponent-profile'],['quality','quality'],['playerStyle','player-style'],['opponentStyle','opponent-style']])if(prefs[key]&&[...$('#'+id).options].some(o=>o.value===prefs[key]))$('#'+id).value=prefs[key];
+  for(const [key,id] of [['points','match-points'],['difficulty','difficulty'],['scheme','control-scheme'],['quality','quality']])if(prefs[key]&&[...$('#'+id).options].some(o=>o.value===prefs[key]))$('#'+id).value=prefs[key];
   if(prefs.performanceVersion!==1)$('#quality').value='auto';
   setFocus(prefs.focus||false);state.motion=Number.isFinite(prefs.motion)?clamp(prefs.motion,0,1):.35;$('#motion').value=state.motion;
   const oldSensitivity=Number.isFinite(prefs.sensitivity)?clamp(prefs.sensitivity,.25,2):1;state.sensitivity=prefs.lookSyncVersion===2?oldSensitivity:clamp(oldSensitivity*1.35,.25,2);$('#sensitivity').value=state.sensitivity;
@@ -2007,8 +2000,8 @@ function restorePreferences(){
   $('#receive-pace').value=state.receivePace;
   state.sprintAssist=$('#sprint-assist').checked=prefs.sprintAssist!==false;
   applyRacketStyle(prefs.racketStyle||'attack');applyRacketSkin(prefs.racketSkin||'astrox100zz');
-  if(prefs.playerStats&&prefs.playerStyle==='custom')for(const key of ['attack','speed','defense','net','control','stamina']){const n=Number(prefs.playerStats[key]);if(Number.isFinite(n))$('#player-'+key).value=Math.round(clamp(n*100,40,160));}
-  const restoredCustom=playerStatsFromInputs();applyPlayerStyle($('#player-style').value);if(prefs.playerStyle==='custom'){techniquePanel.write('player',restoredCustom);refreshPlayerStats();}
+  const savedPlayer=prefs.playerStats||(prefs.playerStyle?playerStatsForStyle(prefs.playerStyle):normalizeSkills());
+  techniquePanel.write('player',savedPlayer);refreshPlayerStats();
   state.opponentStats=normalizeSkills(prefs.opponentStats);techniquePanel.write('opponent',state.opponentStats);
   $('#placement-hint').checked=prefs.placementHint===true;
   state.assists=$('#assist-toggle').checked=prefs.assists===true;
@@ -2023,11 +2016,20 @@ function restorePreferences(){
   if(prefs.assistSettingsVersion!==1)savePreferences();
   applyQuality($('#quality').value);updateDifficultyUI();updateCharacterPreview();
 }
-function showPlayer(){state.screen='inspect';state.inspectYaw=.30;state.inspectDistance=3.1;state.inspectPitch=.12;state.inspectPose='idle';state.inspectTime=0;keys.clear();hitIntent.clear();document.exitPointerLock?.();$('#menu').classList.add('hidden');$('#hud').classList.add('hidden');$('#showroom').classList.remove('hidden');$('#pause-overlay').classList.add('hidden');document.body.classList.remove('playing');}
+function showPlayer(){const avatar=ensurePlayerAvatar();for(const [material,original] of avatar.fadeMaterials)material.opacity=original;avatar.coverage=1;avatar.resetFeet();bot.root.visible=false;state.screen='inspect';state.inspectYaw=.08;state.inspectDistance=.83;state.inspectPitch=.035;state.inspectPose='idle';state.inspectTime=0;keys.clear();hitIntent.clear();document.exitPointerLock?.();$('#menu').classList.add('hidden');$('#hud').classList.add('hidden');$('#showroom').classList.remove('hidden');$('#pause-overlay').classList.add('hidden');document.body.classList.remove('playing');}
 
 function bindEvents() {
+  for(const button of document.querySelectorAll('[data-home-open]')){
+    button.addEventListener('click',()=>document.getElementById(button.dataset.homeOpen).showModal());
+  }
+  for(const dialog of document.querySelectorAll('.lobby-dialog')){
+    // Close before launching a second modal or entering the court.
+    dialog.addEventListener('click',e=>{if(e.target.closest('button'))dialog.close();},true);
+    dialog.addEventListener('keydown',e=>e.stopPropagation());
+  }
+
   $('#placement-hint').addEventListener('change',savePreferences);
-  for(const id of ['opponent-profile','opponent-style'])$('#'+id).addEventListener('change',updateCharacterPreview);
+
   updateCharacterPreview();
   $('#eagle-point-review').addEventListener('click', () => openLineReview());
   $('#last-line-review').addEventListener('click', () => openLineReview());
@@ -2050,10 +2052,9 @@ function bindEvents() {
   $('#photo-btn').addEventListener('click',()=>{presentation.render(scene,camera);const link=document.createElement('a');link.download='feather-court-5-photo.jpg';link.href=canvas.toDataURL('image/jpeg',.94);link.click();});
   for(const pose of ['idle','run','swing'])$('#pose-'+pose).addEventListener('click',()=>{state.inspectPose=pose;state.inspectTime=0;for(const name of ['idle','run','swing'])$('#pose-'+name).classList.toggle('active',name===pose);});
   $('#focus-btn').addEventListener('click',()=>setControlsVisible(!state.controlsVisible));$('#focus-toggle').addEventListener('change',e=>setFocus(e.target.checked));$('#motion').addEventListener('input',e=>state.motion=Number(e.target.value));
-  for(const id of ['difficulty','match-points','opponent-profile','quality','focus-toggle','motion','sensitivity','pace','assist-toggle','auto-return-toggle','comfortable-toggle'])$('#'+id).addEventListener('change',()=>savePreferences());
+  for(const id of ['difficulty','match-points','quality','focus-toggle','motion','sensitivity','pace','assist-toggle','auto-return-toggle','comfortable-toggle'])$('#'+id).addEventListener('change',()=>savePreferences());
   $('#control-scheme').addEventListener('change',e=>{setAssist(e.target.value==='assisted');setComfortable(e.target.value==='tracking');savePreferences();});
-  $('#shot-select').addEventListener('change',e=>{setShot(e.target.value);savePreferences();});$('#racket-style').addEventListener('change',e=>{applyRacketStyle(e.target.value);savePreferences();});$('#racket-skin').addEventListener('change',e=>{applyRacketSkin(e.target.value);savePreferences();});$('#player-style').addEventListener('change',e=>{applyPlayerStyle(e.target.value);savePreferences();});$('#opponent-style').addEventListener('change',()=>{updateDifficultyUI();savePreferences();});$('#high-ball-toggle').addEventListener('change',e=>{state.highBallAssist=e.target.checked;savePreferences();});
-  document.querySelectorAll('[data-player-style]').forEach(button=>button.addEventListener('click',()=>{applyPlayerStyle(button.dataset.playerStyle);savePreferences();}));
+  $('#shot-select').addEventListener('change',e=>{setShot(e.target.value);savePreferences();});$('#racket-style').addEventListener('change',e=>{applyRacketStyle(e.target.value);savePreferences();});$('#racket-skin').addEventListener('change',e=>{applyRacketSkin(e.target.value);savePreferences();});$('#high-ball-toggle').addEventListener('change',e=>{state.highBallAssist=e.target.checked;savePreferences();});
   $('#play-btn').addEventListener('click', () => launchMatch('match')); $('#practice-btn').addEventListener('click', () => startGame('practice')); $('#drill-btn').addEventListener('click', () => startGame('targets'));
   const trainingPicker = $('#training-picker');
   $('#training-btn').addEventListener('click', () => trainingPicker.showModal());
@@ -2153,10 +2154,15 @@ function bindEvents() {
   canvas.addEventListener('auxclick',e=>{if(state.screen==='play')e.preventDefault();});
   window.addEventListener('pointerup', e => {if(e.button===0){pointerDown=false;hitIntent.release('pointer');}if(e.button===2)hitIntent.release('pointer-smash');});
   window.addEventListener('pointerup',()=>inspectDrag=null);
-  canvas.addEventListener('wheel',e=>{if(state.screen==='inspect'){e.preventDefault();state.inspectDistance=clamp((state.inspectDistance||3.1)+e.deltaY*.003,1.2,5);}else if(state.screen==='play'){e.preventDefault();chooseLanding({...selectedLanding(),z:selectedLanding().z+Math.sign(e.deltaY)*.4});}},{passive:false});
-  window.addEventListener('pointercancel',()=>{pointerDown=false;hitIntent.release('pointer');hitIntent.release('pointer-smash');});
+  canvas.addEventListener('wheel',e=>{if(state.screen==='inspect'){e.preventDefault();state.inspectDistance=clamp((state.inspectDistance||3.1)+e.deltaY*.003,.52,5);}else if(state.screen==='play'){e.preventDefault();chooseLanding({...selectedLanding(),z:selectedLanding().z+Math.sign(e.deltaY)*.4});}},{passive:false});
+  window.addEventListener('pointercancel',()=>{inspectDrag=null;pointerDown=false;hitIntent.release('pointer');hitIntent.release('pointer-smash');});
+  canvas.addEventListener('pointermove',e=>{
+    if(state.screen!=='inspect'||!inspectDrag)return;
+    state.inspectYaw-=(e.clientX-inspectDrag.x)*.007;
+    state.inspectPitch=clamp((state.inspectPitch??.035)+(e.clientY-inspectDrag.y)*.002,-.15,.6);
+    inspectDrag={x:e.clientX,y:e.clientY};
+  });
   canvas.addEventListener('mousemove', e => {
-    if(state.screen==='inspect'&&inspectDrag){state.inspectYaw-=(e.clientX-inspectDrag.x)*.007;state.inspectPitch=clamp((state.inspectPitch||.12)+(e.clientY-inspectDrag.y)*.002,-.15,.6);inspectDrag={x:e.clientX,y:e.clientY};return;}
     if (state.screen !== 'play') return;
     if(!coarse)applyMouseLook(e.movementX||0,e.movementY||0);
   });
@@ -2263,11 +2269,11 @@ async function init() {
       const tacticsMatch=document.createElement('button');tacticsMatch.id='run-tactics-matches';tacticsMatch.textContent='验证五档完整比赛与多种制胜球';panel.prepend(tacticsMatch);
       const characterProof=document.createElement('button');characterProof.id='run-character-matches';characterProof.textContent='验证五种对手打法整局比赛';panel.prepend(characterProof);
       characterProof.onclick=()=>{
-        const saved={level:$('#difficulty').value,profile:$('#opponent-profile').value,points:$('#match-points').value,eagle:$('#eagle-auto').checked},results=[],careerBefore=career;
+        const saved={level:$('#difficulty').value,points:$('#match-points').value,eagle:$('#eagle-auto').checked},results=[],careerBefore=career;
         try{
           $('#difficulty').value='master';$('#match-points').value='11';$('#eagle-auto').checked=false;
           for(const profile of ['balanced','attack','netpress','defend','counter']){
-            $('#opponent-profile').value=profile;startGame('match');state.sound=false;rng=8291;hitIntent.press(state.timer,null,'character-proof');
+            startGame('match');state.profile=profile;state.sound=false;rng=8291;hitIntent.press(state.timer,null,'character-proof');
             let incomingBefore=false;
             for(let n=0;n<86400&&!state.finished;n++){
               const incoming=state.lastHitter==='opponent'&&state.phase==='rally';
@@ -2276,7 +2282,7 @@ async function init() {
             }
             results.push({profile,finished:state.finished,score:[...state.score],hits:state.hits,actions:{...opponent.actionCounts},methods:{...matchTactics.methods},intent:currentMatchIntent().phase,review:matchTactics.lastResult,geometry:renderer.info.memory.geometries});
           }
-        }finally{$('#difficulty').value=saved.level;$('#opponent-profile').value=saved.profile;$('#match-points').value=saved.points;$('#eagle-auto').checked=saved.eagle;career=careerBefore;updateCareerUI();updateCharacterPreview();}
+        }finally{$('#difficulty').value=saved.level;$('#match-points').value=saved.points;$('#eagle-auto').checked=saved.eagle;career=careerBefore;updateCareerUI();updateCharacterPreview();}
         $('#test-result').textContent=JSON.stringify({pass:results.every(r=>r.finished&&Object.keys(r.actions).length>=4&&r.review?.tip),results},null,2);pauseGame();
       };
       tacticsMatch.onclick=()=>{
@@ -2397,7 +2403,7 @@ async function init() {
       const handProof=document.createElement('button');handProof.id='hand-proof';handProof.textContent='隐藏面板查看当前视角 · Esc 返回';handProof.onclick=()=>{inspectHand();panel.classList.add('hidden');$('#masthead').classList.add('hidden');};panel.prepend(handProof);
       const techniqueTest=document.createElement('button');techniqueTest.id='run-technique-test';techniqueTest.textContent='验证6.5球路与双方实力';panel.prepend(techniqueTest);
       techniqueTest.onclick=()=>{
-        const checks=[],savedStats={...state.playerStats},savedOpponent={...state.opponentStats},savedStyle=$('#player-style').value;
+        const checks=[],savedStats={...state.playerStats},savedOpponent={...state.opponentStats};
         for(const [kind,position] of [['netcross',[1.8,1.4,1.2]],['netcross',[-1.8,1.4,1.2]],['slicesmash',[1.8,3.05,3.6]],['slicedrop',[1.8,2.8,4.8]],['drop',[1.8,2.8,4.8]]]){
           startGame('practice');state.sound=false;state.manualLanding=false;state.aim=0;setShot(kind);state.swingKind=kind;
           ball.pos.fromArray(position);ball.vel.set(0,-1,.1);ball.active=true;state.lastHitter='opponent';state.phase='rally';player.pos.set(position[0],0,position[2]+.65);player.vel.set(0,0,0);player.speed=0;
@@ -2414,7 +2420,7 @@ async function init() {
         const soft=createGroundMotion({x:0,y:.03,z:0},{x:1,y:-2,z:-2}),hard=createGroundMotion({x:0,y:.03,z:0},{x:1,y:-18,z:-5});let softApex=0,hardApex=0;
         for(let i=0;i<360;i++){stepGroundMotion(soft,1/120);stepGroundMotion(hard,1/120);softApex=Math.max(softApex,soft.pos.y);hardApex=Math.max(hardApex,hard.pos.y);}
         checks.push({name:'energy-dependent-rebound-and-rest',pass:hardApex>softApex+.3&&hard.settled&&soft.settled,hardApex,softApex});
-        techniquePanel.write('player',savedStats);state.playerStats=savedStats;$('#player-style').value=savedStyle;state.playerStyle=savedStyle;state.opponentStats=savedOpponent;exitGame();
+        techniquePanel.write('player',savedStats);state.playerStats=savedStats;state.opponentStats=savedOpponent;exitGame();
         $('#test-result').textContent=JSON.stringify({pass:checks.every(c=>c.pass),checks},null,2);
       };
       const eagleTest = document.createElement('button'); eagleTest.id = 'run-eagle-test'; eagleTest.textContent = '验证鹰眼与落地弹跳'; panel.prepend(eagleTest);

@@ -1,9 +1,9 @@
 {
   "name": "feather-court",
-  "version": "7.41.0",
+  "version": "7.42.0",
   "private": true,
   "type": "module",
-  "description": "羽境 — realistic first-person badminton with ten adjustable opponent grades, varied footwork, net play and precise shot placement",
+  "description": "来拍！ — realistic first-person badminton with ten adjustable opponent grades, varied footwork, net play and precise shot placement",
   "scripts": {
     "dev": "node build.mjs && node server.mjs",
     "start": "node dist/server.mjs",

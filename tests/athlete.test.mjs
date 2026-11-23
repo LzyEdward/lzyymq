@@ -3,6 +3,25 @@ import assert from 'node:assert/strict';
 import * as THREE from 'three';
 import {createAthlete} from '../athlete.mjs';
 
+test('photo face and headset follow the player head during a swing, with a skinned neckline',()=>{
+ const previous=globalThis.document;
+ globalThis.document={createElement:()=>({getContext:()=>({fillRect(){}})})};
+ try{
+  const portraitMap=new THREE.Texture();
+  const model=createAthlete(THREE,()=>new THREE.Group(),{portraitMap});
+  const portrait=model.head.children.find(group=>group.children.some(part=>part.material?.map===portraitMap));
+  assert.ok(portrait);
+  assert.equal(model.head.getObjectByName('Surface eyebrow'),undefined);
+  const neck=model.meshes.find(mesh=>mesh.isSkinnedMesh&&mesh.geometry!==model.torso.geometry&&!mesh.geometry.attributes.uv);
+  assert.ok(neck?.geometry.index.count>0);
+  const pad=portrait.children[1],local=pad.matrix.clone();
+  model.update({lookX:1,lookY:2.8,swing:.18,shot:'smash'});model.root.updateMatrixWorld(true);
+  assert.ok(pad.matrix.equals(local));
+  assert.ok(pad.matrixWorld.elements.every(Number.isFinite));
+  for(const n of neck.geometry.attributes.normal.array)assert.ok(Number.isFinite(n));
+ }finally{globalThis.document=previous;}
+});
+
 test('player avatar can jump, reset planted feet and hold a serve without lifting its floor shadow',()=>{
  const previous=globalThis.document;
  globalThis.document={createElement:()=>({width:0,height:0,getContext:()=>({fillRect(){}})})};
