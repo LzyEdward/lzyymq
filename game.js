@@ -2231,12 +2231,6 @@ async function init() {
       const panel=document.createElement('div');panel.id='test-panel';panel.style.cssText='position:fixed;left:20px;top:115px;z-index:50;background:#12382f;padding:12px;max-width:350px;font:12px sans-serif;border:1px solid #dcf49a';
       panel.innerHTML='<button id="run-play-test">运行长按 60 秒对打测试</button><button id="run-input-suite">验证左右球路与提前点击</button><button id="run-target-test">验证打点挑战</button><button id="run-v2-test">验证手动操作与比赛</button><button id="inspect-model">查看人物近景</button><button id="run-perf-test">测量 180 帧实际表现</button><button id="run-scene-test">检查当前场景坐标</button><pre id="test-result">等待测试</pre>';document.body.append(panel);
       panel.style.zIndex = '45';
-      const resultPreview=document.createElement('button');resultPreview.id='preview-result-test';resultPreview.textContent='预览赛后结算';panel.prepend(resultPreview);
-      resultPreview.addEventListener('click',()=>{
-        startGame('match');state.sound=false;state.score=[state.matchPoints,state.matchPoints-3];state.finished=true;state.ratingDelta=24;
-        state.winners=4;state.smashes=6;state.hits=72;state.errors=3;state.maxRally=19;state.rally=6;state.maxSpeed=386;
-        pauseGame(true);
-      });
       const tacticsProof=document.createElement('button');tacticsProof.id='run-tactics-test';tacticsProof.textContent='验证战术球实飞、鼠标方向与辅助接管';panel.prepend(tacticsProof);
       tacticsProof.onclick=()=>{
         const checks=[],savedLevel=$('#difficulty').value,savedAuto=$('#eagle-auto').checked,careerBefore=career;
