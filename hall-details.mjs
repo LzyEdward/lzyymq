@@ -1,12 +1,13 @@
 import {ARENA} from './arena-layout.mjs';
 import {createSportsTowel} from './sports-towel.mjs';
-export function dressHall(T,scene){
+import {createUmpire} from './umpire.mjs';
+export function dressHall(T,scene,mergeGeometries){
  const v=(x,y,z)=>new T.Vector3(x,y,z),dark=new T.MeshStandardMaterial({color:'#304744',roughness:.48,metalness:.52}),wood=new T.MeshStandardMaterial({color:'#9d7853',roughness:.63}),white=new T.MeshStandardMaterial({color:'#e0e2d5',roughness:.84}),rubber=new T.MeshStandardMaterial({color:'#25413c',roughness:.95});
  function mesh(g,m,x,y,z){const o=new T.Mesh(g,m);o.position.set(x,y,z);o.castShadow=o.receiveShadow=true;scene.add(o);return o;}
  const box=(w,h,d,m,x,y,z)=>mesh(new T.BoxGeometry(w,h,d),m,x,y,z);
  function bar(a,b,r=.018,m=dark){const d=b.clone().sub(a),o=mesh(new T.CylinderGeometry(r,r,d.length(),8),m,...a.clone().add(b).multiplyScalar(.5).toArray());o.quaternion.setFromUnitVectors(v(0,1,0),d.normalize());return o;}
  // Umpire's high chair and access ladder beside the post, outside the runoff.
- const x=4.8,z=-.15;
+ const x=4.8,z=-.15,startChair=scene.children.length;
  for(const side of [-1,1]){
   bar(v(x+side*.31,.03,z-.4),v(x+side*.25,1.7,z-.15),.023);
   bar(v(x+side*.31,.03,z+.45),v(x+side*.25,1.7,z+.15),.023);
@@ -15,6 +16,13 @@ export function dressHall(T,scene){
  box(.59,.065,.5,wood,x,1.66,z);box(.58,.34,.045,wood,x,1.95,z-.18);
  for(let i=0;i<5;i++)bar(v(x-.3,.25+i*.26,z+.41-i*.042),v(x+.3,.25+i*.26,z+.41-i*.042),.025);
  box(.75,.025,.85,rubber,x,.005,z);
+ box(.46,.034,.21,dark,x,1.25,z+.38);
+ const heading=-1.19,turnChair=new T.Quaternion().setFromAxisAngle(v(0,1,0),heading),origin=v(x,0,z);
+ for(const piece of scene.children.slice(startChair)){
+  piece.position.sub(origin).applyQuaternion(turnChair).add(origin);piece.quaternion.premultiply(turnChair);
+ }
+ const official=createUmpire(T,mergeGeometries);
+ official.root.position.set(x,1.71,z);official.root.rotation.y=heading;scene.add(official.root);
  // Open training basket, spare feather shuttles, and a tube of new shuttles.
  const bx=-5.0,bz=1.25;
  for(const s of [-1,1])for(const t of [-1,1])bar(v(bx+s*.27,.04,bz+t*.22),v(bx+s*.27,.86,bz+t*.22),.012);
@@ -90,4 +98,5 @@ export function dressHall(T,scene){
  const shadowMat=new T.MeshBasicMaterial({map:new T.CanvasTexture(shadowCanvas),transparent:true,depthWrite:false});
  for(const [x,z,w,d] of [[-5.8,-10.5,5,1.2],[5.8,-10.5,5,1.2],[5.8,10.5,5,1.2],[4.8,-.15,1.1,1.1],[-5,1.25,.9,.8]]){const p=mesh(new T.PlaneGeometry(w,d),shadowMat,x,-.0034,z);p.rotation.x=-Math.PI/2;p.castShadow=p.receiveShadow=false;}
  for(const [x,z]of [[-6.1,-10.4],[6.0,-10.4],[6.0,10.5]])for(const [xx,w,d]of [[x,1.08,.50],[x+.78,.17,.17]]){const p=mesh(new T.PlaneGeometry(w,d),shadowMat,xx,.5104,z);p.rotation.x=-Math.PI/2;p.castShadow=p.receiveShadow=false;}
+ return official;
 }

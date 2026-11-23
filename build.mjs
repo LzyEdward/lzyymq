@@ -39,7 +39,7 @@ await writeFile(path.join(out,'assets','player-arm.bin'),armBytes);
 await writeFile(path.join(out,'assets','player-arm.bin.gz'),gzipSync(armBytes,{level:9}));
 await cp(path.join(root,'arena-layout.mjs'),path.join(out,'arena-layout.mjs'));
 await cp(path.join(root,'arena-bowl.mjs'),path.join(out,'arena-bowl.mjs'));
-for(const file of ['presentation.mjs','viewmodel.mjs','hand-sculpt.mjs','racket-model.mjs','skin-surface.mjs','motion.mjs','hall-details.mjs','net-material.mjs','footwork.mjs','render-budget.mjs','UPDATE-6.8.md','UPDATE-6.9.md'])await cp(path.join(root,file),path.join(out,file));
+for(const file of ['presentation.mjs','viewmodel.mjs','hand-sculpt.mjs','racket-model.mjs','skin-surface.mjs','motion.mjs','umpire.mjs','hall-details.mjs','net-material.mjs','footwork.mjs','render-budget.mjs','UPDATE-6.8.md','UPDATE-6.9.md'])await cp(path.join(root,file),path.join(out,file));
 await writeFile(path.join(out, 'package.json'), JSON.stringify({ name: 'feather-court-portable', version: JSON.parse(await readFile(path.join(root,'package.json'),'utf8')).version, private: true, type: 'module', scripts: { start: 'node server.mjs' } }, null, 2) + '\n');
 await cp(path.join(root, 'game.js'), path.join(out, 'game.js'));
 for(const file of ['bootstrap.js','asset-loading.mjs','hand-surface.mjs','hand-pose.mjs','hall-surfaces.mjs','shuttle-model.mjs','woven-strings.mjs','UPDATE-6.9.1.md','UPDATE-7.0.md','UPDATE-7.0.1.md','UPDATE-7.1.md','UPDATE-7.2.md','UPDATE-7.3.md'])await cp(path.join(root,file),path.join(out,file));

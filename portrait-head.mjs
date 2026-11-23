@@ -8,9 +8,9 @@ const rings = [
   [1, .012, .016, .085]
 ];
 
-export function createPortraitHead(THREE, texture, headOrigin) {
+export function createPortraitHead(THREE, texture, headOrigin, {headphones=true, name='林楠 · 照片头模'}={}) {
   const group = new THREE.Group();
-  group.name = '林楠 · 照片头模';
+  group.name = name;
   group.position.copy(headOrigin).multiplyScalar(-1);
   const positions = [], uv = [], indices = [];
   const columns = 80, rows = 56;
@@ -56,6 +56,7 @@ export function createPortraitHead(THREE, texture, headOrigin) {
     return mesh;
   }
   attach(geometry,face);
+  if(!headphones)return group;
   const cushion = new THREE.MeshStandardMaterial({color:0x242221,roughness:.83});
   const housing = new THREE.MeshStandardMaterial({color:0x302e2d,metalness:.28,roughness:.45});
   const metal = new THREE.MeshStandardMaterial({color:0xb69e68,metalness:.55,roughness:.35});

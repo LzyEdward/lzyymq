@@ -48,11 +48,24 @@ export function createArenaBowl(T,mergeGeometries){
  const seatParts=[localBox(.43,.065,.38,0,.43,0),localBox(.43,.40,.05,0,.66,-.20,-.10),localBox(.055,.40,.055,0,.22,0)];
  const seatGeo=mergeGeometries(seatParts,false);seatParts.forEach(g=>g.dispose());
  const seatMesh=new T.InstancedMesh(seatGeo,seatMat,seats.length);seatMesh.name='Moulded seats with backrests';
- const people=seats.filter((_,i)=>((i*73+17)%100)>10);
+ const occupied=seats.filter((_,i)=>((i*73+17)%100)>10);
+ // A contiguous prefix lets each animated body-part batch upload just its changed matrices.
+ const active=[],quiet=[];
+ occupied.forEach((p,i)=>{
+  const threshold=p.row<5?58:p.row<11?32:13;
+  (((i*47+Math.floor(i/17)*13)%100)<threshold?active:quiet).push(p);
+ });
+ const people=active.concat(quiet);
  // These silhouettes sit 10–35 metres away. Smooth normals and colour carry
  // detail more cheaply than subdividing every distant arm and head.
  const torsos=new T.InstancedMesh(new T.SphereGeometry(1,7,4),cloth,people.length),heads=new T.InstancedMesh(new T.SphereGeometry(1,7,4),skin,people.length),hairs=new T.InstancedMesh(new T.SphereGeometry(1,7,3,0,Math.PI*2,0,Math.PI*.55),hairMat,people.length);
  const limbs=new T.InstancedMesh(new T.CylinderGeometry(1,1,1,4,1,true),skin,people.length*4),legs=new T.InstancedMesh(new T.CylinderGeometry(1,1,1,4,1,true),pants,people.length*4);
+ const palms=new T.InstancedMesh(new T.SphereGeometry(1,6,4),skin,people.length*2);
+ if(typeof document!=='undefined'){
+  heads.material=skin.clone();
+  heads.material.map=new T.TextureLoader().load(new URL('./assets/textures/stand-faces.webp',import.meta.url).href);
+  heads.material.map.colorSpace=T.SRGBColorSpace;
+ }
  torsos.name='Seated spectator shoulders and torsos';heads.name='Spectator heads';
  const shirts=['#b6c0c8','#778296','#94827a','#b3a77b','#657f7b','#af929a','#7285a4','#c1bbac'],skins=['#c49375','#d9b292','#916149','#b37a59'],hairsPalette=['#262325','#42332e','#695545','#9e8b73'];
  const place=(mesh,i,p,offset,scale,rot=0,color)=>{
@@ -60,22 +73,93 @@ export function createArenaBowl(T,mergeGeometries){
   dummy.position.set(p.x+x*c+z*s,p.y+y,p.z-x*s+z*c);dummy.rotation.set(rot,p.yaw,0);dummy.scale.set(...scale);dummy.updateMatrix();mesh.setMatrixAt(i,dummy.matrix);if(color)mesh.setColorAt(i,new T.Color(color));
  };
  seats.forEach((p,i)=>place(seatMesh,i,p,[0,0,0],[1,1,1]));
- people.forEach((p,i)=>{
-  const lean=((i*19)%11-5)*.008,skinColor=skins[i%skins.length];
-  place(torsos,i,p,[0,.73,.015+lean],[.19,.27,.12],-.08,shirts[(i*17+Math.floor(i/23))%shirts.length]);
-  place(heads,i,p,[0,1.08,.035+lean],[.097,.125,.095],0,skinColor);
-  place(hairs,i,p,[0,1.115,.027+lean],[.10,.107,.098],0,hairsPalette[i%4]);
+ const up=new T.Vector3(0,1,0),direction=new T.Vector3(),yawQ=new T.Quaternion();
+ const mix=T.MathUtils.lerp,smooth=T.MathUtils.smoothstep;
+ function segment(mesh,index,p,ax,ay,az,bx,by,bz,radius){
+  direction.set(bx-ax,by-ay,bz-az);
+  const length=direction.length(),mx=(ax+bx)*.5,mz=(az+bz)*.5;
+  dummy.position.set(p.x+mx*p.cos+mz*p.sin,p.y+(ay+by)*.5,p.z-mx*p.sin+mz*p.cos);
+  dummy.quaternion.setFromUnitVectors(up,direction.multiplyScalar(1/length)).premultiply(yawQ);
+  dummy.scale.set(radius,length,radius);dummy.updateMatrix();mesh.setMatrixAt(index,dummy.matrix);
+ }
+ function pose(p,i,time,age,power){
+  const delay=p.delay,local=age-delay;
+  const response=power*smooth(local,0,.35)*(1-smooth(local,1.32,2.05));
+  const stand=smooth(response,p.threshold,1),beat=Math.sin(time*p.tempo+i);
+  const idle=Math.sin(time*1.7+i)*.017;
+  const lift=stand*.36,lean=p.lean+idle+stand*.075;
+  const hip=.48+lift,shoulder=.89+lift;
+  place(torsos,i,p,[0,.73+lift,.015+lean],[.19,.27,.12],-.08+stand*.09);
+  place(heads,i,p,[idle*.38,1.08+lift,.035+lean],[.097,.125,.095]);
+  place(hairs,i,p,[idle*.38,1.115+lift,.027+lean],[.10,.107,.098]);
+  yawQ.setFromAxisAngle(up,p.yaw);
   for(const side of [-1,1]){
-   const n=i*4+(side>0?2:0);
-   place(limbs,n,p,[side*.20,.73,.07],[.035,.24,.035],-.4,skinColor);
-   place(limbs,n+1,p,[side*.19,.59,.19],[.029,.21,.029],-1.3,skinColor);
-   place(legs,n,p,[side*.095,.44,.15],[.065,.29,.065],Math.PI/2);
-   place(legs,n+1,p,[side*.095,.24,.29],[.047,.32,.047]);
+   const n=i*4+(side>0?2:0), sx=side*.157;
+   const clap=p.waves&&side>0?0:response;
+   const wave=p.waves&&(i%3===0||side>0)?response:0;
+   const ex=side*(.205+.09*wave+.026*clap),ey=shoulder-.194+.30*wave+.055*clap;
+   const ez=lean+.061+.025*wave+.07*clap;
+   const wx=side*(.177+.13*wave+.075*beat*wave-clap*(.13+.04*beat));
+   const wy=shoulder-.295+.61*wave+.26*clap+.02*idle;
+   const wz=lean+.223-.14*wave+.07*clap;
+   segment(limbs,n,p,sx,shoulder,.012+lean,ex,ey,ez,.042);
+   segment(limbs,n+1,p,ex,ey,ez,wx,wy,wz,.032);
+   place(palms,i*2+(side>0?1:0),p,[wx,wy,wz],[.041,.049,.027],-.35*clap);
+   const kneeZ=mix(.30,.19,stand);
+   segment(legs,n,p,side*.094,hip,.012+lean,side*.11,.43,kneeZ,.070);
+   segment(legs,n+1,p,side*.11,.43,kneeZ,side*.115,.055,.22,.052);
   }
+ }
+ people.forEach((p,i)=>{
+  p.sin=Math.sin(p.yaw);p.cos=Math.cos(p.yaw);p.lean=((i*19)%11-5)*.007;
+  p.delay=((i*17)%23)*.017+p.row*.007;p.tempo=6+i%5;
+  p.threshold=.16+(i*31%13)*.032;p.waves=i%4!==0;
+  const skinColor=new T.Color(skins[i%skins.length]);
+  torsos.setColorAt(i,new T.Color(shirts[(i*17+Math.floor(i/23))%shirts.length]));
+  heads.setColorAt(i,skinColor);hairs.setColorAt(i,new T.Color(hairsPalette[i%4]));
+  palms.setColorAt(i*2,skinColor);palms.setColorAt(i*2+1,skinColor);
+  for(let j=0;j<4;j++)limbs.setColorAt(i*4+j,skinColor);
+  pose(p,i,0,-1,0);
  });
- for(const o of [seatMesh,torsos,heads,hairs,limbs,legs]){o.instanceMatrix.needsUpdate=true;o.castShadow=false;o.receiveShadow=false;o.computeBoundingSphere();group.add(o);}
+ const moving=[torsos,heads,hairs,limbs,legs,palms];
+ let lastTime=-Infinity;
+ for(const o of moving)o.instanceMatrix.setUsage(T.DynamicDrawUsage);
+ group.userData.updateCrowd=(time,age=-1,power=0)=>{
+  if(time>=lastTime&&time-lastTime<1/(age>=0?18:6))return;
+  lastTime=time;
+  for(let i=0;i<active.length;i++)pose(people[i],i,time,age,power);
+  for(const mesh of moving){
+   const attribute=mesh.instanceMatrix;
+   attribute.clearUpdateRanges();
+   attribute.addUpdateRange(0,active.length*(mesh===limbs||mesh===legs?4:mesh===palms?2:1)*16);
+   attribute.needsUpdate=true;
+  }
+ };
+ for(const o of [seatMesh,...moving]){o.instanceMatrix.needsUpdate=true;o.castShadow=false;o.receiveShadow=false;o.computeBoundingSphere();group.add(o);}
  // All architecture uses a small shared set of material batches.
  for(const [material,parts] of batches){const geometry=mergeGeometries(parts,false),m=new T.Mesh(geometry,material);m.receiveShadow=false;group.add(m);parts.forEach(g=>g.dispose());}
+ // Sewn banners hang from the front rail, facing the players on all four sides.
+ const banners=[];
+ const panels=[[-3.6,-13.49,0,0],[4,-13.49,0,1],[3.5,13.49,Math.PI,3],
+  [-8.06,-4,Math.PI/2,2],[-8.06,6,Math.PI/2,1],[8.06,-4,-Math.PI/2,3]];
+ for(const [x,z,yaw,tile] of panels){
+  const clothPanel=new T.PlaneGeometry(3.85,.76,24,3);
+  const {position,uv}=clothPanel.attributes;
+  for(let i=0;i<position.count;i++){
+   const s=uv.getX(i),v=uv.getY(i);
+   position.setY(i,position.getY(i)-.055*Math.sin(Math.PI*s));
+   position.setZ(i,.035*Math.sin(s*29+.6*v)+.014*Math.sin(s*57));
+   uv.setY(i,1-(tile+1-v)/4);
+  }
+  clothPanel.computeVertexNormals();clothPanel.rotateY(yaw);clothPanel.translate(x,.78,z);banners.push(clothPanel);
+ }
+ const bannerMaterial=new T.MeshStandardMaterial({roughness:1});
+ if(typeof document!=='undefined'){
+  const atlas=new T.TextureLoader().load(new URL('./assets/textures/supporter-banners.webp',import.meta.url).href);
+  atlas.colorSpace=T.SRGBColorSpace;atlas.anisotropy=4;bannerMaterial.map=atlas;
+ }
+ const clothBanners=new T.Mesh(mergeGeometries(banners,false),bannerMaterial);
+ clothBanners.name='Supporters’ rail banners';group.add(clothBanners);banners.forEach(g=>g.dispose());
  group.userData.capacity=seats.length;group.userData.spectators=people.length;
  const fasciaColor=new T.Color('#3c464b'),eventColor=new T.Color();
  group.userData.applyVenue=(spec={})=>{

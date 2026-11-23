@@ -113,6 +113,7 @@ for(const entity of [player,opponent,ball]){entity.previous=entity.pos.clone();e
 let renderer, scene, camera, racket, shuttle, bot, landingMarker, targetMarker, aimMarker, shuttleShadow, shuttleFootprint, net, courtScore, presentation, surfaceMaps;
 let receiveMarker, shuttleHeightLine;
 let playerAvatar=null;
+let umpire, standReaction=null;
 let audienceGroup=null, venueSign=null, venueAccent='#818e93',mainCourtMaterial=null,runoffMaterial=null;
 let audio, master, trailLine, shuttleNoise, shuttleFilter, shuttleGain, shuttlePan, lastShuttleSoundUpdate=-1, menuTime = 0, accumulator = 0, fps = 60;
 let lastHud = 0, previousCameraPos = V(), pointerDown = false, touchMove = { x: 0, y: 0 };
@@ -278,7 +279,7 @@ function createHall() {
     for (let i = 0; i < 3; i++) box(4.4, .13, .055, benchWood, x, .7 + i * .16, z - .3);
   }
   bench(-5.8, -10.5); bench(5.8, -10.5); bench(5.8, 10.5);
-  createAudience();createNet();dressHall(THREE,scene);createHallContext(THREE,scene);
+  createAudience();createNet();umpire=dressHall(THREE,scene,mergeGeometries);createHallContext(THREE,scene);
   courtScore = textPanel('林楠   00  :  00   对手', 4.2, .9, { bg: '#102823', color: '#def6a3', size: 70 });
   courtScore.position.set(0, 11.7, -31.5); scene.add(courtScore);
 }
@@ -427,6 +428,38 @@ function createEffects() {
   trailLine = new THREE.Line(geo, new THREE.LineBasicMaterial({ color: '#eef6c9', transparent: true, opacity: .14, depthWrite: false })); trailLine.frustumCulled = false; scene.add(trailLine);
 }
 
+const standClips=new Map();
+let crowdPlayback=null;
+function loadStandClip(key){
+  if(!standClips.has(key)){
+    const clip=fetch(new URL('./assets/audio/stand-'+key+'.wav',import.meta.url))
+      .then(response=>{if(!response.ok)throw Error(response.status);return response.arrayBuffer();})
+      .then(bytes=>audio.decodeAudioData(bytes))
+      .catch(()=>{standClips.delete(key);return null;});
+    standClips.set(key,clip);
+  }
+  return standClips.get(key);
+}
+function stopStandCheer(){
+  if(crowdPlayback){crowdPlayback.stop();crowdPlayback=null;}
+}
+async function playStandCheer(key,volume){
+  if(!audio||!state.sound||state.screen!=='play')return;
+  const point=standReaction,buffer=await loadStandClip(key);
+  if(!buffer||!state.sound||state.screen!=='play'||standReaction!==point||state.phase!=='point'||state.timer-point.start>.65)return;
+  stopStandCheer();
+  const source=audio.createBufferSource(),gain=audio.createGain();
+  source.buffer=buffer;source.playbackRate.value=.96+Math.random()*.08;
+  gain.gain.value=.67*volume;
+  source.connect(gain);gain.connect(master);gain.connect(audio.reverb);
+  source.onended=()=>{source.disconnect();gain.disconnect();if(crowdPlayback===source)crowdPlayback=null;};
+  crowdPlayback=source;source.start();
+}
+function waveAmount(){
+  if(state.phase!=='point'||!standReaction?.playerWon)return 0;
+  const age=state.timer-standReaction.start;
+  return THREE.MathUtils.smoothstep(age,.08,.46)*(1-THREE.MathUtils.smoothstep(age,1.33,1.93));
+}
 function initAudio() {
   if (audio) { if (audio.state === 'suspended') audio.resume().catch(() => {}); return; }
   try {
@@ -695,6 +728,8 @@ function startGame(mode = 'match', preserveSettings = false) {
   $('#eagle-point-review').classList.add('hidden'); $('#last-line-review').disabled = true;
   initAudio(); state.mode = mode;
   training = mode === 'training' ? { mode: trainingMode, completed: [], best: trainingBest(trainingMode), newBest: false } : null;
+  standReaction=null;stopStandCheer();
+  if(mode==='match'&&audio&&state.sound)for(const key of ['rally','win','clinch'])loadStandClip(key);
   state.receiveStarted = -10;
   state.receiveRally = null;
   document.body.classList.toggle('training-mode', Boolean(training));
@@ -1143,7 +1178,7 @@ function scorePoint(winner, reason) {
   const playerWon = winner === 'player';
   if (state.mode === 'match') state.score[playerWon ? 0 : 1]++;
   state.server=winner;
-  if(playerWon&&state.lastHitter==='player'&&['smash','slicesmash'].includes(state.lastShot?.type))state.winners++;
+  if(playerWon&&state.lastHitter==='player'&&state.lastShot?.type!=='serve'&&state.lastShot)state.winners++;
   if(!playerWon&&state.lastHitter==='player')state.errors++;
   const finished = state.mode === 'match' && matchFinished(state.score,state.matchPoints);
   state.finished = finished;
@@ -1157,7 +1192,12 @@ function scorePoint(winner, reason) {
   if(earned.length)$('#point-subtitle').textContent+=` · 达成 ${earned.join(' / ')}`;
   state.tacticMessage='';
   updateCourtScore();
-  if(finished)resolveTournamentPoint(playerWon);
+  if(state.mode==='match'){
+    standReaction={start:state.timer,playerWon,power:finished?1:playerWon?.88:.52};
+    if(finished)state.pointDelay=2.8;
+    playStandCheer(finished&&playerWon?(state.tournamentId&&state.tournamentRound===4?'clinch':'win'):'rally',playerWon?1:.53);
+  }
+  if(finished&&state.tournamentId)resolveTournamentPoint(playerWon);
   else if(finished&&playerWon)celebrateVictory('exhibition');
 }
 
@@ -1488,7 +1528,7 @@ function updatePlayerAvatar(dt,impactOnly=false){
   lookY:ball.pos.y,lookX:Math.cos(avatar.root.rotation.y)*(ball.pos.x-player.pos.x)-Math.sin(avatar.root.rotation.y)*(ball.pos.z-player.pos.z),anticipation:holding?0:readiness,
   split,crossover:Math.abs(vx)>1.9&&vz>.7,lunge:Math.max(netLunge,dashLunge),
   netVariant:kind==='netcross'?'勾对角':kind==='net'?'搓网':kind==='push'?'推后场':'',
-  landing:jumping.landing,impactOnly});
+  landing:jumping.landing,celebration:waveAmount(),impactOnly});
 }
 function updateAvatarOcclusion(dt){
  const receiving=state.phase==='rally'&&ball.active&&state.lastHitter==='opponent';
@@ -1532,7 +1572,15 @@ function updateCamera(dt) {
   racket.position.fromArray(pose.position);racket.rotation.fromArray([...pose.rotation,'XYZ']);
   if(racket.userData.support){
     const cork=camera.worldToLocal((state.phase==='rally'&&state.contactPoint?state.contactPoint:ball.renderPos).clone()).toArray();
-    positionServeHand(null,supportHandPose({phase:state.phase,elapsed:state.serveElapsed,swing:state.swing,kind:state.swingKind,cork,speed:player.speed,time:state.timer,lateral:player.vel.x}));
+    const support=supportHandPose({phase:state.phase,elapsed:state.serveElapsed,swing:state.swing,kind:state.swingKind,cork,speed:player.speed,time:state.timer,lateral:player.vel.x});
+    const wave=waveAmount();
+    if(wave){
+      const beat=Math.sin((state.timer-standReaction.start)*9);
+      support.position[0]+=wave*(.018+.058*beat);
+      support.position[1]+=.78*wave;support.position[2]-=.08*wave;
+      support.rotation[2]+=wave*(.13+.32*beat);
+    }
+    positionServeHand(null,support);
   }
 }
 function updateOpponentModel(dt,impactOnly=false) {
@@ -1864,6 +1912,12 @@ function animate() {
     for (let n = 0; accumulator >= 1 / 120 && n < 12; n++) { fixedUpdate(1 / 120); accumulator -= 1 / 120; }
     for(const entity of [player,opponent,ball])entity.renderPos.lerpVectors(entity.previous,entity.pos,clamp(accumulator*120,0,1));
     if(state.impactFrame&&ball.active)ball.renderPos.copy(state.impactFrame==='player'?state.contactPoint:opponent.contactPoint);
+    const pointAge=standReaction&&state.phase==='point'?state.timer-standReaction.start:-1;
+    audienceGroup.userData.updateCrowd(state.timer,pointAge,standReaction?.power||0);
+    const courtTarget=state.phase==='rally'?ball.renderPos:state.server==='player'?player.renderPos:opponent.renderPos;
+    const gaze=clamp(Math.atan2(courtTarget.x-umpire.root.position.x,courtTarget.z-umpire.root.position.z)-umpire.root.rotation.y,-.75,.64);
+    umpire.pivot.rotation.y=damp(umpire.pivot.rotation.y,gaze,4,dt);
+    umpire.pivot.rotation.x=damp(umpire.pivot.rotation.x,state.phase==='point'?.22:clamp((2.4-courtTarget.y)*.09,-.2,.14),5,dt);
     updateCamera(dt);updateOpponentModel(dt);updateEffects(dt);state.impactFrame=null; racket.visible = state.cameraMode==='first';
     if (state.elapsed - lastHud > .075) { updateHud(); lastHud = state.elapsed; }
   }
@@ -1888,6 +1942,8 @@ function requestLock() {
 }
 function pauseGame(finished = false) {
   if (state.screen !== 'play') return;
+  finished=finished||state.finished;
+  stopStandCheer();
   $('#contact-halo').classList.add('hidden');$('#shuttle-indicator').classList.add('hidden');$('#receive-cue').classList.add('hidden');
   shuttleFootprint.visible=receiveMarker.visible=shuttleHeightLine.visible=false;
   state.screen = 'pause'; keys.clear();state.aiming=false;state.aimAlt=false;document.body.classList.remove('choosing-landing'); pointerDown = false; gamepadHitHeld = false; gamepadJumpHeld = false; hitIntent.clear();jumping.cancelBuffer(); touchMove.x = touchMove.y = 0;
@@ -1901,14 +1957,14 @@ function pauseGame(finished = false) {
   $('#match-result').classList.toggle('hidden',!finished);
   $('#match-result').dataset.outcome=champion?'champion':won?'win':'loss';
   if(finished){
-    $('#result-cup-label').textContent=champion?'TOURNAMENT CHAMPION':won?'MATCH VICTORY':'MATCH COMPLETE';
-    $('#result-outcome').textContent=champion?'赛事总冠军！':won?'本场胜利！':'下一场继续冲！';
+    $('#result-more').open=false;
+    $('#result-cup-label').textContent=state.tournamentId?tourEvent(state.tournamentId).name+' · '+tourEvent(state.tournamentId).rounds[state.tournamentRound]:'单打挑战';
+    $('#result-outcome').textContent=champion?'捧起冠军奖杯！':won?'拿下这场！':'本场惜败';
     $('#result-player-name').textContent=PLAYER_NAME;$('#result-opponent-name').textContent=opponentName;
-    $('#result-score').textContent=`${state.score[0]}  :  ${state.score[1]}`;
+    $('#result-mine').textContent=state.score[0];$('#result-theirs').textContent=state.score[1];
     $('#result-rating').textContent=`${state.ratingDelta>=0?'+':''}${state.ratingDelta}`;
     $('#result-smashes').textContent=String(state.winners);$('#result-hits').textContent=String(state.hits);$('#result-errors').textContent=String(state.errors);
     $('#result-rally').textContent=String(Math.max(state.maxRally,state.rally));$('#result-speed').textContent=String(state.maxSpeed);
-    $('#result-accolade').textContent=champion?`${tourEvent(tour.eventId).name} · 五轮夺冠`:won?`连胜 ${career.streak} 场 · ${rankName(career.rating)} ${career.rating} 分`:`本场已记入生涯 · ${rankName(career.rating)} ${career.rating} 分`;
     $('#result-detail').textContent=`生涯 ${career.wins} 胜 ${career.played-career.wins} 负 · 最长连胜 ${career.bestStreak}`;
   }
   const next=$('#tour-next');if(next){const tournamentMatch=Boolean(state.tournamentId);next.classList.toggle('hidden',!finished||!tournamentMatch);document.body.classList.toggle('tournament-finished',finished&&tournamentMatch);next.textContent=tour?.completed?'返回赛事中心':tour?.eliminated?'重新报名':'进入下一轮';}
@@ -1927,7 +1983,7 @@ function pauseGame(finished = false) {
   $('#resume-btn').classList.toggle('hidden', trainingComplete || (finished && Boolean(state.tournamentId)));
   $('#restart-btn').classList.toggle('hidden', trainingComplete);
   $('#pause-overlay').classList.remove('hidden');
-  if (trainingComplete) $('.pause-modal').scrollTop = 0;
+  if (trainingComplete||finished) $('.pause-modal').scrollTop = 0;
   updateHud();
 }
 function updateTacticalReport(){
@@ -1956,6 +2012,7 @@ function resumeGame() {
   state.screen = 'play'; $('#pause-overlay').classList.add('hidden'); $('#help-overlay').classList.add('hidden'); accumulator = 0; clock.getDelta();canvas.focus({preventScroll:true}); requestLock(); initAudio();
 }
 function exitGame() {
+  standReaction=null;stopStandCheer();
   if(bot)bot.root.visible=true;
   state.screen = 'menu'; training = null; ball.active = false; keys.clear(); pointerDown = false;hitIntent.clear();
   $('#placement-cue').classList.add('hidden');$('#shot-cue').classList.remove('visible');
