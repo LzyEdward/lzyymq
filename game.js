@@ -351,17 +351,16 @@ function createOpponent() {
   const label = textPanel('INTERNATIONAL  /  01', 1.42, .19, { bg: '#173b35', color: '#f0d2a2', size: 72 });
   label.position.set(0, 2.05, 0); athlete.root.add(label);
   const headband=new THREE.Mesh(new THREE.TorusGeometry(.082,.008,5,24),material('#d6c16f',.68));headband.rotation.x=Math.PI/2;headband.position.set(0,.102,.018);headband.visible=false;athlete.bones.head.add(headband);
-  const wristbands=['L','R'].map((side,index)=>{const band=new THREE.Mesh(new THREE.TorusGeometry(.032,.004,5,18),material('#e7e8de',.86));band.rotation.x=Math.PI/2;band.position.set(0,.006,index?.004:-.004);athlete.bones['wrist.'+side].add(band);return band;});
-  return { ...athlete, label, headband, wristbands };
+  return { ...athlete, label, headband };
 }
 
 function applyOpponentIdentity(id){
   if(!bot)return;const rival=id?tourStar(id):null;
-  if(!rival){bot.setKit(state.opponentStyle);bot.root.scale.set(1,1,1);bot.headband.visible=false;bot.wristbands.forEach(b=>b.visible=false);return;}
+  if(!rival){bot.setKit(state.opponentStyle);bot.root.scale.set(1,1,1);bot.headband.visible=false;for(const side of [0,1])bot.setWristband(side,false,'#a1c5bd');return;}
   const {accent,build}=matchKit(rival);bot.setKit(rival);
   const width=.94+(rival.seed%7)*.018,height=.955+(rival.seed%8)*.013,depth=.96+((rival.seed*3)%6)*.016;
   if(build.some(n=>n!==1))bot.root.scale.fromArray(build);else bot.root.scale.set(width,height,depth);
-  bot.headband.visible=[4,9,13,18,24,27,34,39,43].includes(rival.seed);bot.headband.material.color.set(accent);bot.wristbands.forEach((b,i)=>{b.visible=(rival.seed+i)%3!==0;b.material.color.set((rival.seed+i)%4===0?accent:'#e7e8de');});
+  bot.headband.visible=[4,9,13,18,24,27,34,39,43].includes(rival.seed);bot.headband.material.color.set(accent);for(const i of [0,1])bot.setWristband(i,(rival.seed+i)%3!==0,(rival.seed+i)%4===0?accent:'#e7e8de');
   const ctx=bot.label.material.map.image.getContext('2d');ctx.clearRect(0,0,1024,256);ctx.fillStyle='#142c28';ctx.fillRect(0,0,1024,256);ctx.fillStyle=accent;ctx.textAlign='center';ctx.textBaseline='middle';ctx.font='700 94px "Segoe UI","Microsoft YaHei"';ctx.fillText(rival.name,512,106);ctx.font='42px "Segoe UI",sans-serif';ctx.fillText(rival.latin.toUpperCase(),512,193);bot.label.material.map.needsUpdate=true;
 }
 
@@ -1431,7 +1430,8 @@ function positionServeHand(cork,pose){
 function ensurePlayerAvatar(){
  if(playerAvatar)return playerAvatar;
  const portraitMap=new THREE.TextureLoader().load(new URL('./assets/lin-nan-head.webp',import.meta.url).href,()=>renderBudget.invalidate());
- playerAvatar=createAthlete(THREE,()=>{const mount=new THREE.Group(),model=createRacket(true);mount.add(model);mount.userData.racketModel=model;return mount;},{skinMap:surfaceMaps?.athleteSkin,mergeGeometries,portraitMap});
+ const uniformMap=new THREE.TextureLoader().load(new URL('./assets/textures/shenzhen-polo.webp',import.meta.url).href,()=>renderBudget.invalidate());
+ playerAvatar=createAthlete(THREE,()=>{const mount=new THREE.Group(),model=createRacket(true);mount.add(model);mount.userData.racketModel=model;return mount;},{skinMap:surfaceMaps?.athleteSkin,mergeGeometries,portraitMap,uniformMap});
  // Dither coverage in the opaque pass to keep normal depth sorting.
  const fadeMaterials=new Map();
  playerAvatar.body.traverse(object=>{
@@ -1842,7 +1842,7 @@ function animate() {
     const yaw=state.inspectYaw??.30,distance=state.inspectDistance||3.1,pitch=state.inspectPitch||.12;
     const focus=avatar.head.getWorldPosition(inspectCenter);
     const wide=clamp((distance-1)/2.6,0,1);
-    focus.lerp(avatar.root.position,wide*.37);
+    focus.lerp(avatar.root.position,wide*.47);
     camera.position.set(focus.x+Math.sin(yaw)*distance,focus.y+pitch*distance,focus.z+Math.cos(yaw)*distance);
     camera.fov=42;camera.lookAt(focus);camera.updateProjectionMatrix();
     racket.visible=false;if(racket.userData.support)racket.userData.support.visible=false;landingMarker.visible=targetMarker.visible=aimMarker.visible=false;shuttleShadow.visible=false;
@@ -2016,7 +2016,7 @@ function restorePreferences(){
   if(prefs.assistSettingsVersion!==1)savePreferences();
   applyQuality($('#quality').value);updateDifficultyUI();updateCharacterPreview();
 }
-function showPlayer(){const avatar=ensurePlayerAvatar();for(const [material,original] of avatar.fadeMaterials)material.opacity=original;avatar.coverage=1;avatar.resetFeet();bot.root.visible=false;state.screen='inspect';state.inspectYaw=.08;state.inspectDistance=.83;state.inspectPitch=.035;state.inspectPose='idle';state.inspectTime=0;keys.clear();hitIntent.clear();document.exitPointerLock?.();$('#menu').classList.add('hidden');$('#hud').classList.add('hidden');$('#showroom').classList.remove('hidden');$('#pause-overlay').classList.add('hidden');document.body.classList.remove('playing');}
+function showPlayer(){const avatar=ensurePlayerAvatar();for(const [material,original] of avatar.fadeMaterials)material.opacity=original;avatar.coverage=1;avatar.resetFeet();bot.root.visible=false;state.screen='inspect';state.inspectYaw=.08;state.inspectDistance=.83;$('#showroom-framing').textContent='看全身';state.inspectPitch=.035;state.inspectPose='idle';state.inspectTime=0;keys.clear();hitIntent.clear();document.exitPointerLock?.();$('#menu').classList.add('hidden');$('#hud').classList.add('hidden');$('#showroom').classList.remove('hidden');$('#pause-overlay').classList.add('hidden');document.body.classList.remove('playing');}
 
 function bindEvents() {
   for(const button of document.querySelectorAll('[data-home-open]')){
@@ -2048,6 +2048,10 @@ function bindEvents() {
   $('#jump-btn').addEventListener('pointerdown',e=>{e.preventDefault();requestJump();canvas.focus({preventScroll:true});});
   $('#jump-btn').addEventListener('click',e=>{if(e.detail===0)requestJump();});
   for(const button of document.querySelectorAll('[data-open-rackets]'))button.addEventListener('click',()=>racketGallery.open());
+  $('#showroom-framing').onclick=()=>{
+    const full=state.inspectDistance<2;state.inspectDistance=full?3.2:.83;
+    $('#showroom-framing').textContent=full?'看正脸':'看全身';
+  };
   $('#showroom-btn').addEventListener('click',showPlayer);$('#showroom-close').addEventListener('click',exitGame);
   $('#photo-btn').addEventListener('click',()=>{presentation.render(scene,camera);const link=document.createElement('a');link.download='feather-court-5-photo.jpg';link.href=canvas.toDataURL('image/jpeg',.94);link.click();});
   for(const pose of ['idle','run','swing'])$('#pose-'+pose).addEventListener('click',()=>{state.inspectPose=pose;state.inspectTime=0;for(const name of ['idle','run','swing'])$('#pose-'+name).classList.toggle('active',name===pose);});

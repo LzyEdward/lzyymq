@@ -1,6 +1,7 @@
 import * as source from './assets/athlete-data.mjs';
 import {boundedAsset,decodeAssetBuffer} from './asset-loading.mjs';
-import {handPaths,supportFingerPaths} from './hand-pose.mjs';
+import {gripRig} from './grip-rig.mjs';
+import {supportFingerPaths} from './hand-pose.mjs';
 import {ARM_WRIST,ARM_ELBOW} from './first-person-arm.mjs';
 import {handUV} from './hand-surface.mjs';
 let armGeometry=null;
@@ -32,26 +33,15 @@ export async function preparePlayerArm(T,{safe=false,onWarning=()=>{}}={}){
 export function createSkinnedPlayerArm(T,{skin,fabric,open=false}={}){
  if(!armGeometry)return null;
  const V=(...p)=>new T.Vector3(...p),bind=new Map(source.bones.map(b=>[b.name,V(...b.position)]));
- const wrist=bind.get('wrist.R'),elbow=bind.get('lowerarm01.R'),shoulder=bind.get('upperarm01.R'),middle=bind.get('finger3-1.R');
- const across=bind.get('finger2-1.R').clone().sub(bind.get('finger5-1.R')).normalize(),targetWrist=V(...ARM_WRIST),targetElbow=V(...ARM_ELBOW);
- function frame(a,b,width){const long=b.clone().sub(a).normalize(),cross=width.clone().addScaledVector(long,-width.dot(long));if(cross.lengthSq()<1e-8)cross.set(0,0,1).addScaledVector(long,-long.z);cross.normalize();return new T.Matrix4().makeBasis(long,cross,long.clone().cross(cross).normalize());}
- function map(a,b,c,d,width=.9,depth=.9,targetAcross=V(0,1,0)){
-  const matrix=frame(c,d,targetAcross).multiply(new T.Matrix4().makeScale(c.distanceTo(d)/a.distanceTo(b),width,depth)).multiply(frame(a,b,across).invert());matrix.setPosition(c.clone().sub(a.clone().applyMatrix4(matrix)));return matrix;
- }
- const constant=new Map();constant.set('wrist.R',map(wrist,middle,targetWrist,V(.039,.092,-.014)));
- const lower=map(elbow,wrist,targetElbow,targetWrist,.87,.87),paths=handPaths(open);
- for(let f=1;f<=5;f++)for(let k=1;k<=3;k++){
-  const name=`finger${f}-${k}.R`,a=bind.get(name),b=k<3?bind.get(`finger${f}-${k+1}.R`):a.clone().add(a.clone().sub(bind.get(`finger${f}-${k-1}.R`)).multiplyScalar(.73)),path=paths[f===1?4:f-2];constant.set(name,map(a,b,V(...path[k-1]),V(...path[k]),.96,.96));
- }
+ const wrist=bind.get('wrist.R'),elbow=bind.get('lowerarm01.R'),shoulder=bind.get('upperarm01.R');
+ const targetWrist=V(...ARM_WRIST),targetElbow=V(...ARM_ELBOW);
+ const {across,matrices:constant,segment:map,poseFingers}=gripRig(T,bind,open);
+ const lower=map(elbow,wrist,targetElbow,targetWrist,.87,.87);
  const pinchMatrices=new Map([...constant].map(([key,matrix])=>[key,matrix.clone()]));let lastRelaxation=0;
  function relaxFingers(amount=0){
   if(!open)return;
   amount=Math.max(0,Math.min(1,Number.isFinite(amount)?amount:0));if(Math.abs(amount-lastRelaxation)<1e-5)return;
-  lastRelaxation=amount;const paths=supportFingerPaths(amount);
-  for(let f=1;f<=5;f++)for(let k=1;k<=3;k++){
-   const name=`finger${f}-${k}.R`,a=bind.get(name),b=k<3?bind.get(`finger${f}-${k+1}.R`):a.clone().add(a.clone().sub(bind.get(`finger${f}-${k-1}.R`)).multiplyScalar(.73)),path=paths[f===1?4:f-2];
-   constant.set(name,map(a,b,V(...path[k-1]),V(...path[k]),.96,.96));
-  }
+  lastRelaxation=amount;poseFingers(supportFingerPaths(amount));
  }
  function poseNails(details){
   if(!open)return;

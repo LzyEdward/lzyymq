@@ -5,9 +5,11 @@ import {createCourtShoe} from './court-shoe.mjs';
 import {necklineDistances} from './garment-surfaces.mjs';
 import {shortHairProfile,HAIRLINE_GLSL} from './hair-surface.mjs';
 import {createPortraitHead,createPortraitNeck} from './portrait-head.mjs';
+import {gripRig,fitCourtGrip,smoothCourtHands} from './grip-rig.mjs';
+import {schoolPolo,schoolTrousers,extendTrackPants} from './school-uniform.mjs';
 
 // A continuous CC0 anatomical mesh, 48-bone skin, and two-bone limb IK.
-export function createAthlete(THREE, createRacket,{skinMap=null,mergeGeometries=null,portraitMap=null}={}) {
+export function createAthlete(THREE, createRacket,{skinMap=null,mergeGeometries=null,portraitMap=null,uniformMap=null}={}) {
  const root=new THREE.Group(),body=new THREE.Group();root.name='Athlete · anatomical skin · 1.81m';root.add(body);
  const vec=(...v)=>new THREE.Vector3(...v),clamp=THREE.MathUtils.clamp,bones={},bind={};
  for(const spec of data.bones){const bone=new THREE.Bone();bone.name=spec.name;bones[spec.name]=bone;bind[spec.name]=vec(...spec.position);}
@@ -96,10 +98,15 @@ export function createAthlete(THREE, createRacket,{skinMap=null,mergeGeometries=
   skinIndices=[];
   for(let i=0;i<data.indices0.length;i+=3){
    const triangle=data.indices0.slice(i,i+3);
-   if(triangle.some(id=>data.positions[id*3+1]<1.48))skinIndices.push(...triangle);
+   if(triangle.some(id=>data.positions[id*3+1]<1.48)&&(!uniformMap||triangle.some(id=>data.positions[id*3+1]>.68)))skinIndices.push(...triangle);
   }
  }
- const torso=skinMesh(data.indices1,jersey),anatomySkin=skinMesh(skinIndices,skin);skinMesh(data.indices2,shorts);skinMesh(data.indices3,sock);
+ const torso=skinMesh(data.indices1,uniformMap?schoolPolo(THREE,uniformMap,weave):jersey),anatomySkin=skinMesh(skinIndices,skin);
+ const bottoms=skinMesh(data.indices2,uniformMap?schoolTrousers(THREE,weave):shorts);
+ if(uniformMap){
+  bottoms.geometry.userData.joints=Object.fromEntries(data.bones.map((bone,i)=>[bone.name,i]));
+  extendTrackPants(THREE,bottoms.geometry);
+ }else skinMesh(data.indices3,sock);
  torso.geometry.setAttribute('necklineDistance',new THREE.Float32BufferAttribute(necklineDistances(data.positions,data.indices1).distances,1));
  // Cloth bridges the small anatomical hollows instead of painting a shirt
  // directly on the chest. Keep shoulder and sleeve seams in the original rig.
@@ -114,6 +121,12 @@ export function createAthlete(THREE, createRacket,{skinMap=null,mergeGeometries=
   cloth.setZ(i,z+(envelope-z)*middle+folds*middle*(z>0?1:-1));
   const skirt=(1-THREE.MathUtils.smoothstep(y,.985,1.08))*THREE.MathUtils.smoothstep(.23-Math.abs(x),0,.055);
   cloth.setY(i,y-skirt*.019);
+  if(uniformMap&&y<1.32){
+   const ease=1-THREE.MathUtils.smoothstep(y,1.10,1.32);
+   cloth.setX(i,x*(1+.085*ease));
+   cloth.setZ(i,cloth.getZ(i)*(1+.14*ease));
+   cloth.setY(i,cloth.getY(i)-.025*ease);
+  }
  }
  // Average normals across coincident UV vertices. Recomputing each UV island
  // separately produced a comb-like rim along the neckline under grazing light.
@@ -224,12 +237,31 @@ export function createAthlete(THREE, createRacket,{skinMap=null,mergeGeometries=
  for(const suffix of ['L','R']){
   const foot=bones['foot.'+suffix],g=createCourtShoe(THREE,{upper:new THREE.MeshPhysicalMaterial({color:'#e7ebe4',roughness:.84,bumpMap:weave,bumpScale:.00042}),sole:new THREE.MeshStandardMaterial({color:'#c6bda2',roughness:.9}),trim,lace:sock,mergeGeometries});foot.add(g);shoes.push(g);
  }
- for(const side of ['L','R']){const cuff=add(new THREE.CylinderGeometry(.031,.031,.045,20),sock,bones['wrist.'+side]);cuff.rotation.z=side==='L'?.65:-.65;cuff.position.set(0,.008,-.006);}
+ const bandColors=[new THREE.Color('#a1c5bd'),new THREE.Color('#a1c5bd')];
+ const bandStrength={value:new THREE.Vector2(1,1)};
+ skin.onBeforeCompile=shader=>{
+  shader.uniforms.bandLeft={value:bandColors[0]};shader.uniforms.bandRight={value:bandColors[1]};shader.uniforms.bandStrength=bandStrength;
+  shader.vertexShader=shader.vertexShader.replace('#include <common>','#include <common>\nvarying vec3 vSkinRest;')
+   .replace('#include <begin_vertex>','#include <begin_vertex>\nvSkinRest=position;');
+  shader.fragmentShader=shader.fragmentShader.replace('#include <common>','#include <common>\nvarying vec3 vSkinRest;\nuniform vec3 bandLeft,bandRight; uniform vec2 bandStrength;')
+   .replace('#include <color_fragment>',`#include <color_fragment>
+    vec3 arm=vec3(abs(vSkinRest.x)-.509,vSkinRest.y-1.0983,vSkinRest.z-.2044);
+    float axial=dot(arm,normalize(vec3(-.139,.131,-.196)));
+    float band=(1.-smoothstep(.014,.015,abs(axial-.045)))*(1.-smoothstep(.072,.08,length(arm)));
+    float thread=1.-smoothstep(.15,.85,abs(sin(axial*2900.)));
+    float sheen=.93+.045*thread*(1.-smoothstep(.0003,.0015,fwidth(axial)));
+    diffuseColor.rgb=mix(diffuseColor.rgb,(vSkinRest.x>0.?bandLeft:bandRight)*sheen,band*(vSkinRest.x>0.?bandStrength.x:bandStrength.y));`);
+ };
+ const setWristband=(side,visible,color)=>{bandColors[side].set(color);bandStrength.value.setComponent(side,visible?1:0);};
  const gripFrames={};
  for(const suffix of ['L','R']){const across=bind['finger2-1.'+suffix].clone().sub(bind['finger5-1.'+suffix]).normalize(),long=bind['finger3-1.'+suffix].clone().sub(bind['wrist.'+suffix]);long.addScaledVector(across,-long.dot(across)).normalize();const normal=long.clone().cross(across).normalize();gripFrames[suffix]={across,long,normal,orientation:new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().makeBasis(long,across,normal))};}
  const racket=createRacket();
- const gripCenter=bind['finger2-1.R'].clone().add(bind['finger5-1.R']).multiplyScalar(.5).sub(bind['wrist.R']).addScaledVector(gripFrames.R.normal,-.021);
- racket.position.copy(gripCenter).addScaledVector(gripFrames.R.across,-.085);bones['wrist.R'].add(racket);
+ const bindMap=new Map(Object.entries(bind)),boneNames=data.bones.map(b=>b.name);
+ const gripPose=gripRig(THREE,bindMap);
+ fitCourtGrip(THREE,anatomySkin.geometry,boneNames,bindMap,gripPose);
+ smoothCourtHands(THREE,anatomySkin.geometry,boneNames);
+ racket.position.copy(gripPose.offset);racket.quaternion.copy(gripPose.toBind);bones['wrist.R'].add(racket);
+ const gripInverse=gripPose.toBind.clone().invert();
  const shadowCanvas=document.createElement('canvas');shadowCanvas.width=shadowCanvas.height=64;const sc=shadowCanvas.getContext('2d');
  if(sc.createRadialGradient){const gradient=sc.createRadialGradient(32,32,1,32,32,32);gradient.addColorStop(0,'#0009');gradient.addColorStop(1,'#0000');sc.fillStyle=gradient;sc.fillRect(0,0,64,64);}
  const shadowMap=new THREE.CanvasTexture(shadowCanvas),shadow=add(new THREE.PlaneGeometry(.95,.75),new THREE.MeshBasicMaterial({map:shadowMap,transparent:true,opacity:.4,depthWrite:false}),root);shadow.rotation.x=-Math.PI/2;shadow.position.y=.009;shadow.castShadow=false;
@@ -246,7 +278,7 @@ export function createAthlete(THREE, createRacket,{skinMap=null,mergeGeometries=
  }
  let stride=0,ready=0,carriedX=0,carriedZ=0;const footPlants=[new FootPlant(),new FootPlant()];
  const smooth=(t,lo,hi)=>{const u=clamp((t-lo)/(hi-lo),0,1);return u*u*(3-2*u);};
- function update({speed=0,dt=1/60,time=0,swing=0,lateral=0,forward=0,shot='clear',anticipation=0,lookY=1.5,lookX=0,grip=1,split=0,crossover=false,contact=null,lunge=0,netVariant='',supportContact=null,jumpHeight=0,landing=0,impactOnly=false}={}){
+ function update({speed=0,dt=1/60,time=0,swing=0,lateral=0,forward=0,shot='clear',anticipation=0,lookY=1.5,lookX=0,split=0,crossover=false,contact=null,lunge=0,netVariant='',supportContact=null,jumpHeight=0,landing=0,impactOnly=false}={}){
   // The callers supply court-space velocity. Lean, crossover and feet
   // must all use the same body frame, including when facing the far baseline.
   const velocity=vec(lateral,0,forward);
@@ -348,21 +380,34 @@ export function createAthlete(THREE, createRacket,{skinMap=null,mergeGeometries=
    racketY.normalize().lerp(aim.normalize(),impact*(.45+.55*extension));
   }
   racketY.normalize();const handX=vec(-1,0,.2);handX.addScaledVector(racketY,-handX.dot(racketY)).normalize();
-  const handZ=handX.clone().cross(racketY).normalize(),worldWrist=new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().makeBasis(handX,racketY,handZ)).multiply(gripFrames.R.orientation.clone().invert());
+  handX.negate();const handZ=handX.clone().cross(racketY).normalize();
+  const worldWrist=new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().makeBasis(handX,racketY,handZ));
   if(netWristRoll)worldWrist.multiply(new THREE.Quaternion().setFromAxisAngle(vec(0,1,0),netWristRoll));
+  worldWrist.multiply(gripInverse);
   if(contact&&swing>0){
    const headOffset=racket.position.clone().applyQuaternion(worldWrist).addScaledVector(racketY,.51);
    const goal=vec(...contact).sub(headOffset),weight=clamp(1-Math.abs(swing-.135)/.135,0,1);
    hand.lerp(goal,weight*weight*(3-2*weight));pole.lerp(vec(clamp(hand.x*1.15-.23,-.69,.30),netStroke?.76:1.25,netStroke?.05:-.12),weight);
   }
   limb('upperarm01.R',hand,pole);
+  // Roll the grip along the forearm through preparation and recovery. During
+  // the contact solve, keep the already fitted sweet spot on the shuttle.
+  const armEnd=root.worldToLocal(bones['wrist.R'].getWorldPosition(vec()));
+  const elbowPoint=root.worldToLocal(bones['lowerarm01.R'].getWorldPosition(vec()));
+  const along=armEnd.sub(elbowPoint).normalize();
+  along.addScaledVector(racketY,-along.dot(racketY));
+  const palm=bind['finger3-1.R'].clone().sub(bind['wrist.R']).applyQuaternion(worldWrist);
+  palm.addScaledVector(racketY,-palm.dot(racketY)).normalize();
+  const twist=Math.atan2(racketY.dot(palm.clone().cross(along)),palm.dot(along));
+  const roll=twist*smooth(along.length(),.05,.24)*(1-impact);
+  worldWrist.premultiply(new THREE.Quaternion().setFromAxisAngle(racketY,roll));
   if(!impactOnly)limb('upperarm01.L',vec(.23+stroke*.15-motion*run*.105+drive*.19,1.07+ready*.19+coil*.41+stroke*.12-drive*.17,.16+coil*.31-drive*.25+Math.cos(stride)*run*.045-lunge*.28),vec(.38,.8,.04));
   root.getWorldQuaternion(parentQ);worldWrist.premultiply(parentQ);bones['wrist.R'].parent.getWorldQuaternion(parentQ);bones['wrist.R'].quaternion.copy(parentQ.invert().multiply(worldWrist));bones['wrist.L'].rotation.set(-.1,0,.12);
   if(supportContact){const held=vec(...supportContact);held.x+=.015;held.y-=.09;limb('upperarm01.L',held,vec(.5,.7,.2));}
-  bones['wrist.R'].updateWorldMatrix(true,false);const orientation=new THREE.Quaternion().setFromUnitVectors(vec(0,1,0),racketY);root.getWorldQuaternion(parentQ);orientation.premultiply(parentQ);bones['wrist.R'].getWorldQuaternion(parentQ);racket.quaternion.copy(parentQ.invert().multiply(orientation));
+  bones['wrist.R'].updateWorldMatrix(true,false);
   if(impactOnly)return;
-  for(const suffix of ['L','R']){
-   const amount=suffix==='R'?grip:.30,sign=suffix==='R'?1:-1,frame=gripFrames[suffix];
+  {
+   const suffix='L',amount=supportContact ? .33 : .20,sign=-1,frame=gripFrames.L;
    for(let f=2;f<=5;f++)for(let part=1;part<=3;part++)bones['finger'+f+'-'+part+'.'+suffix].quaternion.setFromAxisAngle(frame.across,sign*amount*(part===1?1.04:part===2?1.22:.86));
    // Oppose the thumb against the index finger instead of pointing it upward.
    const thumb1=bones['finger1-1.'+suffix],thumb2=bones['finger1-2.'+suffix],thumb3=bones['finger1-3.'+suffix];
@@ -397,6 +442,6 @@ export function createAthlete(THREE, createRacket,{skinMap=null,mergeGeometries=
   root.userData.kit=kit.key;
  }
  setKit();
- update();return {root,body,torso,head,legs:[bones['upperleg01.L'],bones['upperleg01.R']],knees:[bones['lowerleg01.L'],bones['lowerleg01.R']],arms:[bones['upperarm01.L'],bones['upperarm01.R']],elbows:[bones['lowerarm01.L'],bones['lowerarm01.R']],wrists:[bones['wrist.L'],bones['wrist.R']],skeleton,meshes,bones,bind,shoes,racket,update,setKit,resetFeet:()=>{footPlants.forEach(foot=>foot.reset());ready=0;carriedX=0;carriedZ=0;}};
+ update();return {root,body,torso,head,legs:[bones['upperleg01.L'],bones['upperleg01.R']],knees:[bones['lowerleg01.L'],bones['lowerleg01.R']],arms:[bones['upperarm01.L'],bones['upperarm01.R']],elbows:[bones['lowerarm01.L'],bones['lowerarm01.R']],wrists:[bones['wrist.L'],bones['wrist.R']],skeleton,meshes,bones,bind,shoes,racket,update,setKit,setWristband,resetFeet:()=>{footPlants.forEach(foot=>foot.reset());ready=0;carriedX=0;carriedZ=0;}};
 }
 

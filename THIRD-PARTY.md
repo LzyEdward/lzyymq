@@ -1,5 +1,9 @@
 # Third-party assets
 
+## Shenzhen summer school uniform
+
+The boys’ polo texture in `assets/textures/shenzhen-polo.webp` uses a rectified crop of the white collar, buttons and green chest embroidery from the [Shenzhen blue summer uniform shop photograph by Monsai Coralmei 2A822](https://commons.wikimedia.org/wiki/File:SZ_Shenzhen_shop_blue_uniform_summer_clothing_July_2025_R12S_01.jpg), released under [CC0](https://creativecommons.org/publicdomain/zero/1.0/). The dark long trousers and side stripes are modeled after the [school sportswear photograph by Sparktour](https://commons.wikimedia.org/wiki/File:Shenzhen_Middle_Schools_Summer_Uniform_201709.jpg).
+
 All gameplay, animation solvers, user interface, procedural equipment and hall
 geometry are supplied as local source. No third-party service is needed to play.
 

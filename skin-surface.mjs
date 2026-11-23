@@ -20,7 +20,7 @@ export function refineSkin(THREE, geometry, levels=2) {
   for(const edge of edges.values())if(edge.opposite.length===1){boundary[edge.a].add(edge.b);boundary[edge.b].add(edge.a);}
   const next=points.map((v,i)=>{
    const adjacent=neighbors[i],rim=[...boundary[i]],p=v.p.clone();
-   if(rim.length===2)p.multiplyScalar(.75).addScaledVector(points[rim[0]].p,.125).addScaledVector(points[rim[1]].p,.125);
+   if(rim.length===2&&!geometry.userData.pinBoundary)p.multiplyScalar(.75).addScaledVector(points[rim[0]].p,.125).addScaledVector(points[rim[1]].p,.125);
    else if(rim.length===0&&adjacent.size){const n=adjacent.size,beta=n===3?3/16:3/(8*n);p.multiplyScalar(1-n*beta);for(const k of adjacent)p.addScaledVector(points[k].p,beta);}
    return {...v,p};
   });

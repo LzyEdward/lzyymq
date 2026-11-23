@@ -14,6 +14,8 @@ await mkdir(path.join(out, 'vendor', 'three', 'build'), { recursive: true });
 await mkdir(path.join(out, 'vendor', 'three', 'addons', 'utils'), { recursive: true });
 for (const file of ['index.html', 'style.css', 'favicon.svg', 'physics.mjs', 'controls.mjs', 'gameplay.mjs', 'player-styles.mjs', 'athlete.mjs', 'server.mjs', 'README.md', 'UPDATE-2.0.md', 'UPDATE-3.0.md', 'UPDATE-4.0.md', 'UPDATE-5.0.md', 'UPDATE-5.4.md', 'UPDATE-5.5.md', 'UPDATE-5.6.md', 'UPDATE-5.7.md', 'UPDATE-5.8.md', 'UPDATE-5.9.md', 'UPDATE-5.10.md', 'UPDATE-6.0.md', 'UPDATE-6.1.md', 'UPDATE-6.3.md', 'competition.mjs', 'tournament.mjs', 'tracking.mjs', 'interaction.mjs', 'interaction.css', 'aiming.mjs', 'aiming.css', 'eagle-eye.mjs', 'eagle-eye.css', 'home.css', 'technique-panel.mjs', 'technique.css', 'UPDATE-6.5.md', 'UPDATE-6.6.md', 'UPDATE-6.7.md', 'UPDATE-6.4.1.md', 'UPDATE-6.4.md', 'opponent-ai.mjs', 'UPDATE-5.2.md', 'UPDATE-5.3.md', 'LEVELS.md', 'UPDATE-5.1.md', 'THIRD-PARTY.md', '启动游戏.bat']) await cp(path.join(root, file), path.join(out, file));
 await cp(path.join(root,'athlete-real.mjs'),path.join(out,'athlete-real.mjs'));
+await cp(path.join(root,'grip-rig.mjs'),path.join(out,'grip-rig.mjs'));
+await cp(path.join(root,'school-uniform.mjs'),path.join(out,'school-uniform.mjs'));
 await cp(path.join(root,'portrait-head.mjs'),path.join(out,'portrait-head.mjs'));
 await cp(path.join(root,'court-shoe.mjs'),path.join(out,'court-shoe.mjs'));
 await cp(path.join(root,'garment-surfaces.mjs'),path.join(out,'garment-surfaces.mjs'));

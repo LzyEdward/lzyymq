@@ -22,7 +22,7 @@ export function createViewmodel(THREE,createRacket,{skinMap=null,articulated=fal
  root.userData.racketModel=racket;root.userData.head=V(0,.4896,0);
  root.userData.gripReport={handleAxis:[0,.075,0],minimumSkinRadius:.0133,closedSurface:true,fingers:5,method:hand.mesh.geometry.userData.anatomical?'posed anatomical topology':'lightweight continuous fallback'};
  root.userData.armMeshes=[hand.mesh];
- const fabric=new THREE.MeshPhysicalMaterial({color:'#dce3df',roughness:.9,sheen:.5});
+ const fabric=new THREE.MeshPhysicalMaterial({color:'#3859a5',roughness:.9,sheen:.22});
  root.userData.fabric=fabric;
  function sleeve(parent){
   const cuff=new THREE.Mesh(new THREE.CylinderGeometry(.043,.047,.17,40,12,true),fabric);

@@ -3,6 +3,27 @@ import assert from 'node:assert/strict';
 import * as THREE from 'three';
 import {createAthlete} from '../athlete.mjs';
 
+test('school uniform reaches both ankles and the player grip follows the forearm through recovery',()=>{
+ const previous=globalThis.document;
+ globalThis.document={createElement:()=>({getContext:()=>({fillRect(){}})})};
+ try{
+  const model=createAthlete(THREE,()=>new THREE.Group(),{portraitMap:new THREE.Texture(),uniformMap:new THREE.Texture()});
+  const trousers=model.meshes[2].geometry,position=trousers.attributes.position;
+  for(const side of [-1,1]){
+   const hem=Array.from(trousers.index.array).filter(i=>position.getY(i)<.112&&side*position.getX(i)>0);
+   assert.ok(hem.length>30);
+   assert.ok(hem.every(i=>trousers.attributes.skinWeight.getY(i)>.99));
+  }
+  for(const swing of [0,.135,.25]){
+   model.update({swing,shot:'smash'});model.root.updateMatrixWorld(true);
+   const wrist=model.bones['wrist.R'].getWorldPosition(new THREE.Vector3());
+   const elbow=model.bones['lowerarm01.R'].getWorldPosition(new THREE.Vector3());
+   const knuckle=model.racket.localToWorld(new THREE.Vector3(.028,.090,-.014));
+   assert.ok(knuckle.sub(wrist).angleTo(wrist.sub(elbow))<Math.PI*.42,'the wrist must not fold back towards the elbow');
+  }
+ }finally{globalThis.document=previous;}
+});
+
 test('photo face and headset follow the player head during a swing, with a skinned neckline',()=>{
  const previous=globalThis.document;
  globalThis.document={createElement:()=>({getContext:()=>({fillRect(){}})})};
