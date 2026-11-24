@@ -46,3 +46,10 @@ geometry are supplied as local source. No third-party service is needed to play.
 - Dark Navy photo reference: https://badmintonworldbalcatta.com/products/astrox-100zz-dark-navy-4ug5
 - The racket is a game-specific procedural approximation; product photographs are not bundled. Yonex names and marks belong to their respective owner. This is not an official Yonex game.
 - From version 7.1, the default first-person hands use a separately posed, refined and elbow-capped portion of the same CC0 anatomical topology. Reproducible conversion: `tools/compile-hand-anatomy.mjs`. The wrist and palm remain continuous. The low-load startup fallback is an independent procedural closed sculpt.
+
+## Crowd, arena and lineup assets in 7.47
+
+- The two applause excerpts are trimmed, normalized and faded from *Applause* by LeeZH. [Recording](https://opengameart.org/content/applause) · [CC BY 3.0](https://creativecommons.org/licenses/by/3.0/).
+- Ambient stands, rally, win and championship cues are edited excerpts of *Free Crowd Cheering Sounds* by Gregor Quendel, tracks 01, 03, 04, 05, 06 and 10. Trimmed, normalized, faded and encoded as MP3. [Recordings](https://opengameart.org/content/free-crowd-cheering-sounds) · [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).
+- The spectator face profile samples the CC0 MakeHuman base mesh. Lineup portraits are rendered in game kit from the game's athlete models. [Base mesh](https://github.com/makehumancommunity/makehuman/blob/master/makehuman/data/3dobjs/base.obj).
+- The stands use a reduced, desaturated diffuse map from Poly Haven's *Concrete Block Wall*. [Material](https://polyhaven.com/a/concrete_block_wall) · [CC0](https://polyhaven.com/license).

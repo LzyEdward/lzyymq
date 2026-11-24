@@ -299,11 +299,13 @@ export function createAthlete(THREE, createRacket,{skinMap=null,mergeGeometries=
   const racketPower=shot==='smash'?1:shot==='slicesmash'?.82:shot==='clear'?.26:.48;
   body.position.y=-.055-Math.abs(motion)*.022*run+Math.sin(time*2.2)*.002-ready*.035-splitLoad*.052-lunge*.145-landing*.064;
   body.position.y+=.048*celebration;
+  const waiting=(1-smooth(speed,0,.85))*(1-air)*(1-landing)*(1-celebration)*(1-fist)*(1-lunge)*(1-splitLoad)*(1-overheadReady);
+  const readySway=swing===0&&!supportContact?Math.sin(time*2.1+stride)*waiting:0;
   const weightShift=run*Math.sin(stride),breath=Math.sin(time*2.65)*(1-run*.65);
   const impact=contact&&swing>0?1-smooth(Math.abs(swing-.135),.012,.135):0;
   const dip=impact*clamp((1.29-(contact?.[1]??1.29))*.54,0,.46);
   const reachSide=impact*clamp((contact?.[0]??0)+.15,-.95,.95);
-  body.position.x=.034*weightShift+reachSide*.11+loadX*.22;body.position.y-=dip;
+  body.position.x=.018*readySway+.034*weightShift+reachSide*.11+loadX*.22;body.position.y-=dip;
   body.position.z=impact*clamp((contact?.[2]??0)*.16,-.07,.15);
   bones.root.rotation.y=weightShift*.095+clamp(lateral*.035,-.19,.19)*run+hips*(overhead?.16:.075);
   bones.root.rotation.z=-weightShift*.04-reachSide*.07-loadX*.40;
@@ -317,6 +319,8 @@ export function createAthlete(THREE, createRacket,{skinMap=null,mergeGeometries=
   bones.spine03.rotation.y=weightShift*-.092+(overhead?power*(-coil*.15+drive*.19):impact*.105);
   bones.spine03.rotation.z=clamp(-lateral*.018,-.10,.10)-loadX*.55-reachSide*.17+weightShift*.035;
   bones.spine01.rotation.x+=breath*.014+dip*.16;
+  bones.spine03.rotation.z-=readySway*.018;
+  bones.spine01.rotation.y+=readySway*.033;
   bones.spine03.rotation.y-=overheadTurn*.32+overheadReady*.12;
   head.rotation.x=clamp((1.55-lookY)*.20,-.58,.32);head.rotation.y=clamp(lookX*.11,-.36,.36);root.updateWorldMatrix(true,true);
   const blinkPhase=(time+1.7)%4.6,blink=blinkPhase<.15?Math.sin(blinkPhase/.15*Math.PI):0;

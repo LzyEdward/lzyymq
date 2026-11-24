@@ -99,6 +99,21 @@ export const MATCH_OBJECTIVES=Object.freeze([
  {key:'variety',name:'球路万花筒',description:'一场里用 4 种不同球路得分',goal:4},
 ]);
 
+const strokeNames={clear:'高远球',smash:'杀球',slicesmash:'劈杀',netkill:'网前扑杀',drop:'吊球',slicedrop:'劈吊',netcross:'勾对角',net:'网前搓球',push:'推后场',drive:'平抽',lift:'挑球'};
+export function matchHighlight(points){
+ let best=null,weight=-1;
+ for(const p of points){
+  if(!p.scoreBefore)continue;
+  const critical=Math.max(...p.scoreBefore)>=(p.goal||11)-2&&Math.abs(p.scoreBefore[0]-p.scoreBefore[1])<=1;
+  const value=(p.playerWon?80:0)+(p.construction?45:0)+(strokeNames[p.method]?20:0)+(critical?26:0)+Math.min(17,p.rallyLength||0);
+  if(value>=weight){best=p;weight=value;}
+ }
+ if(!best)return '';
+ const [a,b]=best.scoreBefore,when=a===b?a+' 平时':a+' 比 '+b+' 时';
+ if(!best.playerWon)return when+(best.rallyLength>1?'，你与对手周旋到第 '+best.rallyLength+' 拍。':'，对手拿下这一分。');
+ const action=best.construction==='shortAttack'?'逼出短球，随后'+(strokeNames[best.method]||'抢攻')+'得分':best.construction==='backhandChange'?'压住反手后变线得分':best.forced?'用'+(strokeNames[best.shot]||'落点')+'逼出回球失误':strokeNames[best.method]?'用'+strokeNames[best.method]+'拿下这一分':'拿下这一分';
+ return when+'，你'+action+'。';
+}
 export class MatchTactics {
  constructor(){this.reset();}
  reset(){this.points=[];this.methods={};this.counts={nonSmash:0,combination:0,variety:0};this.rally=[];this.lastResult=null;}

@@ -28,7 +28,7 @@ export function matchFinished(score,points=11){
 export function rankName(rating){
  return rating<900?'青铜':rating<1100?'白银':rating<1300?'黄金':rating<1500?'铂金':rating<1700?'钻石':rating<1900?'大师':'传奇';
 }
-export function freshCareer(){return {rating:1000,played:0,wins:0,streak:0,bestStreak:0,history:[],trophies:{}};}
+export function freshCareer(){return {rating:1000,played:0,wins:0,streak:0,bestStreak:0,history:[],trophies:{},rivals:{},bestRounds:{}};}
 export function parseCareer(raw){
  try{
   const p=typeof raw==='string'?JSON.parse(raw):raw;
@@ -36,14 +36,31 @@ export function parseCareer(raw){
   const integer=(v,max=1000000)=>Number.isFinite(v)?clamp(Math.floor(v),0,max):0;
   const played=integer(p.played),wins=Math.min(played,integer(p.wins));
   const trophies=Object.fromEntries(Object.entries(p.trophies&&typeof p.trophies==='object'?p.trophies:{}).filter(([id,n])=>typeof id==='string'&&Number.isFinite(n)).map(([id,n])=>[id,integer(n,999)]));
-  return {rating:clamp(Math.round(p.rating),100,3000),played,wins,streak:Math.min(wins,integer(p.streak)),bestStreak:Math.min(wins,integer(p.bestStreak)),history:Array.isArray(p.history)?p.history.filter(h=>typeof h.id==='string'&&Array.isArray(h.score)&&h.score.length===2&&h.score.every(n=>Number.isInteger(n)&&n>=0&&n<=30)&&Number.isFinite(h.delta)&&Number.isFinite(h.rating)&&OPPONENT_LEVELS[h.level]).slice(0,8):[],trophies};
+  const rivals={},bestRounds={};
+  for(const [id,r] of Object.entries(p.rivals||{})){
+   if(!/^[a-z][a-zA-Z0-9]{0,35}$/.test(id)||!r||!Number.isFinite(r.wins)||!Number.isFinite(r.losses))continue;
+   const rival={wins:integer(r.wins),losses:integer(r.losses),lastWon:Boolean(r.lastWon)};
+   const first=r.firstWin;
+   if(rival.wins&&first&&Number.isInteger(first.match)&&first.match>0&&first.match<=played&&Array.isArray(first.score)&&first.score.length===2&&first.score.every(n=>Number.isInteger(n)&&n>=0&&n<=30)&&first.score[0]>first.score[1])rival.firstWin={match:first.match,score:[...first.score]};
+   rivals[id]=rival;
+  }
+  for(const [id,r] of Object.entries(p.bestRounds||{}))if(/^[a-z][a-zA-Z0-9]{0,35}$/.test(id)&&Number.isInteger(r))bestRounds[id]=clamp(r,0,5);
+  return {rivals,bestRounds,rating:clamp(Math.round(p.rating),100,3000),played,wins,streak:Math.min(wins,integer(p.streak)),bestStreak:Math.min(wins,integer(p.bestStreak)),history:Array.isArray(p.history)?p.history.filter(h=>typeof h.id==='string'&&Array.isArray(h.score)&&h.score.length===2&&h.score.every(n=>Number.isInteger(n)&&n>=0&&n<=30)&&Number.isFinite(h.delta)&&Number.isFinite(h.rating)&&OPPONENT_LEVELS[h.level]).slice(0,8):[],trophies};
  }catch{return freshCareer();}
 }
 // Local-only Elo. Completed IDs make remounting a result idempotent.
-export function settleMatch(career,{id,level='normal',score,points=11,mode='match',date=''}){
+export function settleMatch(career,{id,level='normal',score,points=11,mode='match',date='',opponentId='',eventId='',round=0,highlight=''}){
  if(mode!=='match'||!id||!matchFinished(score,points)||career.history.some(h=>h.id===id))return {career,delta:0,applied:false};
  const won=score[0]>score[1],expected=1/(1+10**((opponentLevel(level).rating-career.rating)/400));
  const delta=Math.round(32*(Number(won)-expected)),rating=clamp(career.rating+delta,100,3000),streak=won?career.streak+1:0;
- const history=[{id,level,score:[...score],delta:rating-career.rating,rating,date},...career.history].slice(0,8);
- return {career:{rating,played:career.played+1,wins:career.wins+Number(won),streak,bestStreak:Math.max(streak,career.bestStreak),history,trophies:{...(career.trophies||{})}},delta:rating-career.rating,applied:true};
+ const rivals={...career.rivals},bestRounds={...career.bestRounds};
+ if(opponentId){
+  const prior=rivals[opponentId]||{wins:0,losses:0};
+  const record={...prior,wins:prior.wins+Number(won),losses:prior.losses+Number(!won),lastWon:won};
+  if(won&&!prior.wins)record.firstWin={match:career.played+1,score:[...score]};
+  rivals[opponentId]=record;
+ }
+ if(eventId)bestRounds[eventId]=Math.max(bestRounds[eventId]||0,round+Number(won));
+ const history=[{id,level,opponentId,eventId,highlight,score:[...score],delta:rating-career.rating,rating,date},...career.history].slice(0,8);
+ return {career:{rivals,bestRounds,rating,played:career.played+1,wins:career.wins+Number(won),streak,bestStreak:Math.max(streak,career.bestStreak),history,trophies:{...(career.trophies||{})}},delta:rating-career.rating,applied:true};
 }

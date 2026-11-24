@@ -1,3 +1,4 @@
+import {headRings} from './spectator-head.mjs';
 import {arenaSeats} from './arena-layout.mjs';
 
 export function createArenaBowl(T,mergeGeometries){
@@ -42,6 +43,20 @@ export function createArenaBowl(T,mergeGeometries){
   box(46,.48,.22,accent,0,10.5,side*31.6);
   for(let z=-28;z<=28;z+=2.4)box(.18,3.9,.8,trim,side*24.75,17.7,z);
  }
+ // Upper-deck bays and lit vomitories break up the long wall behind the bowl.
+ for(const sign of [-1,1]){
+  for(const x of [-15,-5,5,15]){
+   box(6.6,.22,1.55,trim,x,8.42,sign*30.35);
+   box(6.4,.14,.08,aisleLight,x,8.19,sign*29.70);
+   box(.20,3.10,.85,concrete,x-3.25,9.74,sign*30.42);
+   box(.20,3.10,.85,concrete,x+3.25,9.74,sign*30.42);
+  }
+ }
+ if(typeof document!=='undefined'){
+  const surface=new T.TextureLoader().load(new URL('./assets/textures/concourse-concrete.webp',import.meta.url).href);
+  surface.colorSpace=T.SRGBColorSpace;surface.wrapS=surface.wrapT=T.RepeatWrapping;surface.repeat.set(3,1);
+  concrete.map=surface;concrete.color.set('#777c80');
+ }
  const seats=arenaSeats();
  function localBox(w,h,d,x,y,z,rx=0){const g=new T.BoxGeometry(w,h,d);g.rotateX(rx);g.translate(x,y,z);return g;}
  // Seats have inclined backs, cushions, and a shared mounting bracket.
@@ -58,7 +73,14 @@ export function createArenaBowl(T,mergeGeometries){
  const people=active.concat(quiet);
  // These silhouettes sit 10–35 metres away. Smooth normals and colour carry
  // detail more cheaply than subdividing every distant arm and head.
- const torsos=new T.InstancedMesh(new T.SphereGeometry(1,7,4),cloth,people.length),heads=new T.InstancedMesh(new T.SphereGeometry(1,7,4),skin,people.length),hairs=new T.InstancedMesh(new T.SphereGeometry(1,7,3,0,Math.PI*2,0,Math.PI*.55),hairMat,people.length);
+ const vertices=[],uv=[],indices=[];
+ headRings.forEach((ring,row)=>ring.forEach((point,col)=>{
+  vertices.push(...point);uv.push(col/(ring.length-1),row/(headRings.length-1));
+  if(row&&col){const i=row*ring.length+col;indices.push(i-ring.length-1,i-ring.length,i,i-ring.length-1,i,i-1);}
+ }));
+ const face=new T.BufferGeometry();face.setAttribute('position',new T.Float32BufferAttribute(vertices,3));face.setAttribute('uv',new T.Float32BufferAttribute(uv,2));face.setIndex(indices);face.computeVertexNormals();
+ const jersey=new T.LatheGeometry([[.68,-1],[.86,-.82],[.96,.15],[1,.54],[.86,.71],[.42,.94]].map(([x,y])=>new T.Vector2(x,y)),7);
+ const torsos=new T.InstancedMesh(jersey,cloth,people.length),heads=new T.InstancedMesh(face,skin,people.length),hairs=new T.InstancedMesh(new T.SphereGeometry(1,7,3,0,Math.PI*2,0,Math.PI*.55),hairMat,people.length);
  const limbs=new T.InstancedMesh(new T.CylinderGeometry(1,1,1,4,1,true),skin,people.length*4),legs=new T.InstancedMesh(new T.CylinderGeometry(1,1,1,4,1,true),pants,people.length*4);
  const palms=new T.InstancedMesh(new T.SphereGeometry(1,6,4),skin,people.length*2);
  if(typeof document!=='undefined'){
@@ -82,21 +104,22 @@ export function createArenaBowl(T,mergeGeometries){
   dummy.quaternion.setFromUnitVectors(up,direction.multiplyScalar(1/length)).premultiply(yawQ);
   dummy.scale.set(radius,length,radius);dummy.updateMatrix();mesh.setMatrixAt(index,dummy.matrix);
  }
- function pose(p,i,time,age,power){
-  const delay=p.delay,local=age-delay;
+ function pose(p,i,time,age,power,attention=0,side=0){
+  const local=age-p.delay-(side&&side*p.x<0?.18:0);
   const response=power*smooth(local,0,.35)*(1-smooth(local,1.32,2.05));
   const stand=smooth(response,p.threshold,1),beat=Math.sin(time*p.tempo+i);
-  const idle=Math.sin(time*1.7+i)*.017;
-  const lift=stand*.36,lean=p.lean+idle+stand*.075;
+  const idle=Math.sin(time*(1.1+.13*(i%6))+i)*.022;
+  const build=.90+(i*7%11)*.022,neck=.018*Math.sin(i*1.9),tilt=.04*Math.sin(i+time*.54);
+  const lift=stand*.36,lean=p.lean+idle+stand*.075+attention*(.045+.025*Math.sin(i));
   const hip=.48+lift,shoulder=.89+lift;
-  place(torsos,i,p,[0,.73+lift,.015+lean],[.19,.27,.12],-.08+stand*.09);
-  place(heads,i,p,[idle*.38,1.08+lift,.035+lean],[.097,.125,.095]);
-  place(hairs,i,p,[idle*.38,1.115+lift,.027+lean],[.10,.107,.098]);
+  place(torsos,i,p,[0,.73+lift,.015+lean],[.19*build,.27,.12*build],-.08+stand*.09+p.lean*.2);
+  place(heads,i,p,[idle*.38,1.08+lift+neck,.035+lean],[.097*build,.125,.095],tilt);
+  place(hairs,i,p,[idle*.38,1.118+lift+neck,.021+lean],[.10*build,.095+(i%5)*.007,.095+(i%3)*.008],tilt);
   yawQ.setFromAxisAngle(up,p.yaw);
   for(const side of [-1,1]){
    const n=i*4+(side>0?2:0), sx=side*.157;
    const clap=p.waves&&side>0?0:response;
-   const wave=p.waves&&(i%3===0||side>0)?response:0;
+   const wave=p.waves&&(i%3===0||side>0)?response*smooth(power,.44,.80):0;
    const ex=side*(.205+.09*wave+.026*clap),ey=shoulder-.194+.30*wave+.055*clap;
    const ez=lean+.061+.025*wave+.07*clap;
    const wx=side*(.177+.13*wave+.075*beat*wave-clap*(.13+.04*beat));
@@ -124,10 +147,10 @@ export function createArenaBowl(T,mergeGeometries){
  const moving=[torsos,heads,hairs,limbs,legs,palms];
  let lastTime=-Infinity;
  for(const o of moving)o.instanceMatrix.setUsage(T.DynamicDrawUsage);
- group.userData.updateCrowd=(time,age=-1,power=0)=>{
+ group.userData.updateCrowd=(time,age=-1,power=0,attention=0,side=0)=>{
   if(time>=lastTime&&time-lastTime<1/(age>=0?18:6))return;
   lastTime=time;
-  for(let i=0;i<active.length;i++)pose(people[i],i,time,age,power);
+  for(let i=0;i<active.length;i++)pose(people[i],i,time,age,power,attention,side);
   for(const mesh of moving){
    const attribute=mesh.instanceMatrix;
    attribute.clearUpdateRanges();
@@ -165,6 +188,14 @@ export function createArenaBowl(T,mergeGeometries){
  group.userData.applyVenue=(spec={})=>{
   eventColor.set(spec.accent||'#3c464b');
   accent.color.copy(fasciaColor).lerp(eventColor,.07);
+  // Supporter blocks keep individual shirts and echo the tournament colours.
+  const shirtColor=new T.Color();
+  people.forEach((p,i)=>{
+   if(p.row>10||p.section!=='N'&&p.section!=='S'||Math.abs(p.x)>6||i%4===0)return;
+   shirtColor.set(shirts[(i*17+Math.floor(i/23))%shirts.length]).lerp(eventColor,.34+(i%3)*.12);
+   torsos.setColorAt(i,shirtColor);
+  });
+  torsos.instanceColor.needsUpdate=true;
   group.userData.eventId=spec.id||'';
  };
  return group;

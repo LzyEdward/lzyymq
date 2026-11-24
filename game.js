@@ -1,3 +1,4 @@
+import {createStandAudio} from './stand-audio.mjs';
 import {matchKit} from './match-kit.mjs';
 import * as THREE from './vendor/three/build/three.module.js';
 import { mergeGeometries } from './vendor/three/addons/utils/BufferGeometryUtils.js';
@@ -34,7 +35,7 @@ import { createCourtNet, NET_HALF_WIDTH } from './court-net.mjs';
 import { createTechniquePanel } from './technique-panel.mjs';
 import { OPPONENT_STYLES, effectiveOpponentLevel, playerStatsFromInputs, playerStatsForStyle, normalizeSkills } from './player-styles.mjs';
 import {OPPONENT_CHARACTERS,matchIntent,characterRecovery,resolveCharacter,strokeSoundProfile} from './match-mind.mjs';
-import {OpponentMemory,MatchTactics,MATCH_OBJECTIVES,TACTICAL_LABELS,movementEnergyRate,directionalTarget,contactPressure} from './tactics.mjs';
+import {matchHighlight,OpponentMemory,MatchTactics,MATCH_OBJECTIVES,TACTICAL_LABELS,movementEnergyRate,directionalTarget,contactPressure} from './tactics.mjs';
 import {TOUR_EVENTS,TOUR_STARS,EXHIBITION_ROSTER,FEATURED_STARS,chooseRandomOpponent,event as tourEvent,star as tourStar,freshTour,buildBracket,currentTourMatch,advanceTour,tourStatus} from './tournament.mjs';
 
 const $ = (s) => document.querySelector(s);
@@ -95,7 +96,7 @@ let techniquePanel,racketGallery,galleryReturnScreen;
 
 function openLineReview(automatic = false) {
   if (!lastLineReview || !['play', 'pause'].includes(state.screen) || (state.screen === 'play' && !['point', 'serve', 'opponentServe'].includes(state.phase))) return;
-  reviewReturnScreen = state.screen; state.screen = 'review'; reviewPending = -1;
+  standAudio?.quiet();stopStandCheer();reviewReturnScreen = state.screen; state.screen = 'review'; reviewPending = -1;
   keys.clear(); hitIntent.clear(); pointerDown = false; state.aimAlt = false; touchMove = { x: 0, y: 0 };
   document.exitPointerLock?.();
   eagleEye.open(lastLineReview, automatic);
@@ -236,7 +237,7 @@ function createHall() {
       }
     }
   }
-  const roof = new THREE.MeshStandardMaterial({map:architecture.roof,color:'#697079',roughness:.86,metalness:.06,emissive:'#343940',emissiveIntensity:.06});
+  const roof = new THREE.MeshStandardMaterial({map:architecture.roof,color:'#697079',roughness:.86,metalness:.06,emissive:'#38414a',emissiveIntensity:.32});
   mesh(roofGeometry(THREE),roof);
   const diffuserMaterial=new THREE.MeshStandardMaterial({map:architecture.diffuser,color:'#e6ebdf',emissiveMap:architecture.diffuser,emissive:'#eef2e1',emissiveIntensity:.8,roughness:.64});
   const lampRim=material('#d0d6c9',.55,.18);
@@ -372,7 +373,7 @@ function resolveTournamentPoint(won){
   if(tour.completed){tourCareer.completed++;tourCareer.active=null;if(!tour.titleAwarded){tour.titleAwarded=true;tourCareer.titles++;tourCareer.trophies[tour.eventId]=(Number(tourCareer.trophies[tour.eventId])||0)+1;career.trophies[tour.eventId]=(Number(career.trophies?.[tour.eventId])||0)+1;try{if(!testing)localStorage.setItem(CAREER_KEY,JSON.stringify(career));}catch{}updateCareerUI();celebrateVictory(tour.eventId);}saveTour();$('#point-title').textContent='冠军属于你。';$('#point-subtitle').textContent=`五场连胜 · ${tourEvent(tour.eventId).name} 冠军 · 奖杯 ${tourCareer.trophies[tour.eventId]}`;}
   else if(tour.eliminated){tourCareer.completed++;tourCareer.active=null;saveTour();$('#point-title').textContent=`止步${tourEvent(tour.eventId).rounds[state.tournamentRound]}`;$('#point-subtitle').textContent=`本届 ${tour.wins} 胜 · 下一站再战`;
   }else{$('#point-title').textContent=`赢下${tourEvent(tour.eventId).rounds[state.tournamentRound]}`;$('#point-subtitle').textContent=`晋级${tourEvent(tour.eventId).rounds[tour.roundIndex]} · 下一场对阵${currentTourMatch(tour).opponent.name}`;}
-  renderTourHub();
+  renderTourHub();updateCareerUI();
 }
 
 let celebrationTimer=0;
@@ -428,32 +429,11 @@ function createEffects() {
   trailLine = new THREE.Line(geo, new THREE.LineBasicMaterial({ color: '#eef6c9', transparent: true, opacity: .14, depthWrite: false })); trailLine.frustumCulled = false; scene.add(trailLine);
 }
 
-const standClips=new Map();
-let crowdPlayback=null;
-function loadStandClip(key){
-  if(!standClips.has(key)){
-    const clip=fetch(new URL('./assets/audio/stand-'+key+'.wav',import.meta.url))
-      .then(response=>{if(!response.ok)throw Error(response.status);return response.arrayBuffer();})
-      .then(bytes=>audio.decodeAudioData(bytes))
-      .catch(()=>{standClips.delete(key);return null;});
-    standClips.set(key,clip);
-  }
-  return standClips.get(key);
-}
-function stopStandCheer(){
-  if(crowdPlayback){crowdPlayback.stop();crowdPlayback=null;}
-}
-async function playStandCheer(key,volume){
-  if(!audio||!state.sound||state.screen!=='play')return;
-  const point=standReaction,buffer=await loadStandClip(key);
-  if(!buffer||!state.sound||state.screen!=='play'||standReaction!==point||state.phase!=='point'||state.timer-point.start>.65)return;
-  stopStandCheer();
-  const source=audio.createBufferSource(),gain=audio.createGain();
-  source.buffer=buffer;source.playbackRate.value=.96+Math.random()*.08;
-  gain.gain.value=.67*volume;
-  source.connect(gain);gain.connect(master);gain.connect(audio.reverb);
-  source.onended=()=>{source.disconnect();gain.disconnect();if(crowdPlayback===source)crowdPlayback=null;};
-  crowdPlayback=source;source.start();
+let standAudio=null;
+function stopStandCheer(){standAudio?.stopVoice();}
+function playStandCheer(key,volume){
+ if(!state.sound||state.screen!=='play')return;
+ standAudio?.play(key,volume*.68,Math.max(-.52,Math.min(.52,(ball.pos.x||.7)*.19)));
 }
 function waveAmount(){
   return pointGesture('wave');
@@ -478,6 +458,7 @@ function initAudio() {
     shuttleFilter=audio.createBiquadFilter();shuttleFilter.type='bandpass';shuttleFilter.frequency.value=850;shuttleFilter.Q.value=.42;
     shuttleGain=audio.createGain();shuttleGain.gain.value=0;shuttlePan=audio.createStereoPanner();
     shuttleNoise.connect(shuttleFilter);shuttleFilter.connect(shuttleGain);shuttleGain.connect(shuttlePan);shuttlePan.connect(master);shuttleNoise.start();
+    standAudio=createStandAudio(audio,master,audio.reverb);standAudio.volume(state.standVolume??.75);
     state.audioInitialized = true;
   } catch { state.sound = false; }
 }
@@ -485,6 +466,7 @@ function initAudio() {
 function updateShuttleSound(){
   if(!audio||!shuttleGain)return;
   if(audio.currentTime-lastShuttleSoundUpdate<.045)return;
+  standAudio?.update({playing:state.screen==='play'&&state.mode==='match'&&state.sound,rally:state.rally,phase:state.phase});
   const speed=ball.vel.length(),distance=camera.position.distanceTo(ball.pos),near=clamp(1-distance/13,0,1);
   const level=state.screen==='play'&&state.sound&&ball.active?Math.pow(near,1.7)*clamp(speed/82,.12,1)*.045:0;
   const pan=clamp((ball.pos.x-camera.position.x)/Math.max(1,distance),-1,1);
@@ -538,8 +520,9 @@ function updateCharacterPreview(){
 function renderTourHub(){
   const list=$('#tour-event-list');if(!list)return;const chosen=list.dataset.selected||tour?.eventId||TOUR_EVENTS[0].id;list.replaceChildren();
   for(const item of TOUR_EVENTS){const button=document.createElement('button');button.type='button';button.className='tour-event';button.dataset.event=item.id;button.style.setProperty('--event-accent',item.accent);button.setAttribute('aria-selected',String(item.id===chosen));button.innerHTML=`<i></i><span><strong>${item.name}</strong><small>${item.city} · ${item.venue}</small></span><em>${item.rounds.length} 轮</em>`;button.addEventListener('click',()=>{list.dataset.selected=item.id;renderTourHub();});list.append(button);}
+  $('#tour-enter').textContent=tour?.eventId===chosen&&!tour.completed&&!tour.eliminated?'继续本届赛事 →':'报名参赛 →';
   list.dataset.selected=chosen;const selected=tourEvent(chosen),current=tour&&tour.eventId===chosen?currentTourMatch(tour):null;const info=$('#tour-selected-info');info.style.setProperty('--event-accent',selected.accent);info.innerHTML=`<b>${selected.name} · ${selected.english}</b><span>${selected.city} · ${selected.venue} · ${selected.surface} · ${selected.crowd}</span><span>${current?`当前：${tourStatus(tour)}`:'报名后从 32 强开打，五场胜利夺冠。'}</span>`;$('#tour-career-record').textContent=tour?`${selected.name}：${tour.wins||0} 胜 · ${tour.completed?'已夺冠':tour.eliminated?'本届已出局':'正在征战 '+(current?.round||'')}`:'选择赛事后报名，赛事进度会保存在本机。';
-  const bracket=$('#tour-bracket');if(bracket){bracket.replaceChildren();const draw=tour&&tour.eventId===chosen&&tour.bracket?tour.bracket:buildBracket(selected,TOUR_EVENTS.indexOf(selected)+2026);const title=document.createElement('b');title.textContent=tour&&tour.eventId===chosen?'完整淘汰签表 · 其余比赛已按种子模拟':'32 强签表预览 · 玩家占 1 号种子';bracket.append(title);const grid=document.createElement('div');grid.className='tour-bracket-grid';draw.forEach((round,index)=>{const col=document.createElement('div');col.className='tour-round';const heading=document.createElement('strong');heading.textContent=selected.rounds[index];col.append(heading);round.forEach(match=>{const card=document.createElement('div');card.className='tour-bracket-match'+(match.player?' is-player':'');const a=document.createElement('span');a.textContent=(match.winner===match.a?'✓ ':'')+(match.a==='player'?PLAYER_NAME:tourStar(match.a)?.name||'待定');const b=document.createElement('span');b.textContent=(match.winner===match.b?'✓ ':'')+(match.b==='player'?PLAYER_NAME:tourStar(match.b)?.name||'待定');card.append(a,b);col.append(card);});grid.append(col);});bracket.append(grid);}
+  const bracket=$('#tour-bracket');if(bracket){bracket.replaceChildren();const draw=tour&&tour.eventId===chosen&&tour.bracket?tour.bracket:buildBracket(selected,TOUR_EVENTS.indexOf(selected)+2026);const title=document.createElement('b');title.textContent=tour&&tour.eventId===chosen?'完整淘汰签表 · 其余比赛已按种子模拟':'32 强签表预览 · 玩家占 1 号种子';bracket.append(title);const grid=document.createElement('div');grid.className='tour-bracket-grid';draw.forEach((round,index)=>{const col=document.createElement('div');col.className='tour-round';const heading=document.createElement('strong');heading.textContent=selected.rounds[index];col.append(heading);round.forEach(match=>{const card=document.createElement('div');card.className='tour-bracket-match'+(match.player?' is-player':'');const pending=match.player&&index>(tour?.eventId===chosen?tour.roundIndex:0);const a=document.createElement('span');a.textContent=pending?'待晋级':(match.winner===match.a?'✓ ':'')+(match.a==='player'?PLAYER_NAME:tourStar(match.a)?.name||'待定');const b=document.createElement('span');b.textContent=pending?'待定':(match.winner===match.b?'✓ ':'')+(match.b==='player'?PLAYER_NAME:tourStar(match.b)?.name||'待定');card.append(a,b);col.append(card);});grid.append(col);});bracket.append(grid);}
 }
 function openTourHub(){loadTour();const list=$('#tour-event-list');if(!list.dataset.selected)list.dataset.selected=tour?.eventId||TOUR_EVENTS[0].id;$('#tournament-hub').classList.remove('hidden');renderTourHub();}
 function closeTourHub(){$('#tournament-hub').classList.add('hidden');}
@@ -564,14 +547,19 @@ function populateOpponentStars(){
 function showMatchIntro(mode='match'){
   const current=mode==='tournament'?currentTourMatch(tour):null,rival=current?.opponent||tourStar(state.currentOpponentId||'peterGade'),e=current?.event||tourEvent('olympics');
   const playerName=PLAYER_NAME;
+  $('#intro-rival-portrait').src=new URL('./assets/lineup/'+rival.id+'.webp',import.meta.url).href;
+  $('#intro-rival-portrait').alt=rival.name+'的游戏形象';
+  $('#first-controls').hidden=state.controlsChosen===true;
   $('#intro-kicker').textContent=current?`WORLD TOUR · ${current.round}`:'OLYMPIC CENTER COURT · EXHIBITION';$('#intro-event-name').textContent=current?e.name:'巴黎奥运会羽毛球赛';$('#intro-venue').textContent=`${e.city} · ${e.venue}`;$('#intro-player-name').textContent=playerName;$('#intro-player-style').textContent='单打选手';$('#intro-rival-name').textContent=rival.name;$('#intro-rival-rank').textContent=`SEED ${String(rival.seed).padStart(2,'0')}`;$('#intro-rival-meta').textContent=`${rival.country} · ${opponentLevel(matchDifficulty(rival,!!current)).tier} 级 · ${rival.signature}`;$('#intro-rival-signature').textContent=`${rival.latin} · ${rival.era}`;$('#intro-round').textContent=current?.round||'单场挑战';$('#intro-surface').textContent=e.surface;$('#intro-crowd').textContent=e.crowd;$('#intro-story').textContent=current?'巨幅赛场屏亮起，满场观众迎来登场。签表对手已经就位，把这一轮打下来。':'巴黎奥运主赛场灯光全开，满场观众正在等你登场。';$('#match-intro-overlay').classList.remove('hidden');pendingMatchMode=mode;}
-let pendingMatchMode='match';
-function launchMatch(mode='match'){
+let pendingMatchMode='match',introPreviousMatch=null;
+function launchMatch(mode='match',rivalId=null){
+  stopStandCheer();standAudio?.quiet();
+  introPreviousMatch={currentOpponentId:state.currentOpponentId,tournamentId:state.tournamentId,tournamentRound:state.tournamentRound,tournamentOpponent:state.tournamentOpponent,tournamentVenue:state.tournamentVenue,tournamentAccent:state.tournamentAccent};
   if(mode==='tournament'&&!configureTournamentMatch())return;
   if(mode==='match'){
     state.tournamentId='';state.tournamentRound=0;state.tournamentOpponent='';
     applyTournamentVenue(tourEvent('olympics'));
-    state.currentOpponentId=exhibitionOpponent();
+    state.currentOpponentId=TOUR_STARS[rivalId]?rivalId:exhibitionOpponent();
   }
   showMatchIntro(mode);
 }
@@ -686,6 +674,22 @@ function updateDifficultyUI(){
   $('#difficulty-detail').textContent=`参考：${LEVEL_REFERENCES[level.tier]}。${LEVEL_DESCRIPTIONS[level.tier]}。移动 ${level.speed.toFixed(1)} m/s · 反应 ${(level.reaction*1000).toFixed(0)} ms · 覆盖 ${level.reach.toFixed(2)} m · 稳定 ${Math.round(level.accuracy*100)}%。`;
 }
 function updateCareerUI(){
+  const current=tour&&!tour.completed&&!tour.eliminated?currentTourMatch(tour):null;
+  $('#tour-home-title').textContent=current?current.event.name:'赛事生涯';
+  $('#tour-home-detail').textContent=current?'继续'+current.round+' · 对阵'+current.opponent.name:'从 32 强打到决赛';
+  const recentLoss=career.history.find(h=>TOUR_STARS[h.opponentId]&&career.rivals?.[h.opponentId]?.lastWon===false);
+  const rematch=$('#career-rematch');rematch.hidden=!recentLoss;rematch.dataset.rival=recentLoss?.opponentId||'';
+  if(recentLoss)rematch.textContent='再战'+TOUR_STARS[recentLoss.opponentId].name+' ↗';
+  const milestone=$('#career-milestone');
+  const wins=Object.entries(career.rivals||{}).filter(([id,r])=>TOUR_STARS[id]&&r.wins>0).sort((a,b)=>(b[1].firstWin?.match||0)-(a[1].firstWin?.match||0));
+  const earned=Object.entries(career.bestRounds||{}).filter(([id,r])=>r>=2&&TOUR_EVENTS.some(e=>e.id===id)).sort((a,b)=>b[1]-a[1])[0];
+  const latest=wins[0];
+  const first=latest?.[1].firstWin?'首次战胜'+TOUR_STARS[latest[0]].name+' · '+latest[1].firstWin.score.join(' 比 '):'';
+  milestone.textContent=[first,earned?tourEvent(earned[0]).name+' · '+(['32强','16强','8强','半决赛','决赛','冠军'][earned[1]]):''].filter(Boolean).join('　');
+  milestone.hidden=!milestone.textContent;
+  $('#tour-browse').hidden=!current;
+  $('#career-head-to-head').hidden=!wins.length;
+  $('#career-opponents').replaceChildren(...wins.map(([id,r])=>{const li=document.createElement('li');li.textContent=TOUR_STARS[id].name+' · '+r.wins+' 胜 '+r.losses+' 负'+(r.firstWin?'　首胜 '+r.firstWin.score.join('∶'):'');return li;}));
   $('#career-rank').textContent=rankName(career.rating);$('#career-rating').textContent=career.rating;
   const trophyCount=Object.values(tourCareer.trophies||{}).reduce((sum,n)=>sum+(Number(n)||0),0);
   $('#career-record').textContent=`${career.wins} 胜 / ${career.played-career.wins} 负 · 连胜 ${career.streak} · 冠军 ${trophyCount}`;
@@ -693,13 +697,13 @@ function updateCareerUI(){
   $('#career-progress').style.width=`${Math.min(100,Math.max(0,(career.rating-700)%200)/2)}%`;
   const history=$('#career-history');history.replaceChildren();
   for(const h of career.history.slice(0,4)){
-    const row=document.createElement('li');row.textContent=`${h.score[0]>h.score[1]?'胜':'负'} · ${opponentLevel(h.level).name} ${h.score.join(':')}   ${h.delta>=0?'+':''}${h.delta}`;history.append(row);
+    const row=document.createElement('li');row.textContent=`${h.score[0]>h.score[1]?'胜':'负'} · ${TOUR_STARS[h.opponentId]?.name||opponentLevel(h.level).name} ${h.score.join(':')}   ${h.delta>=0?'+':''}${h.delta}`;history.append(row);
   }
   if(!career.history.length){const row=document.createElement('li');row.textContent='完成正式比赛，记录首场战绩';history.append(row);}
 }
 function commitMatch(){
   if(state.ratingDelta!==null)return;
-  const result=settleMatch(career,{id:state.matchId,level:state.difficulty,score:state.score,points:state.matchPoints,mode:state.mode,date:new Date().toISOString()});
+  const result=settleMatch(career,{id:state.matchId,level:state.difficulty,score:state.score,points:state.matchPoints,mode:state.mode,date:new Date().toISOString(),opponentId:state.currentOpponentId,eventId:state.tournamentId,round:state.tournamentRound,highlight:matchHighlight(matchTactics.points)});
   if(!result.applied)return;
   career=result.career;state.ratingDelta=result.delta;
   try{if(!testing)localStorage.setItem(CAREER_KEY,JSON.stringify(career));}catch{}
@@ -733,7 +737,7 @@ function startGame(mode = 'match', preserveSettings = false) {
   initAudio(); state.mode = mode;
   training = mode === 'training' ? { mode: trainingMode, completed: [], best: trainingBest(trainingMode), newBest: false } : null;
   standReaction=null;stopStandCheer();
-  if(mode==='match'&&audio&&state.sound)for(const key of ['applause','rally','win','clinch'])loadStandClip(key);
+  if(mode==='match'&&state.sound)standAudio?.warm();
   state.receiveStarted = -10;
   state.receiveRally = null;
   document.body.classList.toggle('training-mode', Boolean(training));
@@ -1137,6 +1141,7 @@ function tryPlayerHit() {
   opponent.splitTarget=prior?{x:prior.x,z:clamp(prior.z-.45,-7.05,-.7)}:{x:opponent.pos.x,z:opponent.pos.z};
   const pressure=opponentMemory.observe({type,target:shot.target,position:opponent.pos,velocity:opponent.vel,quality:shot.quality,fault:shot.fault,energy:opponent.energy,level:currentOpponentLevel()});
   opponent.pressure=pressure;
+  if(state.sound&&state.mode==='match')standAudio?.rallyRise(state.rally+1,clamp(ball.pos.x*.2,-.45,.45));
   state.tacticMessage=pressure.key&&pressure.strength>.28?TACTICAL_LABELS[pressure.key]:'';
   matchTactics.stroke({hitter:'player',type,target:shot.target,quality:shot.quality,fault:shot.fault,pressure,position:{x:ball.pos.x,y:ball.pos.y,z:ball.pos.z},contactReason:shot.reason});
   state.lastLanding=predict(ball.pos,ball.vel,-1).landing;state.lastPlacement={intended:{...target},landing:state.lastLanding,fault:shot.fault,reason:shot.reason};ball.spin=['net','netcross','slicedrop','slicesmash'].includes(type)?state.playerStats.net*(type==='netcross'?1.8:1):0;ball.spinAt=state.timer;
@@ -1198,8 +1203,9 @@ function scorePoint(winner, reason) {
   if(!playerWon&&state.lastHitter==='player')state.errors++;
   const finished = state.mode === 'match' && matchFinished(state.score,state.matchPoints);
   state.finished = finished;
-  if(finished)commitMatch();
   const result=matchTactics.finish({playerWon,lastHitter:state.lastHitter,reason,opponentEnergy:opponent.energy,playerPosition:{x:player.pos.x,z:player.pos.z}});
+  result.scoreBefore=state.score.map((n,i)=>n-Number(i===(playerWon?0:1)));result.rallyLength=state.rally;result.goal=state.matchPoints;
+  if(finished)commitMatch();
   $('#point-toast').classList.remove('hidden'); $('#point-reason').textContent = `${result.label} · ${result.detail}`;
   $('#point-title').textContent = state.mode === 'practice' ? `${state.rally} 拍，继续保持。` : finished ? (playerWon ? '拿下比赛。' : '下一场，再来。') : playerWon ? '漂亮，拿下一分。' : '调整一下，再来。';
   $('#point-subtitle').textContent = state.mode === 'practice' ? '自动开始下一轮练习' : `${String(state.score[0]).padStart(2, '0')}  :  ${String(state.score[1]).padStart(2, '0')}  /  ${state.rally} 拍回合${finished?` · 积分 ${state.ratingDelta>=0?'+':''}${state.ratingDelta}`:''}`;
@@ -1212,7 +1218,7 @@ function scorePoint(winner, reason) {
     const close=Math.max(...state.score)>=state.matchPoints-2&&Math.abs(state.score[0]-state.score[1])<=2;
     const highlight=state.rally>=8||close;
     const power=finished?1:highlight?.84:playerWon?.48:.32;
-    standReaction={start:state.timer,gesture:playerWon?(finished?'wave':'fist'):null,power};
+    standReaction={start:state.timer,gesture:playerWon?(finished?'wave':'fist'):null,power,side:Math.sign(ball.pos.x)};
     if(finished)state.pointDelay=2.8;
     const cheer=finished&&playerWon?(state.tournamentId&&state.tournamentRound===4?'clinch':'win'):highlight||finished?'rally':'applause';
     playStandCheer(cheer,power);
@@ -1631,7 +1637,7 @@ function updateOpponentModel(dt,impactOnly=false) {
  const contact=strike?bot.root.worldToLocal(strike.clone()).toArray():null;
  bot.update({speed:Math.hypot(opponent.vel.x,opponent.vel.z),dt,time:state.timer,swing:state.impactFrame==='opponent'?.135:opponent.swing,lateral:opponent.vel.x,forward:opponent.vel.z,shot:opponent.shot||'clear',jumpHeight:jump,anticipation:near,lookY:ball.pos.y,lookX:Math.cos(bot.root.rotation.y)*(ball.pos.x-opponent.pos.x)-Math.sin(bot.root.rotation.y)*(ball.pos.z-opponent.pos.z),split:Math.max(0,1-(state.timer-(opponent.splitAt??-10))/.25),crossover:opponent.movementMode==='crossover',lunge:opponent.netLunge,netVariant:opponent.action,contact,impactOnly});
  if(impactOnly)return;
- bot.label.visible=!state.focus;bot.label.quaternion.copy(camera.quaternion);bot.label.rotation.x=0;bot.label.rotation.z=0;
+ bot.label.visible=state.controlsVisible&&!state.focus;bot.label.quaternion.copy(camera.quaternion);bot.label.rotation.x=0;bot.label.rotation.z=0;
 }
 
 function updateContactHint(){
@@ -1811,8 +1817,9 @@ function updateHud() {
   $('#shot-cue').classList.toggle('visible',state.screen==='play'&&state.timer<state.shotCueUntil);
   const cue=$('#placement-cue');cue.classList.toggle('hidden',state.screen!=='play'||!$('#placement-hint').checked||state.phase!=='rally');
   if(!cue.classList.contains('hidden')){const locked=state.swing>0&&!state.swingContact&&state.swingTarget,target=locked||selectedLanding();cue.textContent=`${locked?'起拍已锁定':'下一拍'} · ${landingName(target)} · ${Math.abs(target.x).toFixed(1)}m / ${Math.abs(target.z).toFixed(1)}m`;}
+  $('#serve-key').textContent=state.phase==='opponentServe'?'接发':'左键';
   if(state.phase==='serving')$('#serve-copy').textContent='轻抛后向前送拍 · 发球中';
-  else if(state.phase==='serve')$('#serve-copy').textContent=state.serveStyle==='high'?'高远发球已选 · G 切回低发球，左键发球':'左键发球 · G 切换高远发球';
+  else if(state.phase==='serve')$('#serve-copy').textContent=state.serveStyle==='high'?'高远发球 · G 切换低手':'低手发球 · G 切换高远';
   const trainingHud = $('#training-hud');
   trainingHud.classList.toggle('hidden', !training || state.screen !== 'play');
   if (training) {
@@ -1953,7 +1960,7 @@ function animate() {
     for(const entity of [player,opponent,ball])entity.renderPos.lerpVectors(entity.previous,entity.pos,clamp(accumulator*120,0,1));
     if(state.impactFrame&&ball.active)ball.renderPos.copy(state.impactFrame==='player'?state.contactPoint:opponent.contactPoint);
     const pointAge=standReaction&&state.phase==='point'?state.timer-standReaction.start:-1;
-    audienceGroup.userData.updateCrowd(state.timer,pointAge,standReaction?.power||0);
+    audienceGroup.userData.updateCrowd(state.timer,pointAge,standReaction?.power||0,state.phase==='rally'?clamp((state.rally-4)/7,0,1):0,standReaction?.side||0);
     const courtTarget=state.phase==='rally'?ball.renderPos:state.server==='player'?player.renderPos:opponent.renderPos;
     const gaze=clamp(Math.atan2(courtTarget.x-umpire.root.position.x,courtTarget.z-umpire.root.position.z)-umpire.root.rotation.y,-.75,.64);
     umpire.pivot.rotation.y=damp(umpire.pivot.rotation.y,gaze,4,dt);
@@ -1983,7 +1990,7 @@ function requestLock() {
 function pauseGame(finished = false) {
   if (state.screen !== 'play') return;
   finished=finished||state.finished;
-  stopStandCheer();
+  standAudio?.quiet();if(!finished)stopStandCheer();
   $('#contact-halo').classList.add('hidden');$('#shuttle-indicator').classList.add('hidden');$('#receive-cue').classList.add('hidden');
   shuttleFootprint.visible=receiveMarker.visible=shuttleHeightLine.visible=false;
   state.screen = 'pause'; keys.clear();state.aiming=false;state.aimAlt=false;document.body.classList.remove('choosing-landing'); pointerDown = false; gamepadHitHeld = false; gamepadJumpHeld = false; hitIntent.clear();jumping.cancelBuffer(); touchMove.x = touchMove.y = 0;
@@ -1997,7 +2004,7 @@ function pauseGame(finished = false) {
   $('#match-result').classList.toggle('hidden',!finished);
   $('#match-result').dataset.outcome=champion?'champion':won?'win':'loss';
   if(finished){
-    $('#result-more').open=false;
+    $('#result-more').open=false;$('#result-highlight').textContent=career.history.find(h=>h.id===state.matchId)?.highlight||matchHighlight(matchTactics.points);
     $('#result-cup-label').textContent=state.tournamentId?tourEvent(state.tournamentId).name+' · '+tourEvent(state.tournamentId).rounds[state.tournamentRound]:'单打挑战';
     $('#result-outcome').textContent=champion?'捧起冠军奖杯！':won?'拿下这场！':'本场惜败';
     $('#result-player-name').textContent=PLAYER_NAME;$('#result-opponent-name').textContent=opponentName;
@@ -2007,7 +2014,7 @@ function pauseGame(finished = false) {
     $('#result-rally').textContent=String(Math.max(state.maxRally,state.rally));$('#result-speed').textContent=String(state.maxSpeed);
     $('#result-detail').textContent=`生涯 ${career.wins} 胜 ${career.played-career.wins} 负 · 最长连胜 ${career.bestStreak}`;
   }
-  const next=$('#tour-next');if(next){const tournamentMatch=Boolean(state.tournamentId);next.classList.toggle('hidden',!finished||!tournamentMatch);document.body.classList.toggle('tournament-finished',finished&&tournamentMatch);next.textContent=tour?.completed?'返回赛事中心':tour?.eliminated?'重新报名':'进入下一轮';}
+  const next=$('#tour-next');if(next){const tournamentMatch=Boolean(state.tournamentId);next.classList.toggle('hidden',!finished||!tournamentMatch);document.body.classList.toggle('tournament-finished',finished&&tournamentMatch);next.textContent=tour?.completed?'返回赛事中心':tour?.eliminated?'重新报名':currentTourMatch(tour)?'进入'+currentTourMatch(tour).round+' · 对阵'+currentTourMatch(tour).opponent.name:'进入下一轮';}
   $('#stat-rally').textContent = Math.max(state.maxRally, state.rally); $('#stat-hits').textContent = state.hits; $('#stat-speed').textContent = state.maxSpeed;
   const trainingComplete = updateTrainingResult();
   const tactical = $('#tactical-report');
@@ -2019,6 +2026,7 @@ function pauseGame(finished = false) {
     updateTacticalReport();
     $('#tactical-report').classList.remove('hidden');
   }
+  $('#result-rematch').hidden=!(finished&&!won&&!state.tournamentId);
   $('#resume-btn').innerHTML = trainingComplete ? '再练一组 <span>↗</span>' : training ? '继续训练 <span>→</span>' : finished ? '再来一场 <span>↗</span>' : '继续比赛 <span>→</span>';
   $('#resume-btn').classList.toggle('hidden', trainingComplete || (finished && Boolean(state.tournamentId)));
   $('#restart-btn').classList.toggle('hidden', trainingComplete);
@@ -2052,7 +2060,7 @@ function resumeGame() {
   state.screen = 'play'; $('#pause-overlay').classList.add('hidden'); $('#help-overlay').classList.add('hidden'); accumulator = 0; clock.getDelta();canvas.focus({preventScroll:true}); requestLock(); initAudio();
 }
 function exitGame() {
-  standReaction=null;stopStandCheer();
+  standReaction=null;stopStandCheer();standAudio?.quiet();
   if(bot)bot.root.visible=true;
   state.screen = 'menu'; training = null; ball.active = false; keys.clear(); pointerDown = false;hitIntent.clear();
   $('#placement-cue').classList.add('hidden');$('#shot-cue').classList.remove('visible');
@@ -2080,12 +2088,16 @@ function applyRenderProfile(){
  presentation.setQuality(profile.quality);presentation.setSize(width,height);renderBudget.invalidate();
 }
 function applyQuality(quality){qualityMode=['auto','balanced','high','ultra'].includes(quality)?quality:'auto';adaptiveResolution.reset(performance.now());applyRenderProfile();}
-function savePreferences(){if(testing)return;try{localStorage.setItem('feather-court-3-settings',JSON.stringify({contactHint:state.contactHint,ballGuide:state.ballGuide,thirdFraming:state.thirdFraming,cameraMode:state.cameraMode,orbitYaw:state.orbitYaw,orbitPitch:state.orbitPitch,assistSettingsVersion:1,assists:$('#assist-toggle').checked,autoReturn:$('#auto-return-toggle').checked,comfortable:$('#comfortable-toggle').checked,difficulty:$('#difficulty').value,scheme:$('#control-scheme').value,points:$('#match-points').value,quality:$('#quality').value,performanceVersion:1,focus:state.focus,motion:state.motion,sensitivity:state.sensitivity,lookSyncVersion:2,pace:state.pace,receivePaceVersion:2,receivePace:state.receivePace,sprintAssist:state.sprintAssist,sound:state.sound,racketStyle:state.racketStyle,racketSkin:state.racketSkin,playerStats:playerStatsFromInputs(),opponentStats:state.opponentStats,highBallAssist:$('#high-ball-toggle').checked,placementHint:$('#placement-hint').checked,eagleAuto:$('#eagle-auto').checked}));}catch{}}
+function savePreferences(){if(testing)return;try{localStorage.setItem('feather-court-3-settings',JSON.stringify({contactHint:state.contactHint,ballGuide:state.ballGuide,thirdFraming:state.thirdFraming,cameraMode:state.cameraMode,orbitYaw:state.orbitYaw,orbitPitch:state.orbitPitch,standVolume:state.standVolume,controlsChosen:state.controlsChosen,assistSettingsVersion:1,assists:$('#assist-toggle').checked,autoReturn:$('#auto-return-toggle').checked,comfortable:$('#comfortable-toggle').checked,difficulty:$('#difficulty').value,scheme:$('#control-scheme').value,points:$('#match-points').value,quality:$('#quality').value,performanceVersion:1,focus:state.focus,motion:state.motion,sensitivity:state.sensitivity,lookSyncVersion:2,pace:state.pace,receivePaceVersion:2,receivePace:state.receivePace,sprintAssist:state.sprintAssist,sound:state.sound,racketStyle:state.racketStyle,racketSkin:state.racketSkin,playerStats:playerStatsFromInputs(),opponentStats:state.opponentStats,highBallAssist:$('#high-ball-toggle').checked,placementHint:$('#placement-hint').checked,eagleAuto:$('#eagle-auto').checked}));}catch{}}
 function restorePreferences(){
   try { const settings=JSON.parse(localStorage.getItem('feather-court-3-settings')||'{}');$('#eagle-auto').checked=settings.eagleAuto!==false; } catch {}
   $('#eagle-auto').addEventListener('change',savePreferences);
   try{if(!testing)career=parseCareer(localStorage.getItem(CAREER_KEY));}catch{}loadTour();updateCareerUI();let prefs={};
   try{if(!testing)prefs=JSON.parse(localStorage.getItem('feather-court-3-settings')||'{}');}catch{}
+  state.standVolume=Number.isFinite(prefs.standVolume)?clamp(prefs.standVolume,0,1):.75;
+  $('#stand-volume').value=Math.round(state.standVolume*100);
+  $('#stand-volume').addEventListener('input',e=>{state.standVolume=Number(e.target.value)/100;standAudio?.volume(state.standVolume);savePreferences();});
+  state.controlsChosen=prefs.controlsChosen??(prefs.assistSettingsVersion===1);
   if(prefs.assistSettingsVersion!==1){prefs.assists=false;prefs.comfortable=false;prefs.highBallAssist=true;prefs.scheme='manual';$('#control-scheme').value='manual';}
   for(const [key,id] of [['points','match-points'],['difficulty','difficulty'],['scheme','control-scheme'],['quality','quality']])if(prefs[key]&&[...$('#'+id).options].some(o=>o.value===prefs[key]))$('#'+id).value=prefs[key];
   if(prefs.performanceVersion!==1)$('#quality').value='auto';
@@ -2169,10 +2181,24 @@ function bindEvents() {
     });
   }
   populateOpponentStars();
-  $('#open-tour-hub').addEventListener('click',openTourHub);$('#tour-close').addEventListener('click',closeTourHub);$('#tour-cancel').addEventListener('click',closeTourHub);$('#tour-enter').addEventListener('click',enterTournament);
+  $('#assist-toggle').addEventListener('change',()=>{state.controlsChosen=true;savePreferences();});
+  $('#open-tour-hub').addEventListener('click',()=>{if(tour&&!tour.eliminated&&!tour.completed)launchMatch('tournament');else openTourHub();});
+  $('#tour-browse').addEventListener('click',openTourHub);
+  $('#result-rematch').addEventListener('click',()=>{const id=state.currentOpponentId;$('#pause-overlay').classList.add('hidden');launchMatch('match',id);});
+  $('#career-rematch').addEventListener('click',()=>{const id=$('#career-rematch').dataset.rival;if(TOUR_STARS[id]){document.querySelector('#player-locker [data-home-close]')?.click();launchMatch('match',id);}});$('#tour-close').addEventListener('click',closeTourHub);$('#tour-cancel').addEventListener('click',closeTourHub);$('#tour-enter').addEventListener('click',enterTournament);
   $('#open-trophies').addEventListener('click',openTrophyGallery);$('#trophy-close').addEventListener('click',()=>$('#trophy-gallery').classList.add('hidden'));
-  $('#intro-close').addEventListener('click',()=>{$('#match-intro-overlay').classList.add('hidden');if(pendingMatchMode==='tournament')openTourHub();});
-  $('#intro-enter').addEventListener('click',()=>{$('#match-intro-overlay').classList.add('hidden');startGame(pendingMatchMode==='tournament'?'match':'match');});
+  $('#intro-close').addEventListener('click',()=>{
+    $('#match-intro-overlay').classList.add('hidden');
+    if(introPreviousMatch){Object.assign(state,introPreviousMatch);introPreviousMatch=null;}
+    if(state.screen==='pause'){
+      applyTournamentVenue(tourEvent(state.tournamentId||'olympics'));
+      $('#pause-overlay').classList.remove('hidden');
+    }else if(pendingMatchMode==='tournament'){updateCareerUI();openTourHub();}
+  });
+  $('#intro-enter').addEventListener('click',()=>{
+    if(!$('#first-controls').hidden){state.controlsChosen=true;setAssist($('input[name="first-run"]:checked').value==='mouse');savePreferences();}
+    introPreviousMatch=null;$('#match-intro-overlay').classList.add('hidden');startGame('match');
+  });
   $('#tour-next').addEventListener('click',()=>{if(tour?.completed||tour?.eliminated){exitGame();openTourHub();return;}$('#pause-overlay').classList.add('hidden');launchMatch('tournament');});
   $('#pause-btn').addEventListener('click', () => pauseGame()); $('#resume-btn').addEventListener('click', resumeGame);
   $('#restart-btn').addEventListener('click', () => training ? startGame('training', true) : state.tournamentId?launchMatch('tournament'):launchMatch('match')); $('#exit-btn').addEventListener('click', exitGame);
