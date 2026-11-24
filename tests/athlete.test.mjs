@@ -63,6 +63,31 @@ test('player avatar can jump, reset planted feet and hold a serve without liftin
  }finally{globalThis.document=previous;}
 });
 
+test('supporting feet stay planted through a running net lunge and direction change',()=>{
+ const previous=globalThis.document;
+ globalThis.document={createElement:()=>({width:0,height:0,getContext:()=>({createRadialGradient:()=>({addColorStop(){}}),fillRect(){}})})};
+ try{
+  const model=createAthlete(THREE,()=>new THREE.Group()),dt=1/60,speed=3.7,support=[[],[]];model.root.rotation.y=Math.PI;let stride=0;
+  for(let i=0;i<240;i++){
+   const time=i*dt,burst=time%1,lunge=burst<.35?.45*Math.sin(Math.PI*burst/.35):0,lateral=time<1.25?-.6:time<2.5?.55:-.2,forward=time<1.7?-.88:.45;
+   const travelSpeed=Math.hypot(lateral*speed,forward*speed);stride+=dt*travelSpeed*4.1;model.root.position.x+=lateral*speed*dt;model.root.position.z+=forward*speed*dt;
+   model.update({dt,time,speed:travelSpeed,lateral:speed*lateral,forward:speed*forward,shot:lunge>.03?'net':'clear',swing:lunge>.03?burst:0,lunge,netVariant:'正手搓'});
+   model.root.updateMatrixWorld(true);
+   for(let leg=0;leg<2;leg++){
+    const cycle=((stride/(Math.PI*2)+leg*.5)%1+1)%1;
+    if(cycle<.5){const foot=model.bones['foot.'+(leg?'R':'L')].getWorldPosition(new THREE.Vector3());support[leg].push({time,x:foot.x,z:foot.z});}
+   }
+  }
+  const maxStanceDrift=support.map(samples=>{
+   let group=[],maximum=0;
+   const finish=()=>{if(group.length)maximum=Math.max(maximum,...group.map(p=>Math.hypot(p.x-group[0].x,p.z-group[0].z)));group=[];};
+   for(const point of samples){if(group.length&&point.time-group.at(-1).time>.021)finish();group.push(point);}
+   finish();return maximum;
+  });
+  assert.ok(maxStanceDrift.every(distance=>distance<.34),JSON.stringify(maxStanceDrift));
+ }finally{globalThis.document=previous;}
+});
+
 test('articulated athlete has human proportions, finite surfaces and independently moving knees/elbows',()=>{
   const previous=globalThis.document;
   globalThis.document={createElement:()=>({width:0,height:0,getContext:()=>({fillRect(){}})})};

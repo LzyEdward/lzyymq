@@ -334,12 +334,12 @@ export function createAthlete(THREE, createRacket,{skinMap=null,mergeGeometries=
    const side=i?-1:1,suffix=i?'R':'L',cycle=((stride/(Math.PI*2)+i*.5)%1+1)%1,swingPhase=cycle<.5?0:(cycle-.5)*2,u=cycle<.5?cycle*2:swingPhase*swingPhase*(3-2*swingPhase),travel=(cycle<.5?.36-.72*u:-.36+.72*u)*run;
    const crossed=crossStep&&i===(lateral>0?1:0),x=clamp(side*(.17+anticipation*.025+splitLoad*.038)+velocity.x*travel+(crossed?Math.sign(lateral)*.36:0),crossed?(lateral>0?-.02:-.55):side<0?-.55:.02,crossed?(lateral>0?.55:.02):side<0?-.02:.55);
    const ideal=vec(x,.064+Math.sin(swingPhase*Math.PI)*.13*run,velocity.z*travel+.012+side*(ready*.06+coil*.18-drive*.11));
-   if(lunge>.03){footPlants[i].reset();ideal.lerp(vec(i?-.22:.19,.064,i?.55:-.29),lunge);}
+   if(lunge>.03)ideal.lerp(vec(i?-.22:.19,.064,i?.55:-.29),lunge);
    if(jumpHeight>0){
     footPlants[i].reset();
     ideal.lerp(vec(side*.21,.064,side*(.22-drive*.34)-.08),air);
    }
-   const planted=footPlants[i].sample(root.localToWorld(ideal.clone()).toArray(),cycle,speed>.45&&jumpHeight===0);
+   const planted=footPlants[i].sample(root.localToWorld(ideal.clone()).toArray(),cycle,speed>.45&&jumpHeight===0,lunge>.03?.85:1.3);
    const footTarget=root.worldToLocal(vec(...planted));
    limb('upperleg01.'+suffix,footTarget,vec(side*.17+velocity.x*.1,.48,.8));
    const foot=bones['foot.'+suffix];foot.parent.getWorldQuaternion(parentQ);const desired=new THREE.Quaternion();root.getWorldQuaternion(desired);foot.quaternion.copy(parentQ.invert().multiply(desired));
