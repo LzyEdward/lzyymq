@@ -87,18 +87,27 @@ export function advance(p, v, dt) {
 }
 
 function flight(origin, horizontal, up, dx, dz, step = 1 / 180) {
-  const p = { ...origin }, v = { x: dx * horizontal, y: up, z: dz * horizontal };
-  let netY = Infinity;
+  // With drag and gravity only, the horizontal direction is constant. Integrate
+  // the same game step in that plane for each trial launch in the shot solver.
+  const planarLength = Math.sqrt(dx * dx + dz * dz);
+  let speed = horizontal * planarLength, height = origin.y, distance = 0, netY = Infinity;
+  const netDistance = dz ? -origin.z * planarLength / dz : Infinity;
   for (let i = 0; i < 900; i++) {
-    const previous = { ...p };
-    advance(p, v, step);
-    if (previous.z * p.z <= 0 && previous.z !== p.z) {
-      const t = previous.z / (previous.z - p.z);
-      netY = previous.y + (p.y - previous.y) * t;
+    const drag = 1 / (1 + COURT.drag * Math.sqrt(speed * speed + up * up) * step);
+    speed *= drag;
+    up = up * drag - COURT.gravity * step;
+    const travel = speed * step, rise = up * step;
+    if (travel > 0 && netDistance >= distance && netDistance <= distance + travel) {
+      netY = height + rise * (netDistance - distance) / travel;
     }
-    if (p.y <= CONTACT_HEIGHT) { Object.assign(p, groundCrossing(previous, p)); break; }
+    if (height + rise <= CONTACT_HEIGHT) {
+      distance += travel * clamp((height - CONTACT_HEIGHT) / Math.max(1e-9, -rise), 0, 1);
+      break;
+    }
+    distance += travel;
+    height += rise;
   }
-  return { distance: Math.hypot(p.x - origin.x, p.z - origin.z), netY };
+  return { distance, netY };
 }
 
 function attackVelocity(origin, dx, dz, distance, speed, step) {
