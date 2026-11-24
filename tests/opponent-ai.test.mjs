@@ -118,6 +118,21 @@ test('competent opponents visibly use both brush and cross-court net replies',()
  assert.ok(actions.has('勾对角'),'cross-court hook should appear on net contacts');
 });
 
+test('a settled expert can brush shorter than a club player or a late defender',()=>{
+ function chosen(key,y,pressure){
+  const depths={};
+  for(let i=0;i<240;i++){
+   const plan=planOpponentStroke({level:level(key),position:{x:1,y,z:-1.4},player:{x:.5,z:4.2},pressure,random:()=>i/240});
+   if(plan.type==='net'||plan.type==='netcross')depths[plan.action]=plan.target.z;
+  }
+  return depths;
+ }
+ const top=chosen('legend',1.72,0),club=chosen('hard',1.72,0),late=chosen('legend',1.03,.32);
+ for(const action of ['搓网','正手放网','勾对角']){
+  assert.ok(club[action]-top[action]>.20);assert.ok(late[action]-top[action]>.28);
+ }
+ assert.ok(top['搓网']<top['正手放网']);
+});
 test('low net contacts keep straight and diagonal brushes playable across the tape',()=>{
  for(const levelKey of ['hard','expert','legend']){
   for(const position of [{x:-1.1,y:1.3,z:-1.45},{x:1.1,y:1.3,z:-1.45}]){

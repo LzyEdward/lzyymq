@@ -45,6 +45,17 @@ test('net brush, push and net kill each use distinguishable compact swing arcs',
  assert.notDeepEqual(arcs[0][0].rotation,arcs[1][0].rotation);
  assert.notDeepEqual(arcs[1][1].rotation,arcs[2][1].rotation);
 });
+test('backhand net techniques use distinct contact faces and short, mirrored finishes',()=>{
+ const contact=[-.46,-.2,-1],sample=(kind,time)=>swingPose({elapsed:time,kind,contactTime:.095,contact});
+ const faces=['net','netcross','push','netkill'].map(kind=>JSON.stringify(sample(kind,.095).rotation));
+ assert.equal(new Set(faces).size,4);
+ for(const kind of ['net','netcross']){
+  const hit=sample(kind,.095),finish=sample(kind,.19);
+  assert.ok(Math.hypot(...finish.position.map((n,i)=>n-hit.position[i]))<.24);
+ }
+ const right=swingPose({elapsed:.19,kind:'netcross',contactTime:.095,contact:[.46,-.2,-1]});
+ assert.ok(right.rotation[1]*sample('netcross',.19).rotation[1]<0);
+});
 test('serve has a distinct compact low-contact preparation',()=>{
  const serve=swingPose({elapsed:.048,kind:'serve'}),lift=swingPose({elapsed:.048,kind:'lift'});
  assert.notDeepEqual(serve.rotation,lift.rotation);

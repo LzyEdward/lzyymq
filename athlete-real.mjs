@@ -363,22 +363,25 @@ export function createAthlete(THREE, createRacket,{skinMap=null,mergeGeometries=
   }
   if(['slicesmash','slicedrop'].includes(shot)&&swing>0){bones.spine03.rotation.y+=stroke*.22;hand.x-=stroke*.13;pole.x-=stroke*.10;}
   let netWristRoll=0;
+  const backhand=contact&&Math.abs(contact[0])>.16?contact[0]>0:netVariant.includes('反手');
+  const cross=shot==='netcross'||netVariant.includes('对角'),push=shot==='push'||shot==='netkill'||netVariant.includes('推')||netVariant.includes('扑'),brush=shot==='net'&&netVariant.includes('搓');
   if(netStroke&&swing>0){
-   const cross=netVariant.includes('对角'),backhand=netVariant.includes('反手'),push=netVariant.includes('推')||netVariant.includes('扑'),brush=netVariant.includes('搓');
-   const brushSnap=brush?Math.sin(t*Math.PI*2):0,crossReach=cross?.24:0,attackDrive=push?.46:.13;
+   const handSide=backhand?-1:1;
+   const brushSnap=brush?Math.sin(t*Math.PI*2):0,crossReach=cross?.20*handSide:0,attackDrive=push?.36:.13;
+   const turn=smooth(swing,.082,.147)*(1-smooth(swing,.18,.30));
    // Each net technique has its own striking lane. The shoulder opens for a
    // cross-court brush, while a straight net shot keeps the racket quiet and
    // the push/net kill drives through the shuttle.
    bones.spine03.rotation.y+=stroke*(backhand?-.15:cross?.19:.025);
    bones.spine01.rotation.z+=stroke*(backhand?.08:cross?.045:0)-lunge*.035;
    const reach=smooth(t,0,.13)*(1-smooth(t,.53,1));
-   hand.lerp(vec((backhand?.12:-.25)+stroke*(backhand?-.24:.09+crossReach)+brushSnap*(brush?.085:0),.99-lunge*.08+stroke*.08,.40+lunge*.12+stroke*attackDrive),reach);
+   hand.lerp(vec((backhand?.12:-.25)+stroke*((backhand?-.18:.09)+crossReach)+brushSnap*(brush?.085:0),.99-lunge*.08+stroke*.08,.40+lunge*.12+stroke*attackDrive),reach);
    pole.lerp(vec(backhand?.42:cross?-.28:-.56,.76,.08),reach);
-   netWristRoll=brush?brushSnap*.3:cross?stroke*.13:push?-stroke*.09:0;
+   netWristRoll=handSide*(cross?turn*.39:brush?brushSnap*.26:push?-stroke*.09:0);
   }
   const racketY=vec(-.08,.86,.30);
   if(netStroke){
-   racketY.lerp(vec(-.06+stroke*(netVariant.includes('反手')?-.2:netVariant.includes('对角')?.27:netVariant.includes('推')?.32:netVariant.includes('搓')?.04:.14),.29+stroke*(netVariant.includes('扑')?.2:netVariant.includes('推')?.27:netVariant.includes('搓')?-.035:.09),.96),smooth(t,0,.15)*(1-smooth(t,.58,1)));
+   racketY.lerp(vec(-.06+stroke*(backhand?-1:1)*(cross?.27:push?.32:brush?.04:.14),.29+stroke*(shot==='netkill'?.2:push?.27:brush?-.035:.09),.96),smooth(t,0,.15)*(1-smooth(t,.58,1)));
   }else if(overhead){
    racketY.add(vec(-coil*.38+drive*.94*racketPower,-drive*1.06*racketPower,-coil*.72+drive*.57*racketPower));
   }

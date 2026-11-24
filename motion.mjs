@@ -58,6 +58,10 @@ export function swingPose({elapsed=0,kind='clear',contact=null,contactTime=.095,
  const overhead=kind==='clear'||kind==='smash'||kind==='drop'||slice,serve=kind==='serve',under=kind==='lift'||serve,drive=kind==='drive',netPlay=kind==='net'||kind==='netcross'||kind==='push'||kind==='netkill';
  const backhand=contact&&contact[0]<-.15;
  const rotation=backhand?[.20,.12,.32]:kind==='net'?[.04,-.28,-.72]:kind==='netcross'?[.10,-.34,-.58]:kind==='push'?[.16,-.30,-.34]:kind==='netkill'?[.42,-.10,-.66]:kind==='drop'?[.18,-.13,-.34]:overhead?[.30,-.08,-.42]:under?[-.48,-.12,.12]:drive?[.05,-.2,-.18]:[.10,-.08,-.12];
+ if(backhand&&netPlay){
+  const face={net:[.02,.27,.57],netcross:[.06,-.18,.63],push:[.18,.09,.36],netkill:[.47,.05,.48]};
+  rotation.splice(0,3,...face[kind]);
+ }
  if(slice){rotation[1]+=.48;rotation[2]+=.25;}
  // Rotate the sweet-spot offset using XYZ Euler, without a Three.js dependency.
  const head=[0,.4896,0],rx=rotation[0],ry=rotation[1],rz=rotation[2];
@@ -73,7 +77,14 @@ export function swingPose({elapsed=0,kind='clear',contact=null,contactTime=.095,
  // brush across the cork with an open face and a lateral follow-through.
  if(kind==='drop'||kind==='slicedrop'){prep.rotation=[-.84,.18,-.78];prep.position=[.44,-.10,-.69];follow.rotation=[.46,.03,-.60];}
  if(slice){prep.rotation[1]+=.22;follow.position=[-.23,kind==='slicesmash'?-.48:-.33,-.92];follow.rotation=[kind==='slicesmash'?.95:.48,-.48,-.74];}
- if(kind==='netcross'){prep.rotation=[.12,.42,-.53];follow.position=[-.20,-.32,-.98];follow.rotation=[.34,-.52,-.40];}
+ if(kind==='net'||kind==='netcross'){
+  const lane=backhand?-1:1,hook=kind==='netcross';
+  // Both touches show an open face, then the hook turns across the incoming cork.
+  prep.position=[at[0]-x+lane*.055,at[1]-y-.045,at[2]-z+.13];
+  prep.rotation=[.12,lane*.29,-lane*.63];
+  follow.position=[at[0]-x-lane*(hook?.145:.035),at[1]-y+(hook?.03:.065),at[2]-z-(hook?.06:.035)];
+  follow.rotation=hook?[.21,-lane*.49,-lane*.42]:[.31,lane*.12,-lane*.84];
+ }
  if(kind==='push'){
   const lane=backhand?-1:1;
   prep.position=[lane*.28,-.28,-.78];prep.rotation=[.04,lane*.19,-lane*.24];
