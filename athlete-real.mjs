@@ -339,7 +339,7 @@ export function createAthlete(THREE, createRacket,{skinMap=null,mergeGeometries=
     footPlants[i].reset();
     ideal.lerp(vec(side*.21,.064,side*(.22-drive*.34)-.08),air);
    }
-   const planted=footPlants[i].sample(root.localToWorld(ideal.clone()).toArray(),cycle,speed>.45&&jumpHeight===0,lunge>.03?.85:1.3);
+   const planted=footPlants[i].sample(root.localToWorld(ideal.clone()).toArray(),cycle,speed>.45&&jumpHeight===0,lunge>.03);
    const footTarget=root.worldToLocal(vec(...planted));
    limb('upperleg01.'+suffix,footTarget,vec(side*.17+velocity.x*.1,.48,.8));
    const foot=bones['foot.'+suffix];foot.parent.getWorldQuaternion(parentQ);const desired=new THREE.Quaternion();root.getWorldQuaternion(desired);foot.quaternion.copy(parentQ.invert().multiply(desired));
