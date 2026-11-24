@@ -77,11 +77,12 @@ export function movementEnergyRate({speed=0,sprinting=false,staminaSkill=1,resti
 
 // Initial displacement creates a race. A defender who wins that race earns
 // their normal technique back; do not keep penalising an early, settled catch.
-export function contactPressure({initial=0,distance=0,reach=1,height=2,speed=0,energy=100}={}){
+export function contactPressure({initial=0,distance=0,reach=1,height=2,speed=0,energy=100,chased=0}={}){
  const stretch=clamp((distance/Math.max(.1,reach)-.35)/.65,0,1);
  const low=clamp((1.5-height)/1.2,0,1),rushing=clamp((speed-2.5)/5,0,1);
  const fatigue=clamp((38-energy)/38,0,1);
- return clamp(initial*(.08+stretch*.48+low*.55+rushing*.40+fatigue*.22),0,1);
+ const lunge=clamp((chased-1.45)/2.4,0,1)*low*(.22+.54*clamp(speed/4.4,0,1));
+ return clamp(initial*(.08+stretch*.48+low*.55+rushing*.40+fatigue*.22)+lunge,0,1);
 }
 
 export function directionalTarget({position,kind,mode='natural',natural,opponent}){

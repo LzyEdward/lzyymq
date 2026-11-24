@@ -19,9 +19,9 @@ export function handPaths(open=false){
 
 // The serve pinch and a loose balancing hand share roots and phalanx lengths.
 // Only joint directions change, so releasing the shuttle doesn't grow fingers.
-export function supportFingerPaths(relaxation=0){
+export function supportFingerPaths(relaxation=0,fist=0){
  const amount=Math.max(0,Math.min(1,Number.isFinite(relaxation)?relaxation:0));
- const pinch=handPaths(true);
+ const pinch=handPaths(true),closed=fist>0?handPaths(false):null;
  if(amount===0)return pinch;
  return pinch.map((path,f)=>{
   const result=[path[0].slice()];
@@ -29,7 +29,12 @@ export function supportFingerPaths(relaxation=0){
    [[-1,(1.5-f)*.12,-.16],[-.96,(1.5-f)*.10,.25],[-.62,(1.5-f)*.06,.78]];
   for(let k=0;k<3;k++){
    const original=path[k+1].map((n,i)=>n-path[k][i]),length=Math.hypot(...original);
-   const target=targets[k],targetLength=Math.hypot(...target);
+   let target=targets[k];
+   if(closed){
+    const curl=closed[f][k+1].map((n,i)=>n-closed[f][k][i]),size=Math.hypot(...curl);
+    target=target.map((n,i)=>n*(1-fist)+curl[i]*fist/size);
+   }
+   const targetLength=Math.hypot(...target);
    const direction=original.map((n,i)=>n/length*(1-amount)+target[i]/targetLength*amount),norm=Math.hypot(...direction);
    result.push(result[k].map((n,i)=>n+direction[i]/norm*length));
   }

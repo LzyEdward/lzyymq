@@ -38,10 +38,12 @@ export function createSkinnedPlayerArm(T,{skin,fabric,open=false}={}){
  const {across,matrices:constant,segment:map,poseFingers}=gripRig(T,bind,open);
  const lower=map(elbow,wrist,targetElbow,targetWrist,.87,.87);
  const pinchMatrices=new Map([...constant].map(([key,matrix])=>[key,matrix.clone()]));let lastRelaxation=0;
- function relaxFingers(amount=0){
+ let lastFist=0;
+ function relaxFingers(amount=0,fist=0){
   if(!open)return;
-  amount=Math.max(0,Math.min(1,Number.isFinite(amount)?amount:0));if(Math.abs(amount-lastRelaxation)<1e-5)return;
-  lastRelaxation=amount;poseFingers(supportFingerPaths(amount));
+  amount=Math.max(0,Math.min(1,Number.isFinite(amount)?amount:0));
+  if(Math.abs(amount-lastRelaxation)<1e-5&&Math.abs(fist-lastFist)<1e-5)return;
+  lastRelaxation=amount;lastFist=fist;poseFingers(supportFingerPaths(amount,fist));
  }
  function poseNails(details){
   if(!open)return;

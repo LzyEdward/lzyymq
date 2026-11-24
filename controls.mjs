@@ -37,6 +37,12 @@ export class AutoReturnAssist {
   consume() { this.pending = false; }
 }
 
+export function netKillOpportunity(ball,feet,jump=0){
+  const front=feet.z-ball.z;
+  return ball.z>=.38&&ball.z<=2.12&&ball.y>=1.78&&ball.y<=2.68+jump&&
+    front>=-.06&&front<=1.16&&defensiveReach(ball,feet,jump);
+}
+
 export function canContact({ position, velocity, player, active, lastHitter, assisted, jump = 0, yaw = 0, preparing = false, reachBonus = 0 }) {
   if (!active || lastHitter !== 'opponent' || position.z < .38) return false;
   const dx = position.x - player.x, dz = position.z - player.z;
@@ -48,7 +54,7 @@ export function canContact({ position, velocity, player, active, lastHitter, ass
     position.y <= 3.15 + jump &&
     front >= (assisted ? -1.05 : -.55) &&
     // Let descending balls come down into the visible hitting zone.
-    (!assisted || velocity.y < 1.8 || position.y < 1.75);
+    (!assisted || velocity.y < 1.8 || position.y < 1.75 || netKillOpportunity(position,player,jump));
 }
 
 // A low defensive racket can reach only as far as the shoulder, arm and shaft
@@ -86,16 +92,18 @@ export function receivingTarget(prediction, current, preferLanding = false) {
 // During fast flat rallies the first intercept can be at the net, several
 // metres before the shuttle reaches the receiver. Pick a reachable stance
 // along this flight and allow a little time to plant before swinging.
-export function receiveIntercept(position, velocity, player, pace, speed, height=1.75){
+export function receiveIntercept(position, velocity, player, pace, speed, height=1.75,attackNet=false){
  const p={...position},v={...velocity},step=1/120;
  let best=null,bestCost=Infinity;
  for(let i=1;i<=600;i++){
   advance(p,v,step*pace);
   if(p.y<.20)break;
-  if(i%3||p.z<.55||p.z>7||p.y>height+.20||v.y>1.4)continue;
+  if(i%3||p.z<.55||p.z>7)continue;
   const stance=receivingTarget({intercept:p},player);
   const distance=Math.hypot(stance.x-player.x,stance.z-player.z);
   const time=i*step,travel=time-.09-distance/Math.max(speed,1);
+  if(attackNet&&travel>=0&&netKillOpportunity(p,stance))return {...p,time:time*pace};
+  if(p.y>height+.20||v.y>1.4)continue;
   const cost=Math.max(0,-travel)*8+Math.abs(p.y-height)*.42+distance*.14+time*.10;
   if(cost<bestCost){bestCost=cost;best={...p,time:time*pace};}
  }
@@ -117,6 +125,7 @@ export function swingWindow({position,velocity,player,playerVelocity={x:0,z:0},k
  for(let i=0;i<9;i++)advance(anticipated,v,lookAhead*pace/9);
  const futurePlayer={x:player.x+playerVelocity.x*lookAhead,z:player.z+playerVelocity.z*lookAhead};
  if(!canContact({...contact,position:anticipated,velocity:v,player:futurePlayer,jump,assisted}))return null;
+ if(kind==='netkill'&&!netKillOpportunity(anticipated,futurePlayer,jump))return null;
  if(anticipated.y-jump<2.30&&!defensiveReach(anticipated,futurePlayer,jump))return null;
  const desiredHeight=({clear:2.12,drive:1.9,drop:2.55,slicedrop:2.65,smash:2.98,slicesmash:2.98,lift:1.25,net:1.5,netcross:1.5,push:1.82,netkill:2.15})[kind]??2.1;
  if(age>.22){

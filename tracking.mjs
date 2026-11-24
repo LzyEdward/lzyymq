@@ -35,3 +35,11 @@ export function stepHighBallOffset(current,target,dt){
  const rate=target>current?11:6;
  return current+(target-current)*(1-Math.exp(-rate*Math.max(0,dt)));
 }
+// Read the descending contact in court space. Positive preparation means
+// the feet are behind it; a ball still behind the shoulder calls for a turn.
+export function overheadPreparation(ball,feet,contact){
+ if(!contact||contact.y<2.24||contact.z<1.7)return {turn:0,ready:0};
+ const front=feet.z-contact.z;
+ const near=clamp((3.1-Math.abs(feet.x-contact.x))/2,0,1)*clamp((ball.y-1.85)/1.2,0,1);
+ return {turn:near*clamp((.42-front)/.85,0,1),ready:near*clamp((front+.05)/.5,0,1)*clamp((2.25-front)/1.2,0,1)};
+}

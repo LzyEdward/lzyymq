@@ -171,6 +171,7 @@ export function solveShot(origin, target, type = 'clear',options={}) {
   }
   let up = ({ clear: 15.8, drive: 5.1, push:4.1,netkill:-3.8,drop: 6.1, smash: -6.5, slicesmash:-4.8, serve: 3.6, lift: 18 })[type] ?? 12;
   if(type==='serve'&&Number.isFinite(options.up))up=clamp(options.up,3.6,10);
+  if(type==='lift'&&Number.isFinite(options.up))up=clamp(options.up,5,18);
   if (['smash','slicesmash'].includes(type) && origin.y < 2.65) up = 1.5;
   let horizontal = 10, result;
   for (let attempt = 0; attempt < 13; attempt++) {

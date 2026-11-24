@@ -110,7 +110,7 @@ export function opponentReceiveMissChance({level,shot='clear',position,distance,
 }
 
 // Low grades can mishit under pressure and fall short on clears more often.
-export function opponentStrokeExecution({level,type,target,quality=1,energy=100,pressure=0,random=Math.random}){
+export function opponentStrokeExecution({level,type,target,quality=1,energy=100,pressure=0,height=1.5,random=Math.random}){
  const fatigue=1-clamp(energy/100,0,1);
  const netShot=['drop','slicedrop','net','netcross','lift'].includes(type);
  const faultChance=clamp((1-level.accuracy)*.17+(1-quality)*.08+fatigue*.07+(netShot?(1-level.netSkill)*.045:0),0,.24);
@@ -122,7 +122,15 @@ export function opponentStrokeExecution({level,type,target,quality=1,energy=100,
  const xError=(random()*2-1)*imprecision*1.35;
  const zError=(random()*2-1)*imprecision*1.25;
  const shortfall=['clear','lift'].includes(type)?imprecision*3.4+clamp(pressure,0,1)*(1-level.accuracy*.6)*1.5:0;
- return {target:{x:target.x+xError,z:target.z+zError-shortfall},fault:null};
+ let depth=target.z+zError-shortfall,up;
+ if(type==='lift'){
+  const low=clamp((1.52-height)/1.15,0,1);
+  const late=low*clamp(pressure*1.65+.36*low-.12,0,1);
+  const undercut=clamp(late*(1.48-level.netSkill*.61)+imprecision*.17,0,1);
+  depth=Math.max(1.4,depth-undercut*2.15);
+  up=18-undercut*(10+random()*2.5);
+ }
+ return {target:{x:target.x+xError,z:depth},fault:null,up};
 }
 
 // All choices use observed court positions, never the player's pending input.
@@ -204,7 +212,9 @@ export function opponentFootwork({position,velocity,target,level,energy=100,wait
  const dx=target.x-position.x,dz=target.z-position.z,distance=Math.hypot(dx,dz);
  // A visible split-step anticipation replaces the old statue-like reaction
  // pause. Level still controls how soon the opponent commits and how fast.
- const acceleration=level.acceleration*(waiting?.35:1.12),top=waiting?Math.min(.8,level.speed*.16):level.speed*1.18*(.68+.32*clamp(energy/100,0,1));
+ const reversing=velocity.x*dx+velocity.z*dz<0;
+ const braking=reversing?.68+.32*level.anticipation:1;
+ const acceleration=level.acceleration*(waiting?.35:1.12*braking),top=waiting?Math.min(.8,level.speed*.16):level.speed*1.18*(.68+.32*clamp(energy/100,0,1));
  const desired=Math.min(top,Math.sqrt(Math.max(0,distance-.035)*acceleration*1.65));
  const wanted={x:distance>.035?dx/distance*desired:0,z:distance>.035?dz/distance*desired:0};
  const dvx=wanted.x-velocity.x,dvz=wanted.z-velocity.z,delta=Math.hypot(dvx,dvz),factor=delta?Math.min(1,acceleration*dt/delta):0;

@@ -43,7 +43,7 @@ export function createViewmodel(THREE,createRacket,{skinMap=null,articulated=fal
    const pose=rig.pose({position:root.position.toArray(),rotation:[root.rotation.x,root.rotation.y,root.rotation.z]});
    root.position.fromArray(pose.position);root.rotation.fromArray([...pose.rotation,'XYZ']);const chain=rig.chain(root);arm.update(root,chain);
    root.userData.armReport={reachable:chain.reachable,extension:chain.extension,correction:pose.correction};
-   if(leftArm&&support.visible){leftArm.relaxFingers(support.userData.relaxation);leftArm.update(support,leftRig.chain(support));leftArm.poseNails(open.details);}
+   if(leftArm&&support.visible){leftArm.relaxFingers(support.userData.relaxation,support.userData.fist);leftArm.update(support,leftRig.chain(support));leftArm.poseNails(open.details);}
    root.updateWorldMatrix(true,true);
   };}
  }

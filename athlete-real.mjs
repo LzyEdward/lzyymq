@@ -278,7 +278,7 @@ export function createAthlete(THREE, createRacket,{skinMap=null,mergeGeometries=
  }
  let stride=0,ready=0,carriedX=0,carriedZ=0;const footPlants=[new FootPlant(),new FootPlant()];
  const smooth=(t,lo,hi)=>{const u=clamp((t-lo)/(hi-lo),0,1);return u*u*(3-2*u);};
- function update({speed=0,dt=1/60,time=0,swing=0,lateral=0,forward=0,shot='clear',anticipation=0,lookY=1.5,lookX=0,split=0,crossover=false,contact=null,lunge=0,netVariant='',supportContact=null,jumpHeight=0,landing=0,celebration=0,impactOnly=false}={}){
+ function update({speed=0,dt=1/60,time=0,swing=0,lateral=0,forward=0,shot='clear',anticipation=0,lookY=1.5,lookX=0,split=0,crossover=false,contact=null,lunge=0,netVariant='',supportContact=null,jumpHeight=0,landing=0,celebration=0,fist=0,overheadReady=0,overheadTurn=0,impactOnly=false}={}){
   // The callers supply court-space velocity. Lean, crossover and feet
   // must all use the same body frame, including when facing the far baseline.
   const velocity=vec(lateral,0,forward);
@@ -317,6 +317,7 @@ export function createAthlete(THREE, createRacket,{skinMap=null,mergeGeometries=
   bones.spine03.rotation.y=weightShift*-.092+(overhead?power*(-coil*.15+drive*.19):impact*.105);
   bones.spine03.rotation.z=clamp(-lateral*.018,-.10,.10)-loadX*.55-reachSide*.17+weightShift*.035;
   bones.spine01.rotation.x+=breath*.014+dip*.16;
+  bones.spine03.rotation.y-=overheadTurn*.32+overheadReady*.12;
   head.rotation.x=clamp((1.55-lookY)*.20,-.58,.32);head.rotation.y=clamp(lookX*.11,-.36,.36);root.updateWorldMatrix(true,true);
   const blinkPhase=(time+1.7)%4.6,blink=blinkPhase<.15?Math.sin(blinkPhase/.15*Math.PI):0;
   if(!impactOnly)for(const eye of eyes){
@@ -343,6 +344,8 @@ export function createAthlete(THREE, createRacket,{skinMap=null,mergeGeometries=
   shadow.position.y=.009-jumpHeight;shadow.material.opacity=.4/(1+jumpHeight);
   const hand=vec(-.24-run*.035-motion*run*.035,1.24+ready*.19,.28+Math.cos(stride)*run*.07);
   const pole=vec(-.47,1.08,-.02);
+  hand.y+=.28*overheadReady;hand.z-=.22*overheadReady+.10*overheadTurn;
+  pole.y+=.24*overheadReady;
   if(overhead){
    const load=smooth(t,0,.14),extend=smooth(t,.13,.245),follow=smooth(t,.255,.53),recover=smooth(t,.55,1);
    const swingHand=vec(-.32,1.63,-.27).lerp(vec(-.28,1.86,.16),extend)
@@ -410,11 +413,15 @@ export function createAthlete(THREE, createRacket,{skinMap=null,mergeGeometries=
    limb('upperarm01.L',left.lerp(vec(.30+.08*beat,1.91,.12),celebration),vec(.61,1.54,.02));
    bones['wrist.L'].rotation.z+=celebration*(.45+.34*beat);
   }
+  if(fist&&!impactOnly){
+   const left=root.worldToLocal(bones['wrist.L'].getWorldPosition(vec()));
+   limb('upperarm01.L',left.lerp(vec(.26,1.44,.24),fist),vec(.49,.94,.04));
+  }
   if(supportContact){const held=vec(...supportContact);held.x+=.015;held.y-=.09;limb('upperarm01.L',held,vec(.5,.7,.2));}
   bones['wrist.R'].updateWorldMatrix(true,false);
   if(impactOnly)return;
   {
-   const suffix='L',amount=supportContact ? .33 : .20*(1-celebration),sign=-1,frame=gripFrames.L;
+   const suffix='L',amount=supportContact ? .33 : .20*(1-celebration)+fist*.78,sign=-1,frame=gripFrames.L;
    for(let f=2;f<=5;f++)for(let part=1;part<=3;part++)bones['finger'+f+'-'+part+'.'+suffix].quaternion.setFromAxisAngle(frame.across,sign*amount*(part===1?1.04:part===2?1.22:.86));
    // Oppose the thumb against the index finger instead of pointing it upward.
    const thumb1=bones['finger1-1.'+suffix],thumb2=bones['finger1-2.'+suffix],thumb3=bones['finger1-3.'+suffix];
