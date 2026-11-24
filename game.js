@@ -506,7 +506,7 @@ function tone(freq, duration, volume, end = freq) {
   const o = audio.createOscillator(), g = audio.createGain(); o.type = 'sine'; o.frequency.setValueAtTime(freq, audio.currentTime); o.frequency.exponentialRampToValueAtTime(end, audio.currentTime + duration);
   g.gain.setValueAtTime(volume, audio.currentTime); g.gain.exponentialRampToValueAtTime(.001, audio.currentTime + duration); o.connect(g); g.connect(master); g.connect(audio.reverb); o.start(); o.stop(audio.currentTime + duration);
 }
-function currentMatchIntent(){return matchIntent({profile:state.profile,style:state.opponentStyle,score:state.score,points:state.matchPoints,energy:opponent.energy,recent:matchTactics.points});}
+function currentMatchIntent(){return matchIntent({opponentId:state.mode==='match'?state.currentOpponentId:'',profile:state.profile,style:state.opponentStyle,score:state.score,points:state.matchPoints,energy:opponent.energy,recent:matchTactics.points});}
 function selectedRival(){return TOUR_STARS[$('#opponent-star').value];}
 function matchDifficulty(rival,tournament=false){
   const key=$('#difficulty').value;
@@ -1173,7 +1173,7 @@ function opponentHit() {
   const feed=practiceFeed(opponent.returns);
   const chased=opponent.startFoot?Math.hypot(opponent.pos.x-opponent.startFoot.x,opponent.pos.z-opponent.startFoot.z):0;
   const pressure=contactPressure({initial:opponent.pressure?.strength||0,distance:Math.hypot(ball.pos.x-opponent.pos.x,ball.pos.z-opponent.pos.z),reach:level.reach,height:ball.pos.y,speed:Math.hypot(opponent.vel.x,opponent.vel.z),energy:opponent.energy,chased});
-  const plan=training?{type:feed.type,target:{x:feed.x,z:feed.z},action:'练习喂球',spin:0}:planOpponentStroke({level,position:ball.pos,player:player.pos,playerVelocity:player.vel,energy:opponent.energy,profile:currentMatchIntent().character,match:{style:state.opponentStyle,score:state.score,points:state.matchPoints,recent:matchTactics.points},tactic:OPPONENT_STYLES[state.opponentStyle]?.tactic||'balanced',history:opponent.history,pressure,random});
+  const plan=training?{type:feed.type,target:{x:feed.x,z:feed.z},action:'练习喂球',spin:0}:planOpponentStroke({level,position:ball.pos,player:player.pos,playerVelocity:player.vel,energy:opponent.energy,profile:currentMatchIntent().character,match:{opponentId:state.mode==='match'?state.currentOpponentId:'',style:state.opponentStyle,score:state.score,points:state.matchPoints,recent:matchTactics.points},tactic:OPPONENT_STYLES[state.opponentStyle]?.tactic||'balanced',history:opponent.history,pressure,random});
   const type=plan.type,shot=training?null:strokeOutcome({position:ball.pos,player:opponent.pos,kind:type,target:plan.target,side:-1,speed:Math.hypot(opponent.vel.x,opponent.vel.z),stamina:opponent.energy,qualityBonus:(level.accuracy-.7)*.18});
   if(shot){
     shot.quality=Math.max(.2,shot.quality-pressure*(1-level.anticipation*.68)*.24);
@@ -1361,7 +1361,7 @@ function updateOpponent(dt) {
   }
   const level=currentOpponentLevel(),scriptedOpponent=state.mode==='targets'||state.tutorial;
   const incoming=state.lastHitter==='player'&&state.phase==='rally',intercept=state.prediction?.intercept;
-  const base=opponentMemory.base(characterRecovery(recoveryBase({lastContact:opponent.lastContact,lastTarget:opponent.lastTarget,level}),currentMatchIntent()),level);
+  const base=opponentMemory.base(characterRecovery(recoveryBase({lastContact:opponent.lastContact,lastTarget:opponent.lastTarget,level}),currentMatchIntent(),opponent.history.at(-1)?.type),level);
   const moveStart=state.returnDelay;
   const waiting=incoming&&state.timer<=moveStart;
   let target={...base};

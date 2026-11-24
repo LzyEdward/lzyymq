@@ -22,6 +22,18 @@ test('star default resolves visibly while a manual personality overrides it',()=
  assert.equal(resolveCharacter('defend','linDan08'),'defend');
  assert.equal(resolveCharacter('unknown','allround'),'balanced');
 });
+test('named opponents within one profile can prefer different strokes on the same feed',()=>{
+ const forecourt={position:{x:.8,y:1.68,z:-1.6},player:{x:-1,z:4.3}};
+ const momota=distribution('defend',{...forecourt,match:{opponentId:'momota'}});
+ const chen=distribution('defend',{...forecourt,match:{opponentId:'chenLong'}});
+ assert.ok(momota.push>chen.push*1.45);
+ assert.ok(chen.lift>momota.lift*1.4);
+ const base={x:.2,z:-3.6};
+ assert.ok(characterRecovery(base,matchIntent({opponentId:'ginting',profile:'netpress'}),'drive').z>
+ characterRecovery(base,matchIntent({opponentId:'taufik',profile:'netpress'}),'drive').z+.15);
+ const low=distribution('attack',{position:{x:.8,y:.65,z:-1.4},pressure:.9,match:{opponentId:'shiYuqi'}});
+ assert.deepEqual(Object.keys(low),['lift']);
+});
 test('score and energy change decisions without mutating level or physical ability',()=>{
  const before=JSON.stringify(level);
  assert.equal(matchIntent({score:[7,2]}).phase,'chase');

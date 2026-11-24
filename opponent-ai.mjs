@@ -161,6 +161,7 @@ export function planOpponentStroke({level,position,player,playerVelocity={x:0,z:
   add('drop',straight,1.1+(1-skill)*.7,.9+skill*1.65,'直线吊球');
   if(tier>=3){add('slicedrop',cross,1.10,.65+skill*1.55,'劈吊对角');if(tier>=6)add('slicedrop',openX,1.4,.3+skill,'滑板吊斜线');}
   if(position.y>2.4&&tier>=4)add('slicesmash',cross,3.35,.45+level.attack*2.5,'劈杀斜线');
+  if(intent.signature?.straightAttack&&position.y>2.25&&tier>=4)add('smash',straight,3.8,.75+level.attack*2.2,'直线点杀');
   if(position.y>2.25){add('smash',openX,anticipatedZ>4.8?3.0:4.8,.4+level.attack*4.5,'杀空当');add('smash',bodyX,anticipatedZ>4.8?3.35:4.8,.3+level.attack*2.2,'追身点杀');}
   if(position.y>1&&position.y<2.65){add('drive',openX,4.5,.6+level.attack*1.8,'平抽压制');if(tier>=4)add('drive',bodyX,3.35,.4+skill*1.4,'突击追身');}
  }

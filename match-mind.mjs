@@ -6,22 +6,42 @@ export const OPPONENT_CHARACTERS=Object.freeze({
  defend:{name:'耐心拉吊',description:'先拉开再变速，优先保证回球；强行进攻较少',weights:{clear:1.8,lift:1.4,drop:1.5,slicedrop:1.4,smash:.58,slicesmash:.55},base:-.12},
  counter:{name:'防守反击',description:'被动先过渡，等短球或空当再加速',weights:{clear:1.35,lift:1.45,net:1.2,smash:.75,drive:1.15},base:-.2},
 });
+// Match tendencies for the named exhibition and tournament opponents.
+const signaturePlays={
+ linDan:{net:{push:1.7},rear:{smash:1.5},follow:'smash',step:.17},
+ leeChongWei:{net:{net:1.4},rear:{slicesmash:2.35},follow:'slicesmash',step:.13},
+ peterGade:{net:{netcross:1.55,push:1.5},rear:{slicedrop:1.65},follow:'drop',step:.16},
+ taufik:{net:{net:1.65,netcross:1.45},rear:{clear:1.25},follow:'net',step:.19},
+ chenLong:{net:{lift:1.8},rear:{clear:1.45},follow:'clear',step:-.14},
+ momota:{net:{push:2.15,net:1.23},rear:{drop:1.65},follow:'push',step:.08},
+ shiYuqi:{net:{net:1.4},rear:{drop:1.65},follow:'drop',step:.15,straightAttack:true},
+ viktorAxelsen:{net:{push:1.65},rear:{smash:1.8},follow:'smash',step:.10,steepAttack:true},
+ ginting:{net:{netkill:2.1,push:1.5},rear:{drive:1.45},follow:'drive',step:.23}
+};
 export function resolveCharacter(profile='auto',style='allround'){
  return OPPONENT_CHARACTERS[profile]?profile:({linDan08:'attack',leeChongWei:'counter',chenLong:'defend',taufik:'netpress'})[style]||'balanced';
 }
 // Score only changes decision-making. Speed, accuracy and reach stay tied to
 // the selected grade and sliders; there is no hidden catch-up power boost.
-export function matchIntent({profile='balanced',style='allround',score=[0,0],points=11,energy=100,recent=[]}={}){
+export function matchIntent({opponentId='',profile='balanced',style='allround',score=[0,0],points=11,energy=100,recent=[]}={}){
  const character=resolveCharacter(profile,style),p=OPPONENT_CHARACTERS[character];
  const deficit=score[0]-score[1],closing=Math.max(...score)>=points-2;
  const losses=recent.slice(-3).filter(x=>x.playerWon).length;
  const phase=energy<32?'manage':closing&&Math.abs(deficit)<=2?'clutch':deficit>=3||losses===3?'chase':deficit<=-3?'protect':'build';
  const label={manage:'节省体能，拉开过渡',clutch:'关键分，先稳住再找机会',chase:'调整节奏，主动寻找变化',protect:'领先控制，减少强攻失误',build:'按打法组织下一拍'}[phase];
- return {character,name:p.name,phase,label,base:p.base,weights:p.weights};
+ return {character,name:p.name,phase,label,base:p.base,weights:p.weights,signature:signaturePlays[opponentId]};
 }
 export function characterWeight(candidate,{intent,pressure=0,position,player,last,level}){
  const type=candidate.type,attacks=['smash','slicesmash','netkill'].includes(type),safe=['clear','lift'].includes(type);
  let weight=intent.weights[type]??1;
+ const signature=intent.signature;
+ if(signature&&pressure<.52){
+  const preferences=position.z>-2.6?signature.net:signature.rear;
+  weight*=preferences[type]??1;
+  if(signature.straightAttack&&type==='smash'&&Math.abs(position.x-candidate.target.x)<1.15)weight*=1.8;
+  if(signature.steepAttack&&type==='smash'&&position.y>2.75)weight*=1.35;
+  if(last?.type===signature.follow&&last.type!==type&&candidate.target.z<2.3&&player.z>3.2)weight*=1.38;
+ }
  if(intent.character==='counter'){
   const opening=position.y>2.4&&position.z>-4.5&&Math.abs(candidate.target.x-player.x)>2.2;
   weight*=attacks?(opening&&pressure<.2?3.5:.55):safe&&pressure>.25?1.7:1;
@@ -33,9 +53,9 @@ export function characterWeight(candidate,{intent,pressure=0,position,player,las
  if(last?.target?.z<2.3&&player.z<3.4&&candidate.target.z>4.7)weight*=1.2+level.anticipation*.5;
  return clamp(weight,.12,5);
 }
-export function characterRecovery(base,intent){
+export function characterRecovery(base,intent,lastType){
  const adjustment=intent.phase==='manage'?-.12:intent.phase==='chase'?.1:0;
- return {...base,z:clamp(base.z+intent.base+adjustment,-4.45,-2.45)};
+ return {...base,z:clamp(base.z+intent.base+adjustment+(intent.signature&&lastType===intent.signature.follow?intent.signature.step:0),-4.45,-2.45)};
 }
 
 export function strokeSoundProfile(type){
