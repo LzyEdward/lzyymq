@@ -1679,10 +1679,8 @@ function updateContactHint(){
    depthCue.textContent=`${depth>0?'↓ 后退':'↑ 上前'} ${Math.abs(depth).toFixed(1)} m`;
   }
  }else depthCue.classList.add('hidden');
- if(!thirdPerson||(!guide&&!near)){
-  halo.classList.add('hidden');
-  if(state.cameraMode==='third')edge.classList.add('hidden');
-  return;
+ if(!live||(!guide&&!near)){
+  halo.classList.add('hidden');edge.classList.add('hidden');return;
  }
  const cue=shuttleScreenCue(tmp.copy(ball.renderPos).applyMatrix4(camera.matrixWorldInverse),camera.fov,camera.aspect);
  edge.classList.toggle('hidden',!guide||!cue.edge);
@@ -1690,7 +1688,7 @@ function updateContactHint(){
   edge.style.left=(cue.x*.5+.5)*100+'%';edge.style.top=(-cue.y*.5+.5)*100+'%';
   edge.style.setProperty('--shuttle-arrow',cue.angle+'deg');
  }
- if(cue.edge||!near){halo.classList.add('hidden');return;}
+ if(!near||cue.edge){halo.classList.add('hidden');return;}
  const queued=near&&(hitIntent.armed(state.timer)||(state.swing>0&&!state.swingMissed&&!state.swingContact));
  let ready=false;
  if(near&&!queued&&state.swing===0&&contactReady(true)){
@@ -1743,18 +1741,6 @@ function updateEffects(dt) {
   // DOM indicators only need 30 Hz; avoid styling hidden tactical widgets 60×/s.
   if(state.timer>=lastEffectsUI&&state.timer-lastEffectsUI<1/30)return;
   lastEffectsUI=state.timer;
-  if (state.cameraMode==='first'&&state.screen === 'play' && ball.active) {
-    const rel = tmp.copy(ball.pos).project(camera);
-    const inFront = tmp2.copy(ball.pos).sub(camera.position).dot(camera.getWorldDirection(V())) > 0;
-    const offscreen = Math.abs(rel.x) > .92 || Math.abs(rel.y) > .83 || !inFront;
-    $('#shuttle-indicator').classList.toggle('hidden', !offscreen);
-    if (offscreen) {
-      $('#shuttle-indicator').style.left = `${clamp((rel.x * .5 + .5) * 100, 8, 92)}%`;
-      $('#shuttle-indicator').style.top = `${inFront ? clamp((-rel.y * .5 + .5) * 100, 18, 78) : 78}%`;
-      if(ball.pos.y>camera.position.y+2){$('#shuttle-indicator span').textContent='↑ 高球在头顶 · V 跟球';$('#shuttle-indicator').style.top='19%';}
-      else $('#shuttle-indicator span').textContent=inFront?'来球':'身后来球 · 后退';
-    }
-  } else if(state.cameraMode==='first')$('#shuttle-indicator').classList.add('hidden');
   const ready = contactReady();
   $('#reticle').classList.toggle('ready', ready); $('#reticle').classList.toggle('charging', hitIntent.armed(state.timer) && state.phase === 'rally');
   const armed = hitIntent.armed(state.timer), receiving = ball.active && state.lastHitter==='opponent';
@@ -2888,7 +2874,7 @@ async function init() {
        const nearCue=$('#contact-halo');
        checks.push({name:'incoming-shuttle-gets-a-visible-timing-cue',pass:!nearCue.classList.contains('hidden')&&['near','ready'].includes(nearCue.dataset.timing),timing:nearCue.dataset.timing});
        ball.pos.copy(camera.localToWorld(V(5,1,-3)));ball.renderPos.copy(ball.pos);updateContactHint();
-       checks.push({name:'offscreen-shuttle-gets-a-direction-arrow',pass:!$('#shuttle-indicator').classList.contains('hidden')&&Number.isFinite(Number.parseFloat($('#shuttle-indicator').style.getPropertyValue('--shuttle-arrow'))),left:$('#shuttle-indicator').style.left,angle:$('#shuttle-indicator').style.getPropertyValue('--shuttle-arrow')});
+       checks.push({name:'offscreen-shuttle-gets-a-direction-arrow',pass:getComputedStyle($('#shuttle-indicator')).display!=='none'&&Number.isFinite(Number.parseFloat($('#shuttle-indicator').style.getPropertyValue('--shuttle-arrow'))),left:$('#shuttle-indicator').style.left,angle:$('#shuttle-indicator').style.getPropertyValue('--shuttle-arrow')});
        const guideRing=shuttleFootprint.visible,guidePoint=[shuttleFootprint.position.x,shuttleFootprint.position.z];
        checks.push({name:'ground-footprint-follows-the-shuttle-coordinate',pass:guideRing&&Math.hypot(guidePoint[0]-ball.renderPos.x,guidePoint[1]-ball.renderPos.z)<.001,guidePoint});
        ball.pos.set(.2,3.4,2.3);ball.renderPos.copy(ball.pos);state.prediction={intercept:{x:.6,y:2,z:3.1}};
