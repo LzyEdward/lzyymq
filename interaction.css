@@ -76,3 +76,18 @@ body.training-mode.controls-visible .training-net-controls { display:flex; }
 @media(max-width:800px){.hero .intro{font-size:12px}.hero .menu-options{font-size:9px}#difficulty-detail,.grade-note,.career-note{font-size:8px!important}.setting-row small{font-size:8px}}
 @media(pointer:coarse){body.playing #hud>#control-dock{display:block!important}}
 @media(max-width:480px){.primary-controls span{font-size:12px;letter-spacing:.15px}}
+/* In landscape touch play the original tall action dock covered the rally lane.
+   Keep every quick shot reachable while pinning the compact controls to the edge. */
+@media(pointer:coarse) and (orientation:landscape) and (max-height:500px){
+ body.playing #hud>#control-dock{left:84px;right:6px;bottom:5px;transform:none;width:auto}
+ body.playing #control-dock>p,body.playing #control-dock>small{display:none}
+ #control-dock .primary-controls{gap:4px}
+ .primary-controls>button,#control-dock #quick-hit{min-width:0;flex:1;height:46px;padding:4px 3px;gap:3px}
+ .primary-controls span{font-size:12px;letter-spacing:.2px}
+ .primary-controls kbd,#control-dock #quick-hit kbd{font-size:7px}
+ #control-dock .slice-tools{gap:4px;margin-top:4px}
+ #control-dock .slice-tools button{height:27px;padding:3px 8px;font-size:10px}
+ #control-dock .slice-tools kbd{font-size:8px}
+ body.playing #hud #joystick{left:8px;bottom:10px;width:66px;height:66px}
+ #joystick i{left:21px;top:21px;width:24px;height:24px}
+}

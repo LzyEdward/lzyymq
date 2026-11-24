@@ -84,6 +84,7 @@ await cp(path.join(root,'UPDATE-7.17.md'),path.join(out,'UPDATE-7.17.md'));
 await cp(path.join(root,'UPDATE-7.18.md'),path.join(out,'UPDATE-7.18.md'));
 
 await cp(path.join(root,'UPDATE-7.19.md'),path.join(out,'UPDATE-7.19.md'));
+await cp(path.join(root,'UPDATE-7.56.md'),path.join(out,'UPDATE-7.56.md'));
 await cp(path.join(root,'VERIFICATION-7.21.md'),path.join(out,'VERIFICATION-7.21.md'));
 await cp(path.join(root,'VERIFICATION-7.22.md'),path.join(out,'VERIFICATION-7.22.md'));
 
