@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {OPPONENT_LEVELS} from '../competition.mjs';
+import {OPPONENT_LEVELS,singlesServiceSide} from '../competition.mjs';
 import {opponentFootwork,planOpponentStroke,recoveryBase,opponentReceiveMissChance,opponentStrokeExecution,opponentServeTarget,defensiveIntercept,opponentWeaknessProfile,opponentWeaknessKey} from '../opponent-ai.mjs';
 import {advance,COURT,predict,solveShot} from '../physics.mjs';
 
@@ -15,6 +15,23 @@ test('opponent short serves stay inside a readable central receive lane at every
  }
  const easy=opponentServeTarget({level:level('easy'),random:()=>.99}),elite=opponentServeTarget({level:level('legend'),random:()=>.99});
  assert.ok(Math.abs(easy.x)<.62&&Math.abs(elite.x)<=.62);
+});
+
+test('singles servers change sides with their own score and aim diagonally across the centre line',()=>{
+ for(const [server,points,expectedSide] of [
+  ['player',[0,1],1],['player',[1,2],-1],['player',[20,21],1],
+  ['opponent',[5,0],-1],['opponent',[4,5],1],['opponent',[21,20],-1]
+ ]){
+  const side=singlesServiceSide(server,points);
+  assert.equal(side,expectedSide);
+  if(server==='opponent'){
+   for(const r of [0,.55,.99]){
+    const target=opponentServeTarget({serverSide:side,level:level('legend'),random:()=>r});
+    assert.equal(Math.sign(target.x),-side);
+    assert.ok(Math.abs(target.x)>=.15 && Math.abs(target.x)<=.62);
+   }
+  }
+ }
 });
 
 test('readable serves clear the net and land on the receiver side for all ten grades',()=>{

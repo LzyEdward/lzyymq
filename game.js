@@ -11,7 +11,7 @@ import { freeLook, landingFromMap, moveLanding, normalizeLanding, landingName, L
 import { createAthlete } from './athlete.mjs';
 import {cameraMode,toggleCameraMode,orbitLook,thirdPersonPose,thirdPersonLift,thirdPersonFov,shuttleScreenCue,THIRD_PERSON_PITCH,avatarObstruction,avatarSwingTime} from './camera-mode.mjs';
 import { movementVector, gradeContact, strokeOutcome, shotTarget, SHOT_DEPTHS, Dash, targetDistance, DRILL_TARGETS, practiceFeed, smartStroke, racketPowerBoost, techniqueTarget } from './gameplay.mjs';
-import { OPPONENT_LEVELS, LEVEL_DESCRIPTIONS, LEVEL_REFERENCES, opponentLevel, placementSpread, matchFinished, rankName, freshCareer, parseCareer, settleMatch } from './competition.mjs';
+import { OPPONENT_LEVELS, LEVEL_DESCRIPTIONS, LEVEL_REFERENCES, opponentLevel, placementSpread, singlesServiceSide, matchFinished, rankName, freshCareer, parseCareer, settleMatch } from './competition.mjs';
 import {planOpponentStroke,recoveryBase,opponentFootwork,opponentReceiveMissChance,opponentStrokeExecution,opponentServeTarget,opponentContactWindow,opponentStance,defensiveIntercept,opponentReceiveBase,opponentWeaknessProfile,opponentWeaknessKey} from './opponent-ai.mjs';
 import { trackAngles, stepTracking, highBallOffset, stepHighBallOffset, manualLookTakeover, overheadPreparation } from './tracking.mjs';
 import { loadSurfaceMaps, createEnvironment, CourtPresentation } from './presentation.mjs';
@@ -803,7 +803,14 @@ function prepareServe() {
   opponent.defenseRally = -1;opponent.strikePlan=null;opponent.jumpPeakAt=-10;opponent.jumpUntil=0;opponent.jumpAmplitude=0;opponent.startFoot=null;
   // A short-serve receiver starts near the front service line, not at the
   // rear-court rally base. Otherwise every beginner loses before moving.
-  if(state.mode!=='targets'&&(state.server==='player'||state.mode==='practice')){
+  if(state.mode==='match'&&!state.tutorial){
+    const side=singlesServiceSide(state.server,state.score);
+    const nearServes=state.server==='player';
+    player.pos.set(nearServes?side*.7:-side*.7,0,nearServes?4.1:4.15);
+    player.vel.set(0,0,0);player.speed=0;playerAvatar?.resetFeet();
+    const far=nearServes?opponentReceiveBase({serverX:player.pos.x,high:state.serveStyle==='high'}):{x:side*.7,z:-3.65};
+    opponent.pos.set(far.x,0,far.z);opponent.vel.set(0,0,0);
+  }else if(state.mode!=='targets'&&(state.server==='player'||state.mode==='practice')){
     const base=opponentReceiveBase({serverX:player.pos.x,high:state.serveStyle==='high'});opponent.pos.set(base.x,0,base.z);opponent.vel.set(0,0,0);
   }
   if (state.mode === 'targets') assignDrillTarget();
@@ -1305,7 +1312,9 @@ function updatePlayer(dt, pad = null) {
   const sprint=state.stamina>8?(heldSprint?1:chase):0;
   const energyFactor=.80+.20*clamp(state.stamina/35,0,1);
   const speed=(5.65+2.65*sprint)*state.playerStats.speed*energyFactor;
-  if (manual) {
+  if (state.phase==='serving' && state.mode==='match') {
+    player.vel.set(0,0,0);
+  } else if (manual) {
     // The doubles court is the compass: forward is always toward the net.
     const vx = mx * speed * movement.magnitude, vz = -mz * speed * movement.magnitude;
     player.vel.x = moveVelocity(player.vel.x, vx, dt); player.vel.z = moveVelocity(player.vel.z, vz, dt);
@@ -1319,6 +1328,15 @@ function updatePlayer(dt, pad = null) {
     moveCharacter(player, target, (incoming ? (state.sprintAssist?8.0:6.6) * state.playerStats.defense * state.playerStats.speed : 2.6 * state.playerStats.speed)*energyFactor, dt, true);
   } else {
     player.vel.x=moveVelocity(player.vel.x,0,dt);player.vel.z=moveVelocity(player.vel.z,0,dt);player.pos.addScaledVector(player.vel,dt);
+  }
+  if(state.mode==='match'&&!training&&!state.tutorial&&['serve','serving','opponentServe'].includes(state.phase)){
+    const serverSide=singlesServiceSide(state.server,state.score);
+    const side=state.server==='player'?serverSide:-serverSide;
+    const x=side*clamp(player.pos.x*side,.21,COURT.halfWidth-.12);
+    const z=clamp(player.pos.z,2.19,COURT.halfLength-.16);
+    if(x!==player.pos.x)player.vel.x=0;
+    if(z!==player.pos.z)player.vel.z=0;
+    player.pos.set(x,0,z);
   }
   player.speed = Math.hypot(player.vel.x, player.vel.z);
   state.stamina=clamp(state.stamina+movementEnergyRate({speed:player.speed,sprinting:manual&&sprint>.55,staminaSkill:state.playerStats.stamina,resting:state.phase!=='rally'})*dt,0,100);
@@ -1373,7 +1391,7 @@ function updateOpponent(dt) {
   const moveStart=state.returnDelay;
   const waiting=incoming&&state.timer<=moveStart;
   let target={...base};
-  if(state.phase==='serve'||state.phase==='serving')target={x:opponent.pos.x,z:opponent.pos.z};
+  if(state.phase==='serve'||state.phase==='serving'||state.phase==='opponentServe')target={x:opponent.pos.x,z:opponent.pos.z};
   if(state.mode==='targets')target={x:-.35,z:-4.5};
   else if(waiting&&!scriptedOpponent&&state.rally>1){
     target=opponent.splitTarget||opponent.pos;
@@ -1835,7 +1853,10 @@ function updateHud() {
   if(!cue.classList.contains('hidden')){const locked=state.swing>0&&!state.swingContact&&state.swingTarget,target=locked||selectedLanding();cue.textContent=`${locked?'起拍已锁定':'下一拍'} · ${landingName(target)} · ${Math.abs(target.x).toFixed(1)}m / ${Math.abs(target.z).toFixed(1)}m`;}
   $('#serve-key').textContent=state.phase==='opponentServe'?'接发':'左键';
   if(state.phase==='serving')$('#serve-copy').textContent='轻抛后向前送拍 · 发球中';
-  else if(state.phase==='serve')$('#serve-copy').textContent=state.serveStyle==='high'?'高远发球 · G 切换低手':'低手发球 · G 切换高远';
+  else if(state.phase==='serve'){
+    const court=state.mode==='match'&&!training&&!state.tutorial?(singlesServiceSide('player',state.score)>0?'右区 · ':'左区 · '):'';
+    $('#serve-copy').textContent=court+(state.serveStyle==='high'?'高远发球 · G 切换低手':'低手发球 · G 切换高远');
+  }
   const trainingHud = $('#training-hud');
   trainingHud.classList.toggle('hidden', !training || state.screen !== 'play');
   if (training) {
@@ -1920,7 +1941,7 @@ function fixedUpdate(dt) {
   if(state.phase==='opponentServe'){
     state.countdown-=dt;ball.pos.set(opponent.pos.x,1.15,opponent.pos.z+.65);
     if(state.countdown<.3&&opponent.swing===0){opponent.swing=.001;opponent.shot='serve';opponent.contactPoint=ball.pos.clone();}
-    if(state.countdown<=0){state.phase='rally';ball.active=true;state.lastHitter='opponent';state.rally=1;state.serveCount++;opponent.returns=0;opponent.swing=.24;opponent.shot='serve';opponent.contactPoint=ball.pos.clone();ball.spin=0;ball.spinAt=state.timer;const target=opponentServeTarget({level:currentOpponentLevel(),random});state.lastShot={type:'serve',intended:{...target}};ball.vel.copy(solveShot(ball.pos,target,'serve',{up:6,step:ballTimeScale('opponent')/120}));ball.previous.copy(ball.pos);refreshPrediction();hitSound('serve',true);}
+    if(state.countdown<=0){state.phase='rally';ball.active=true;state.lastHitter='opponent';state.rally=1;state.serveCount++;opponent.returns=0;opponent.swing=.24;opponent.shot='serve';opponent.contactPoint=ball.pos.clone();ball.spin=0;ball.spinAt=state.timer;const target=opponentServeTarget({level:currentOpponentLevel(),serverSide:singlesServiceSide('opponent',state.score),random});state.lastShot={type:'serve',intended:{...target}};ball.vel.copy(solveShot(ball.pos,target,'serve',{up:6,step:ballTimeScale('opponent')/120}));ball.previous.copy(ball.pos);refreshPrediction();hitSound('serve',true);}
   }
 }
 

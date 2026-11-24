@@ -66,11 +66,11 @@ export function opponentContactWindow({ball,position,level,training=false}){
 
 // Readable singles short serve: mostly central, with only modest lane
 // variation so a receiver can set their feet and choose a return.
-export function opponentServeTarget({level,random=Math.random}={}){
+export function opponentServeTarget({level,serverSide=-1,random=Math.random}={}){
  const tier=clamp(Math.round(level?.tier||1),1,10),progress=(tier-1)/9;
  const r=()=>clamp(random(),0,.999999);
- const side=r()<.5?-1:1;
- const x=r()<.78 ? (r()-.5)*(.62+progress*.20) : side*(.28+r()*(.20+progress*.12));
+ const width=r()<.78 ? .15+r()*(.22+progress*.10) : .36+r()*(.18+progress*.08);
+ const x=-Math.sign(serverSide||-1)*width;
  const z=3.55-progress*.08+(r()-.5)*.24;
  return {x:clamp(x,-.62,.62),z:clamp(z,3.32,3.72)};
 }

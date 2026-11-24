@@ -21,6 +21,13 @@ export function placementSpread(key,quality=1,energy=100){
  const accuracy=opponentLevel(key).accuracy;
  return (.035+(1-accuracy)*.95)*(1+(1-clamp(energy/100,0,1))*.85)+(1-clamp(quality,0,1))*.35;
 }
+// Court x is positive on the near player's right when facing the net.
+export function singlesServiceSide(server, score) {
+  const near = server === 'player';
+  const points = score[near ? 0 : 1];
+  return (near ? 1 : -1) * (points % 2 === 0 ? 1 : -1);
+}
+
 export function matchFinished(score,points=11){
  const goal=points===21?21:11,cap=goal===21?30:15;
  return Math.max(...score)>=cap||(Math.max(...score)>=goal&&Math.abs(score[0]-score[1])>=2);
