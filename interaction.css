@@ -104,3 +104,11 @@ body.training-mode.controls-visible .training-net-controls { display:flex; }
  body.playing #hud #joystick{left:8px;bottom:10px;width:66px;height:66px}
  #joystick i{left:21px;top:21px;width:24px;height:24px}
 }
+/* The desktop match HUD stays score-only. Touch screens have no Escape key.
+   Keep the clean score view and expose one
+   small pause affordance so the cursor and controls can be released safely. */
+#hud>#pause-btn{display:none}
+@media(pointer:coarse){
+ body.playing #hud>#pause-btn{display:block!important;position:absolute;right:12px;top:18px;z-index:8;width:32px;height:32px;padding:0;border:1px solid #d9e8cc3d;border-radius:50%;background:#0b1d1cb0;color:#eef4df;font-size:12px;line-height:30px;text-align:center}
+ body.playing #hud>#pause-btn span{display:none}
+}
