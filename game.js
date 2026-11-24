@@ -965,12 +965,16 @@ function releaseServe(){
   const target = state.serveTarget || selectedLanding('serve');
   ball.spin=0;ball.spinAt=state.timer;
   ball.vel.copy(solveShot(ball.pos, target, 'serve',{up:state.serveStyle==='high'?10:3.6,step:state.pace/120})); ball.active = true; state.phase = 'rally'; state.lastHitter = 'player'; state.rally = 1;
+  state.lastPlacement={intended:{...target},landing:null,status:'flying'};
   state.serveCount++;state.contactPoint=ball.pos.clone();state.contactElapsed=state.swing;
   $('#serve-hint').classList.add('hidden');opponent.returns = 0; state.returnDelay = state.timer + currentOpponentLevel().reaction; refreshPrediction(); hitSound('serve'); recordSpeed();
 }
 function refreshPrediction() {
   const level=currentOpponentLevel(),opponentHeight=level.rating>=1350?2.8:2.3;
-  state.prediction = predict(ball.pos, ball.vel, state.lastHitter === 'player' ? -1 : 1, state.lastHitter === 'player' ? opponentHeight : 2.85);
+  state.prediction = predict(ball.pos, ball.vel, state.lastHitter === 'player' ? -1 : 1, state.lastHitter === 'player' ? opponentHeight : 2.85,ballTimeScale());
+  if(state.lastHitter==='player'&&state.lastPlacement?.status==='flying'){
+    state.lastPlacement.landing=state.prediction.landing;state.lastLanding=state.prediction.landing;
+  }
   if(state.lastHitter==='opponent'){
     state.prediction.overhead=state.prediction.intercept;
     const attackNet=state.rally>1&&['auto','smash'].includes(state.shot);
@@ -1149,7 +1153,7 @@ function tryPlayerHit() {
   reactToReturn(shot.fault,type,shot.rating==='scramble',1-shot.quality,player.pos);
   state.tacticMessage=pressure.key&&pressure.strength>.28?TACTICAL_LABELS[pressure.key]:'';
   matchTactics.stroke({hitter:'player',type,target:shot.target,quality:shot.quality,fault:shot.fault,pressure,position:{x:ball.pos.x,y:ball.pos.y,z:ball.pos.z},contactReason:shot.reason});
-  state.lastLanding=predict(ball.pos,ball.vel,-1).landing;state.lastPlacement={intended:{...target},landing:state.lastLanding,fault:shot.fault,reason:shot.reason};ball.spin=['net','netcross','slicedrop','slicesmash'].includes(type)?state.playerStats.net*(type==='netcross'?1.8:1):0;ball.spinAt=state.timer;
+  state.lastPlacement={intended:{...target},landing:null,status:'flying'};ball.spin=['net','netcross','slicedrop','slicesmash'].includes(type)?state.playerStats.net*(type==='netcross'?1.8:1):0;ball.spinAt=state.timer;
   if(['smash','slicesmash'].includes(type))state.smashes++;
   opponent.splitAt=state.timer;opponent.startFoot={x:opponent.pos.x,z:opponent.pos.z};
   if (state.mode === 'targets' && wasOpponentShot) state.targetArmed = true;
@@ -1169,6 +1173,7 @@ function tryPlayerHit() {
   return true;
 }
 function opponentHit() {
+  if(state.lastPlacement?.status==='flying')state.lastPlacement.status='returned';
   const level=currentOpponentLevel(),training=state.mode==='targets'||state.tutorial;
   const feed=practiceFeed(opponent.returns);
   const chased=opponent.startFoot?Math.hypot(opponent.pos.x-opponent.startFoot.x,opponent.pos.z-opponent.startFoot.z):0;
@@ -1233,10 +1238,13 @@ function scorePoint(winner, reason) {
   else if(finished&&playerWon)celebrateVictory('exhibition');
 }
 
-function recordLanding(contact, incomingVelocity) {
-  lastLineReview = flightRecorder.finish(contact, incomingVelocity, state.lastHitter);
+function recordLanding(contact, incomingVelocity, review) {
+  lastLineReview = review;
   groundMotion = createGroundMotion(contact, incomingVelocity);
   state.lastLanding = { ...lastLineReview.position };
+  if(state.lastHitter==='player'&&state.lastPlacement?.status==='flying'){
+    state.lastPlacement.landing=state.lastLanding;state.lastPlacement.status=lastLineReview.call.inside?'landed':'out';
+  }
   $('#eagle-point-review').classList.remove('hidden'); $('#last-line-review').disabled = false;
   if (lastLineReview.call.nearLine && $('#eagle-auto').checked && !state.tutorial && !training) {
     reviewPending = state.timer + .65;
@@ -1445,6 +1453,9 @@ function updateBall(dt) {
     if (netY < COURT.netHeight + .035) {
       net.userData.hit({x:previous.x+(ball.pos.x-previous.x)*t,y:netY},clamp(ball.vel.z/14,-1.5,1.5));
       ball.vel.z *= -.12; ball.vel.x *= .4; ball.vel.y = -Math.abs(ball.vel.y) * .15; ball.pos.z = Math.sign(previousZ) * .055;
+      if(state.lastHitter==='player'&&state.lastPlacement?.status==='flying'){
+        state.lastPlacement.status='net';state.lastPlacement.landing=null;state.lastLanding=null;
+      }
       noise(.13, 1600, .12);
       if (training) completeTrainingRep(null, 'net');
       else {
@@ -1463,15 +1474,19 @@ function updateBall(dt) {
     const incomingVelocity = { x: ball.vel.x, y: ball.vel.y, z: ball.vel.z };
     noise(.045, 780, clamp(Math.abs(ball.vel.y) * .009, .025, .15), 'lowpass');
     const winner = winnerOnLanding(contact, state.lastHitter);
+    const review = flightRecorder.finish(contact, incomingVelocity, state.lastHitter);
     if (training) completeTrainingRep(contact, 'land');
     else if (!completeTargetShot(contact)) {
-      const call = flightRecorder.finish(contact, incomingVelocity, state.lastHitter).call;
+      const call = review.call;
       scorePoint(winner, !call.inside ? '界外球' : call.onLine ? '压线 · 界内球' : contact.z > 0 ? '落地 · 对手得分' : '落地 · 你的得分');
     }
-    recordLanding(contact, incomingVelocity);
+    recordLanding(contact, incomingVelocity, review);
     return;
   }
   if (Math.abs(ball.pos.x) > 12 || Math.abs(ball.pos.z) > 18 || ball.pos.y > 30) {
+    if(state.lastHitter==='player'&&state.lastPlacement?.status==='flying'){
+      state.lastPlacement.status='out';state.lastPlacement.landing=null;state.lastLanding=null;
+    }
     if (training) { completeTrainingRep(null, 'out'); return; }
     if (completeTargetShot(ball.pos)) return;
     scorePoint(state.lastHitter === 'player' ? 'opponent' : 'player', '界外球');
@@ -1800,7 +1815,16 @@ function updateTactics() {
   const last=state.lastPlacement?.landing;$('#landing-last').classList.toggle('hidden',!last);
   if(last){$('#landing-last').style.left=`${clamp((last.x/5.18+.5)*100,1,99)}%`;$('#landing-last').style.top=`${clamp((last.z+6.7)/6.7*100,1,99)}%`;}
   const intended=state.lastPlacement?.intended;
-  $('#landing-result').textContent=state.lastPlacement?.fault?`失误：${state.lastPlacement.fault==='net'?'下网':'出界'} · ${state.lastPlacement.reason}`:last&&intended?`上拍偏差 ${Math.hypot(last.x-intended.x,last.z-intended.z).toFixed(2)} m`:'青点是目标 · 白点是上拍预计落地';
+  const status=state.lastPlacement?.status;
+  let caption='青点是目标 · 白点是预计落点';
+  if(status==='net')caption='上拍下网';
+  else if(status==='out'&&!last)caption='上拍飞出场外';
+  else if(status==='returned')caption='对手已接回 · 白点是原预计落点';
+  else if(last&&intended){
+    const distance=Math.hypot(last.x-intended.x,last.z-intended.z).toFixed(2);
+    caption=(status==='flying'?'预计落点':status==='out'?'实际落点 · 出界':'实际落点')+' · 距目标 '+distance+' m';
+  }
+  $('#landing-result').textContent=caption;
   for(const button of document.querySelectorAll('[data-landing]')){const p=LANDING_PRESETS[Number(button.dataset.landing)];button.setAttribute('aria-pressed',String(Math.hypot(target.x-p.x,target.z-p.z)<.2));}
 }
 

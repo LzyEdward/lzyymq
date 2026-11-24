@@ -198,15 +198,23 @@ export function solveShot(origin, target, type = 'clear',options={}) {
   return { x: dx * horizontal, y: up, z: dz * horizontal };
 }
 
-export function predict(origin, velocity, side = 1, height = 2.05) {
+export function predict(origin, velocity, side = 1, height = 2.05, pace = 1) {
   const p = { ...origin }, v = { ...velocity };
   let intercept = null, landing = null;
-  for (let i = 0; i < 720; i++) {
-    advance(p, v, 1 / 120);
+  pace = Number.isFinite(pace) && pace > 0 ? clamp(pace, .1, 4) : 1;
+  const step = pace / 120, maxSteps = Math.ceil(720 / pace);
+  const previous = { ...p };
+  for (let i = 0; i < maxSteps; i++) {
+    previous.x = p.x; previous.y = p.y; previous.z = p.z;
+    advance(p, v, step);
     if (!intercept && p.z * side > 0.65 && v.y < 0 && p.y <= height && p.y > 0.12) {
       intercept = { ...p, time: (i + 1) / 120 };
     }
-    if (p.y <= CONTACT_HEIGHT) { landing = { ...p, time: (i + 1) / 120 }; break; }
+    if (p.y <= CONTACT_HEIGHT) {
+      const { x, y, z, fraction } = groundCrossing(previous, p);
+      landing = { x, y, z, time: (i + fraction) / 120 };
+      break;
+    }
   }
   return { intercept, landing };
 }

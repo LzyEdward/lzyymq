@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { advance, solveShot, predict, isInCourt, winnerOnLanding, COURT } from '../physics.mjs';
+import { advance, solveShot, predict, isInCourt, winnerOnLanding, COURT, groundCrossing } from '../physics.mjs';
 
 function simulate(origin, velocity) {
   const p = { ...origin }, v = { ...velocity }; let netY = null, apex = p.y, time = 0;
@@ -61,6 +61,26 @@ test('prediction locates a descending intercept and the landing point', () => {
   assert.ok(result.landing && Math.abs(result.landing.z - 5.6) < .15);
   assert.ok(result.intercept.time < result.landing.time);
 });
+test('prediction reports first ground contact and elapsed game time at each pace', () => {
+  const origin = Object.freeze({ x: -1.3, y: 2.56, z: 3.7 });
+  const velocity = Object.freeze({ x: 6.4, y: 2.8, z: -21.3 });
+  for (const pace of [.48, .74, 1, 1.2]) {
+    const expected = predict(origin, velocity, -1, 2.05, pace);
+    const p = { ...origin }, v = { ...velocity };
+    let contact, ticks = 0;
+    while (!contact && ticks < 1500) {
+      const before = { ...p };
+      advance(p, v, pace / 120);
+      contact = groundCrossing(before, p);
+      ticks++;
+    }
+    assert.ok(contact && expected.landing && expected.intercept);
+    assert.ok(Math.abs(expected.landing.time - (ticks - 1 + contact.fraction) / 120) < 1e-9);
+    assert.ok(Math.hypot(expected.landing.x - contact.x, expected.landing.y - contact.y, expected.landing.z - contact.z) < 1e-9);
+    assert.ok(expected.intercept.time < expected.landing.time);
+  }
+});
+
 test('singles boundaries and score ownership include line tolerance', () => {
   assert.equal(isInCourt({ x: 2.6, z: 6.7 }), true);
   assert.equal(isInCourt({ x: 2.8, z: 3 }), false);

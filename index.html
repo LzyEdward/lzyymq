@@ -4,42 +4,42 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
   <meta name="theme-color" content="#fbf5e7">
-  <title>来拍！· 羽毛球俱乐部 | LZYYMQ 7.50.1</title>
+  <title>来拍！· 羽毛球俱乐部 | LZYYMQ 7.51.0</title>
   <link rel="icon" type="image/svg+xml" href="./favicon.svg">
   <script type="importmap">
     {"imports":{
-      "./game.js":"./game.js?v=7.50.1",
-      "./competition.mjs":"./competition.mjs?v=7.50.1",
-      "./stand-audio.mjs":"./stand-audio.mjs?v=7.50.1",
-      "./spectator-head.mjs":"./spectator-head.mjs?v=7.50.1",
-      "./controls.mjs":"./controls.mjs?v=7.50.1",
-      "./physics.mjs":"./physics.mjs?v=7.50.1",
-      "./motion.mjs":"./motion.mjs?v=7.50.1",
-      "./opponent-ai.mjs":"./opponent-ai.mjs?v=7.50.1",
-      "./match-mind.mjs":"./match-mind.mjs?v=7.50.1",
-      "./tracking.mjs":"./tracking.mjs?v=7.50.1",
-      "./tactics.mjs":"./tactics.mjs?v=7.50.1",
-      "./hand-pose.mjs":"./hand-pose.mjs?v=7.50.1",
-      "./player-arm.mjs":"./player-arm.mjs?v=7.50.1",
-      "./viewmodel.mjs":"./viewmodel.mjs?v=7.50.1",
-      "./arena-bowl.mjs":"./arena-bowl.mjs?v=7.50.1",
-      "./hall-details.mjs":"./hall-details.mjs?v=7.50.1",
-      "./portrait-head.mjs":"./portrait-head.mjs?v=7.50.1",
-      "./athlete-real.mjs":"./athlete-real.mjs?v=7.50.1"
+      "./game.js":"./game.js?v=7.51.0",
+      "./competition.mjs":"./competition.mjs?v=7.51.0",
+      "./stand-audio.mjs":"./stand-audio.mjs?v=7.51.0",
+      "./spectator-head.mjs":"./spectator-head.mjs?v=7.51.0",
+      "./controls.mjs":"./controls.mjs?v=7.51.0",
+      "./physics.mjs":"./physics.mjs?v=7.51.0",
+      "./motion.mjs":"./motion.mjs?v=7.51.0",
+      "./opponent-ai.mjs":"./opponent-ai.mjs?v=7.51.0",
+      "./match-mind.mjs":"./match-mind.mjs?v=7.51.0",
+      "./tracking.mjs":"./tracking.mjs?v=7.51.0",
+      "./tactics.mjs":"./tactics.mjs?v=7.51.0",
+      "./hand-pose.mjs":"./hand-pose.mjs?v=7.51.0",
+      "./player-arm.mjs":"./player-arm.mjs?v=7.51.0",
+      "./viewmodel.mjs":"./viewmodel.mjs?v=7.51.0",
+      "./arena-bowl.mjs":"./arena-bowl.mjs?v=7.51.0",
+      "./hall-details.mjs":"./hall-details.mjs?v=7.51.0",
+      "./portrait-head.mjs":"./portrait-head.mjs?v=7.51.0",
+      "./athlete-real.mjs":"./athlete-real.mjs?v=7.51.0"
     }}
   </script>
   <link rel="modulepreload" href="./vendor/three/build/three.core.js">
   <link rel="modulepreload" href="./vendor/three/build/three.module.js">
   <link rel="modulepreload" href="./assets/athlete-data.mjs">
-  <link rel="modulepreload" href="./athlete-real.mjs?v=7.50.1">
-  <link rel="modulepreload" href="./viewmodel.mjs?v=7.50.1">
-  <link rel="modulepreload" href="./game.js?v=7.50.1">
+  <link rel="modulepreload" href="./athlete-real.mjs?v=7.51.0">
+  <link rel="modulepreload" href="./viewmodel.mjs?v=7.51.0">
+  <link rel="modulepreload" href="./game.js?v=7.51.0">
   <link rel="stylesheet" href="./style.css">
-  <link rel="stylesheet" href="./competition.css?v=7.50.1">
-  <link rel="stylesheet" href="./interaction.css?v=7.50.1">
-  <link rel="stylesheet" href="./aiming.css?v=7.50.1">
+  <link rel="stylesheet" href="./competition.css?v=7.51.0">
+  <link rel="stylesheet" href="./interaction.css?v=7.51.0">
+  <link rel="stylesheet" href="./aiming.css?v=7.51.0">
   <link rel="stylesheet" href="./eagle-eye.css">
-  <link rel="stylesheet" href="./home.css?v=7.50.1">
+  <link rel="stylesheet" href="./home.css?v=7.51.0">
   <link rel="stylesheet" href="./racket-gallery.css">
   <link rel="stylesheet" href="./technique.css">
   <link rel="stylesheet" href="./tactics.css">
@@ -111,7 +111,7 @@
     <button id="focus-btn" class="focus-button" aria-label="显示或收起击球操作" aria-pressed="false">击球操作 <kbd>H</kbd></button>
     <button id="advanced-btn" aria-pressed="false">战术面板 Tab</button>
     <button id="pause-btn" class="game-pause" aria-label="暂停">Ⅱ <span>ESC</span></button>
-    <p id="view-status">鼠标自由视角 · 点击球场锁定鼠标</p><p id="tactic-readout">观察对手回位，下一拍换线</p><aside id="landing-control"><div class="landing-title"><span>回球落点</span><b id="landing-name">中后场</b></div><button id="landing-map" aria-label="选择对方场地落点，上方后场，下方网前"><svg viewBox="0 0 100 128" aria-hidden="true"><rect x="2" y="2" width="96" height="124"/><path d="M2 90h96M50 2v88M2 125h96"/></svg><span class="map-deep">后场</span><span class="map-net">球网</span><i id="landing-dot"></i><i id="landing-last" class="hidden"></i></button><div class="landing-presets"><button data-landing="0" aria-pressed="false">左后</button><button data-landing="1" aria-pressed="false">中后</button><button data-landing="2" aria-pressed="false">右后</button><button data-landing="3" aria-pressed="false">左前</button><button data-landing="4" aria-pressed="false">中前</button><button data-landing="5" aria-pressed="false">右前</button></div><button id="aim-edit" aria-pressed="false">T 鼠标选点</button><small>按住 Alt + 鼠标调整<br>中键直线 / 斜线 · 滚轮前后场<br>Z / C 左右 · X 恢复默认</small><p id="landing-result">青点是目标 · 白点是上拍预计落地</p></aside><p id="opponent-action"></p><div id="reticle"><i></i></div><div id="receive-cue" class="hidden" aria-hidden="true"></div><div id="contact-halo" class="hidden" aria-hidden="true"><i></i></div>
+    <p id="view-status">鼠标自由视角 · 点击球场锁定鼠标</p><p id="tactic-readout">观察对手回位，下一拍换线</p><aside id="landing-control"><div class="landing-title"><span>回球落点</span><b id="landing-name">中后场</b></div><button id="landing-map" aria-label="选择对方场地落点，上方后场，下方网前"><svg viewBox="0 0 100 128" aria-hidden="true"><rect x="2" y="2" width="96" height="124"/><path d="M2 90h96M50 2v88M2 125h96"/></svg><span class="map-deep">后场</span><span class="map-net">球网</span><i id="landing-dot"></i><i id="landing-last" class="hidden"></i></button><div class="landing-presets"><button data-landing="0" aria-pressed="false">左后</button><button data-landing="1" aria-pressed="false">中后</button><button data-landing="2" aria-pressed="false">右后</button><button data-landing="3" aria-pressed="false">左前</button><button data-landing="4" aria-pressed="false">中前</button><button data-landing="5" aria-pressed="false">右前</button></div><button id="aim-edit" aria-pressed="false">T 鼠标选点</button><small>按住 Alt + 鼠标调整<br>中键直线 / 斜线 · 滚轮前后场<br>Z / C 左右 · X 恢复默认</small><p id="landing-result">青点是目标 · 白点是预计落点</p></aside><p id="opponent-action"></p><div id="reticle"><i></i></div><div id="receive-cue" class="hidden" aria-hidden="true"></div><div id="contact-halo" class="hidden" aria-hidden="true"><i></i></div>
     <div id="impact-pulse" aria-hidden="true"></div><div id="stance-readout" class="hidden" aria-live="off"><span id="stance-text">站位扎实</span><i><b id="stance-meter"></b></i><small>右键杀球 · 空格起跳 · 移到球后方</small></div>
     <div id="aim-widget"><button id="aim-left" aria-label="瞄准左侧">‹</button><div class="aim-readout"><span id="aim-direction">回到中路</span><i class="aim-track"><b id="aim-marker"></b></i><small>鼠标左右 · Z/C 微调</small></div><button id="aim-right" aria-label="瞄准右侧">›</button></div>
     <div id="tactics"><span class="tactics-label">落点战术板 <b id="depth-label">高远 · 深区</b></span><button id="court-aim" aria-label="点击战术板选择回球落点"><svg viewBox="0 0 100 170" aria-hidden="true"><rect x="3" y="3" width="94" height="164" rx="1"/><path d="M3 85h94M10 3v164M90 3v164M3 60h94M3 110h94M50 3v57M50 110v57"/></svg><i id="map-player" class="map-dot player"></i><i id="map-bot" class="map-dot bot"></i><i id="map-ball" class="map-dot ball"></i><i id="map-aim" class="map-dot aim"></i><i id="map-target" class="map-dot target hidden"></i></button><small>点击上半场选落点 · 鼠标上下控深浅</small></div>
