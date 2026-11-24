@@ -143,7 +143,8 @@ export class MatchTactics {
   const unlocked=completed.filter(key=>!before.includes(key));
   const advice=pointAdvice({playerWon,lastHitter,last,reply,playerPosition,reason});
   if(!playerWon&&advice.cause)detail=advice.cause;
-  const result={playerWon,method,label,detail,tip:advice.tip,construction,forced,completed,unlocked,shot:last?.type||null};
+  const scoring=!playerWon?'lost':forced&&valid?'forced':lastHitter==='player'&&(valid||!last)?'winner':'unforced';
+  const result={playerWon,scoring,method,label,detail,tip:advice.tip,construction,forced,completed,unlocked,shot:last?.type||null};
   this.points.push(result);if(this.points.length>120)this.points.shift();this.lastResult=result;return result;
  }
 }

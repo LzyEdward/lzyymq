@@ -50,7 +50,7 @@ body.focus #stance-readout{display:none!important}
 .result-board{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;padding:17px 8px 16px;background:#275449;color:#fff8e4;border-radius:14px;border:2px solid var(--ink);text-align:center}
 .result-board div{min-width:0}.result-board b,.result-board span{display:block}.result-board b{font:850 clamp(48px,10vw,68px)/1 "Nunito","Segoe UI",sans-serif;font-variant-numeric:tabular-nums;letter-spacing:-.055em}
 .result-board span{margin-top:5px;font-size:14px;line-height:1.4;font-weight:650;overflow-wrap:anywhere}.result-board i{font:700 29px/1 "Segoe UI",sans-serif;color:#afc8ad;align-self:start;margin-top:15px}
-.result-numbers{display:grid;grid-template-columns:repeat(3,1fr);margin:21px 0 17px}
+.result-numbers{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));margin:21px 0 17px}
 .result-numbers div{text-align:center;border-left:1px solid var(--rule)}.result-numbers div:first-child{border:0}
 .result-numbers dt{font-size:12px;color:#4f6356}.result-numbers dd{margin:3px 0 0;font-size:23px;line-height:1.2;font-weight:800;font-variant-numeric:tabular-nums}
 .result-numbers small{font-size:12px;color:#4f6356}

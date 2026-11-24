@@ -90,7 +90,7 @@ test('points and challenges count real non-smash winners and varied tactics, not
  for(const type of ['drop','netcross','push','clear']){
   match.newRally();match.stroke({hitter:'player',type,quality:.9,pressure:{key:'change',strength:.7},fault:null});
   const result=match.finish({playerWon:true,lastHitter:'player'});
-  assert.equal(result.method,type);
+  assert.equal(result.method,type);assert.equal(result.scoring,'winner');
  }
  assert.equal(match.counts.nonSmash,4);assert.equal(match.counts.variety,4);assert.equal(match.counts.combination,4);
  assert.equal(match.lastResult.completed.length,3);assert.ok(match.lastResult.unlocked.includes('variety'));
@@ -98,7 +98,7 @@ test('points and challenges count real non-smash winners and varied tactics, not
  match.finish({playerWon:false,lastHitter:'player'});assert.equal(match.counts.nonSmash,4);
  match.newRally();match.stroke({hitter:'player',type:'clear',pressure:{strength:0},fault:null});
  const free=match.finish({playerWon:true,lastHitter:'opponent',reason:'界外球'});
- assert.equal(free.method,'opponentError');assert.equal(match.counts.nonSmash,4);
+ assert.equal(free.method,'opponentError');assert.equal(free.scoring,'unforced');assert.equal(match.counts.nonSmash,4);
  assert.equal(free.unlocked.length,0);
 });
 
@@ -107,7 +107,7 @@ test('a forced opponent error credits its preceding placement and a new rally ca
  match.stroke({hitter:'player',type:'netcross',fault:null,pressure:{key:'change',strength:.75}});
  match.stroke({hitter:'opponent',type:'lift',fault:'net'});
  const result=match.finish({playerWon:true,lastHitter:'opponent',reason:'触网'});
- assert.equal(result.forced,true);assert.equal(result.method,'netcross');assert.equal(result.detail,'左右调动');
+ assert.equal(result.forced,true);assert.equal(result.scoring,'forced');assert.equal(result.method,'netcross');assert.equal(result.detail,'左右调动');
  match.newRally();assert.equal(match.rally.length,0);
  const serve=match.finish({playerWon:true,lastHitter:'player'});assert.equal(serve.method,'opponentError');
  assert.equal(match.methods.netcross,1);

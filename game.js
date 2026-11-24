@@ -1,4 +1,4 @@
-import {createStandAudio} from './stand-audio.mjs';
+import {crowdReaction,createStandAudio} from './stand-audio.mjs';
 import {matchKit} from './match-kit.mjs';
 import * as THREE from './vendor/three/build/three.module.js';
 import { mergeGeometries } from './vendor/three/addons/utils/BufferGeometryUtils.js';
@@ -434,6 +434,11 @@ function stopStandCheer(){standAudio?.stopVoice();}
 function playStandCheer(key,volume){
  if(!state.sound||state.screen!=='play')return;
  standAudio?.play(key,volume*.68,Math.max(-.52,Math.min(.52,(ball.pos.x||.7)*.19)));
+}
+function reactToReturn(fault,type,stretched,pressure,feet){
+ if(state.mode!=='match'||!state.sound||fault)return;
+ const gain=crowdReaction({height:ball.pos.y,reach:Math.hypot(ball.pos.x-feet.x,ball.pos.z-feet.z),stretched,pressure,stroke:type,rally:state.rally+1,close:Math.abs(state.score[0]-state.score[1])<=1&&Math.max(...state.score)>=state.matchPoints-2});
+ if(gain)standAudio?.rallyRise(gain,clamp(ball.pos.x*.2,-.45,.45));
 }
 function waveAmount(){
   return pointGesture('wave');
@@ -1141,7 +1146,7 @@ function tryPlayerHit() {
   opponent.splitTarget=prior?{x:prior.x,z:clamp(prior.z-.45,-7.05,-.7)}:{x:opponent.pos.x,z:opponent.pos.z};
   const pressure=opponentMemory.observe({type,target:shot.target,position:opponent.pos,velocity:opponent.vel,quality:shot.quality,fault:shot.fault,energy:opponent.energy,level:currentOpponentLevel()});
   opponent.pressure=pressure;
-  if(state.sound&&state.mode==='match')standAudio?.rallyRise(state.rally+1,clamp(ball.pos.x*.2,-.45,.45));
+  reactToReturn(shot.fault,type,shot.rating==='scramble',1-shot.quality,player.pos);
   state.tacticMessage=pressure.key&&pressure.strength>.28?TACTICAL_LABELS[pressure.key]:'';
   matchTactics.stroke({hitter:'player',type,target:shot.target,quality:shot.quality,fault:shot.fault,pressure,position:{x:ball.pos.x,y:ball.pos.y,z:ball.pos.z},contactReason:shot.reason});
   state.lastLanding=predict(ball.pos,ball.vel,-1).landing;state.lastPlacement={intended:{...target},landing:state.lastLanding,fault:shot.fault,reason:shot.reason};ball.spin=['net','netcross','slicedrop','slicesmash'].includes(type)?state.playerStats.net*(type==='netcross'?1.8:1):0;ball.spinAt=state.timer;
@@ -1179,6 +1184,7 @@ function opponentHit() {
   ball.vel.copy(solveShot(ball.pos,shot?.target||plan.target,type,{up:shot?.up,speed:['smash','slicesmash'].includes(type)?level.power*(type==='slicesmash'?.73:1)+(shot?.heavy?8:0):type==='netkill'?level.power*.65:null,touch:.6+level.netSkill,quality:shot?.quality??1,step:ballTimeScale('opponent')/120}));
   // Do not rescale a solved trajectory: it changes the called landing and net clearance.
   if(shot?.fault==='net')ball.vel.y-=5.8;
+  reactToReturn(shot?.fault,type,chased>2.3&&pressure>.28,pressure,opponent.pos);
   state.lastShot=null;state.lastFault=null;state.lastHitter='opponent';state.rally++;
   matchTactics.stroke({hitter:'opponent',type,target:shot?.target||plan.target,quality:shot?.quality??1,fault:shot?.fault||null,pressureStrength:pressure,action:plan.action,position:{x:ball.pos.x,y:ball.pos.y,z:ball.pos.z}});
   opponent.returns++;state.impactFrame='opponent';opponent.swing=.135;opponent.shot=type;opponent.contactPoint=ball.pos.clone();
@@ -1199,11 +1205,11 @@ function scorePoint(winner, reason) {
   const playerWon = winner === 'player';
   if (state.mode === 'match') state.score[playerWon ? 0 : 1]++;
   state.server=winner;
-  if(playerWon&&state.lastHitter==='player'&&state.lastShot?.type!=='serve'&&state.lastShot)state.winners++;
   if(!playerWon&&state.lastHitter==='player')state.errors++;
   const finished = state.mode === 'match' && matchFinished(state.score,state.matchPoints);
   state.finished = finished;
   const result=matchTactics.finish({playerWon,lastHitter:state.lastHitter,reason,opponentEnergy:opponent.energy,playerPosition:{x:player.pos.x,z:player.pos.z}});
+  if(result.scoring==='winner')state.winners++;
   result.scoreBefore=state.score.map((n,i)=>n-Number(i===(playerWon?0:1)));result.rallyLength=state.rally;result.goal=state.matchPoints;
   if(finished)commitMatch();
   $('#point-toast').classList.remove('hidden'); $('#point-reason').textContent = `${result.label} · ${result.detail}`;
@@ -1996,7 +2002,7 @@ function pauseGame(finished = false) {
     $('#result-player-name').textContent=PLAYER_NAME;$('#result-opponent-name').textContent=opponentName;
     $('#result-mine').textContent=state.score[0];$('#result-theirs').textContent=state.score[1];
     $('#result-rating').textContent=`${state.ratingDelta>=0?'+':''}${state.ratingDelta}`;
-    $('#result-smashes').textContent=String(state.winners);$('#result-hits').textContent=String(state.hits);$('#result-errors').textContent=String(state.errors);
+    $('#result-smashes').textContent=String(state.winners);$('#result-forced').textContent=String(matchTactics.points.filter(p=>p.scoring==='forced').length);$('#result-hits').textContent=String(state.hits);$('#result-errors').textContent=String(state.errors);
     $('#result-rally').textContent=String(Math.max(state.maxRally,state.rally));$('#result-speed').textContent=String(state.maxSpeed);
     $('#result-detail').textContent=`生涯 ${career.wins} 胜 ${career.played-career.wins} 负 · 最长连胜 ${career.bestStreak}`;
   }

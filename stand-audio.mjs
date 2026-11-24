@@ -1,10 +1,18 @@
 // All buffers are local excerpts. The arena bed shares the game's master volume.
 const pools={applause:['claps-a','claps-b'],rally:['cheer-soft','cheer-break'],win:['cheer-win'],clinch:['cheer-title']};
+// Open-play crowd anticipation is earned by the contact, with a small lift on game point.
+export function crowdReaction({height,reach,stretched,pressure,stroke,rally,close}){
+ const save=height<1.18&&(stretched||reach>.91);
+ const pressuredReply=pressure>.48&&(reach>.75||stretched);
+ const interception=stroke==='netkill'&&rally>=4;
+ if(!save&&!pressuredReply&&!interception)return 0;
+ return Math.min(.26,.13+(save?.06:0)+(rally>=7?.03:0)+(close?.04:0));
+}
 export function createStandAudio(context,master,reverb){
  const bus=context.createGain(),roomSend=context.createGain();bus.connect(master);roomSend.connect(reverb);
  const volume=n=>{bus.gain.setTargetAtTime(n,context.currentTime,.025);roomSend.gain.setTargetAtTime(n,context.currentTime,.025);};
  const buffers=new Map(),last=new Map();
- let voice=null,bed=null,bedPending=false,bedWanted=false,serial=0,riseAt=-1,bedLevel=-1;
+ let voice=null,bed=null,bedPending=false,bedWanted=false,serial=0,riseAt=-Infinity,bedLevel=-1;
  function buffer(key){
   if(!buffers.has(key))buffers.set(key,fetch(new URL('./assets/audio/'+key+'.mp3',import.meta.url)).then(r=>{
    if(!r.ok)throw Error(r.status);return r.arrayBuffer();
@@ -36,6 +44,6 @@ export function createStandAudio(context,master,reverb){
   if(bed&&bedLevel!==desired){bed.level.gain.setTargetAtTime(desired,context.currentTime,.24);bedLevel=desired;}
  }
  function warm(){for(const key of [...Object.values(pools).flat(),'cheer-rise','stands-room'])buffer(key);}
- function rallyRise(rally,pan){if(rally>=7&&rally%5===2&&context.currentTime-riseAt>4){riseAt=context.currentTime;play('cheer-rise',.17,pan);}}
+ function rallyRise(gain,pan){if(context.currentTime-riseAt>3.4){riseAt=context.currentTime;play('cheer-rise',gain,pan);}}
  return {warm,volume,play,update,rallyRise,stopVoice,quiet};
 }
