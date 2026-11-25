@@ -7,7 +7,7 @@ export function stringCrossing(axis,index,along){
  const phase=axis==='vertical'?(along-.51)/STRING_CROSS_PITCH+10:along/STRING_PITCH+10.5;
  return (axis==='vertical'?1:-1)*.00035*Math.cos(Math.PI*(phase+index));
 }
-export function createWovenStrings(T,{stencil=()=>false}={}){
+export function createWovenStrings(T,{stencil=()=>false,ink='#b52e28',stencilName='Yonex string stencil'}={}){
  const buckets=[{positions:[],normals:[],indices:[]},{positions:[],normals:[],indices:[]}];
  const V=(...p)=>new T.Vector3(...p),inside=(x,y)=>Math.abs(x/.098)**2.3+Math.abs((y-.51)/.139)**2.3<=1;
  function segment(a,b){
@@ -32,8 +32,8 @@ export function createWovenStrings(T,{stencil=()=>false}={}){
  const group=new T.Group();
  for(const [i,b] of buckets.entries()){
   const g=new T.BufferGeometry();g.setAttribute('position',new T.Float32BufferAttribute(b.positions,3));g.setAttribute('normal',new T.Float32BufferAttribute(b.normals,3));g.setIndex(b.indices);g.computeBoundingSphere();
-  const m=new T.MeshStandardMaterial({color:i?'#b52e28':'#d9ddd3',roughness:.48,metalness:0});
-  const mesh=new T.Mesh(g,m);mesh.name=i?'Yonex string stencil':'Woven white strings';mesh.castShadow=false;group.add(mesh);
+  const m=new T.MeshStandardMaterial({color:i?ink:'#d9ddd3',roughness:.48,metalness:0});
+  const mesh=new T.Mesh(g,m);mesh.name=i?stencilName:'Woven white strings';mesh.castShadow=false;group.add(mesh);
  }
  group.name='Physical woven string bed';group.userData={radius:STRING_RADIUS,pitch:STRING_PITCH,mains:22,crosses:21,drawCalls:2};return group;
 }

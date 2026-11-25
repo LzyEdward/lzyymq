@@ -4,43 +4,48 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
   <meta name="theme-color" content="#fbf5e7">
-<title>来拍！· 羽毛球俱乐部 | LZYYMQ 7.62.0</title>
+<title>来拍！· 羽毛球俱乐部 | LZYYMQ 7.63.0</title>
   <link rel="icon" type="image/svg+xml" href="./favicon.svg">
   <script type="importmap">
     {"imports":{
-      "./game.js":"./game.js?v=7.62.0",
-      "./competition.mjs":"./competition.mjs?v=7.62.0",
-      "./stand-audio.mjs":"./stand-audio.mjs?v=7.62.0",
-      "./spectator-head.mjs":"./spectator-head.mjs?v=7.62.0",
-      "./controls.mjs":"./controls.mjs?v=7.62.0",
-      "./physics.mjs":"./physics.mjs?v=7.62.0",
-      "./motion.mjs":"./motion.mjs?v=7.62.0",
-      "./opponent-ai.mjs":"./opponent-ai.mjs?v=7.62.0",
-      "./match-mind.mjs":"./match-mind.mjs?v=7.62.0",
-      "./tracking.mjs":"./tracking.mjs?v=7.62.0",
-      "./tactics.mjs":"./tactics.mjs?v=7.62.0",
-      "./hand-pose.mjs":"./hand-pose.mjs?v=7.62.0",
-      "./player-arm.mjs":"./player-arm.mjs?v=7.62.0",
-      "./viewmodel.mjs":"./viewmodel.mjs?v=7.62.0",
-      "./arena-bowl.mjs":"./arena-bowl.mjs?v=7.62.0",
-      "./hall-details.mjs":"./hall-details.mjs?v=7.62.0",
-      "./portrait-head.mjs":"./portrait-head.mjs?v=7.62.0",
-      "./athlete-real.mjs":"./athlete-real.mjs?v=7.62.0"
+      "./game.js":"./game.js?v=7.63.0",
+      "./racket-catalog.mjs":"./racket-catalog.mjs?v=7.63.0",
+      "./racket-finish.mjs":"./racket-finish.mjs?v=7.63.0",
+      "./racket-model.mjs":"./racket-model.mjs?v=7.63.0",
+      "./woven-strings.mjs":"./woven-strings.mjs?v=7.63.0",
+      "./racket-gallery.mjs":"./racket-gallery.mjs?v=7.63.0",
+      "./competition.mjs":"./competition.mjs?v=7.63.0",
+      "./stand-audio.mjs":"./stand-audio.mjs?v=7.63.0",
+      "./spectator-head.mjs":"./spectator-head.mjs?v=7.63.0",
+      "./controls.mjs":"./controls.mjs?v=7.63.0",
+      "./physics.mjs":"./physics.mjs?v=7.63.0",
+      "./motion.mjs":"./motion.mjs?v=7.63.0",
+      "./opponent-ai.mjs":"./opponent-ai.mjs?v=7.63.0",
+      "./match-mind.mjs":"./match-mind.mjs?v=7.63.0",
+      "./tracking.mjs":"./tracking.mjs?v=7.63.0",
+      "./tactics.mjs":"./tactics.mjs?v=7.63.0",
+      "./hand-pose.mjs":"./hand-pose.mjs?v=7.63.0",
+      "./player-arm.mjs":"./player-arm.mjs?v=7.63.0",
+      "./viewmodel.mjs":"./viewmodel.mjs?v=7.63.0",
+      "./arena-bowl.mjs":"./arena-bowl.mjs?v=7.63.0",
+      "./hall-details.mjs":"./hall-details.mjs?v=7.63.0",
+      "./portrait-head.mjs":"./portrait-head.mjs?v=7.63.0",
+      "./athlete-real.mjs":"./athlete-real.mjs?v=7.63.0"
     }}
   </script>
   <link rel="modulepreload" href="./vendor/three/build/three.core.js">
   <link rel="modulepreload" href="./vendor/three/build/three.module.js">
   <link rel="modulepreload" href="./assets/athlete-data.mjs">
-  <link rel="modulepreload" href="./athlete-real.mjs?v=7.62.0">
-  <link rel="modulepreload" href="./viewmodel.mjs?v=7.62.0">
-  <link rel="modulepreload" href="./game.js?v=7.62.0">
-  <link rel="stylesheet" href="./style.css?v=7.62.0">
-  <link rel="stylesheet" href="./competition.css?v=7.62.0">
-  <link rel="stylesheet" href="./interaction.css?v=7.62.0">
-  <link rel="stylesheet" href="./aiming.css?v=7.62.0">
+  <link rel="modulepreload" href="./athlete-real.mjs?v=7.63.0">
+  <link rel="modulepreload" href="./viewmodel.mjs?v=7.63.0">
+  <link rel="modulepreload" href="./game.js?v=7.63.0">
+  <link rel="stylesheet" href="./style.css?v=7.63.0">
+  <link rel="stylesheet" href="./competition.css?v=7.63.0">
+  <link rel="stylesheet" href="./interaction.css?v=7.63.0">
+  <link rel="stylesheet" href="./aiming.css?v=7.63.0">
   <link rel="stylesheet" href="./eagle-eye.css">
-  <link rel="stylesheet" href="./home.css?v=7.62.0">
-  <link rel="stylesheet" href="./racket-gallery.css">
+  <link rel="stylesheet" href="./home.css?v=7.63.0">
+  <link rel="stylesheet" href="./racket-gallery.css?v=7.63.0">
   <link rel="stylesheet" href="./technique.css">
   <link rel="stylesheet" href="./tactics.css">
 </head>
@@ -189,7 +194,7 @@
         <p id="result-detail"></p>
       </details>
     </section>
-    <button id="tour-next" class="btn-primary hidden" type="button">进入下一轮 <span>→</span></button><section id="training-result" class="hidden" aria-label="训练结果"><div><strong id="training-result-score"></strong><span id="training-result-best"></span></div><ol id="training-result-list"></ol><div class="training-complete-actions"><button id="training-repeat" type="button">再练一组</button><button id="training-change" type="button">换个项目</button></div></section><div class="pause-stats"><div><b id="stat-rally">0</b><span>最长回合</span></div><div><b id="stat-hits">0</b><span>成功击球</span></div><div><b id="stat-speed">0</b><span>最快球速 KM/H</span></div></div><div class="setting-row"><label for="camera-mode-pause">比赛视角 <small>F2 切换视角，Y 归正第三人称镜头</small></label><select id="camera-mode-pause" data-camera-mode><option value="first">第一人称</option><option value="third">第三人称 · 肩后近景</option></select></div><div class="setting-row"><label for="third-framing">第三人称镜头距离</label><select id="third-framing"><option value="near">近景</option><option value="wide">全场</option></select></div><div class="setting-row"><label for="ball-guide-toggle">两种视角找球辅助 <small>地面投影帮助判断远近，虚线显示高度，青色半环标记该站的位置，按提示上前或后退</small></label><input type="checkbox" id="ball-guide-toggle" checked></div><div class="setting-row"><label for="contact-hint-toggle">第三人称击球提示 <small>白弧：近身来球；浅绿：可起拍；蓝弧：已接收击球输入</small></label><input type="checkbox" id="contact-hint-toggle" checked></div><div class="setting-row"><label for="placement-hint">轻量落点提示 <small>可选显示下一拍区域；起拍时确认锁定，不改变鼠标控制</small></label><input type="checkbox" id="placement-hint"></div><div class="setting-row"><label for="high-ball-toggle">高球自动抬头 <small>默认开启；独立于自动跟球视角</small></label><input type="checkbox" id="high-ball-toggle" checked></div><div class="setting-row"><label for="auto-return-toggle">自动回球 <small>默认关闭；开启后按当前选中的击球方式自动接来球</small></label><input type="checkbox" id="auto-return-toggle"></div><div class="setting-row"><label for="receive-pace">对方来球节奏 <small>两个视角通用，只调你接球时的飞行速度</small></label><select id="receive-pace"><option value="0.6">慢练 · 60%</option><option value="0.74">舒适 · 74%</option><option value="1" selected>比赛原速 · 100%</option></select></div><div class="setting-row"><label for="sprint-assist">追球自动冲刺 <small>朝远球移动会加速。按住 Shift 可主动冲刺，点 Ctrl 跨步救球</small></label><input type="checkbox" id="sprint-assist" checked></div><div class="setting-row"><label for="assist-toggle">自动跑位 <small>默认关闭，需要时单独开启</small></label><input type="checkbox" id="assist-toggle"></div><div class="setting-row"><label for="comfortable-toggle">自动跟球视角 <small>轻缓水平跟随；高球抬头独立控制</small></label><input type="checkbox" id="comfortable-toggle"></div><div class="setting-row"><label for="focus-toggle">专注画面 <small>收起战术板和辅助标记，保留基本操作</small></label><input type="checkbox" id="focus-toggle"></div><div class="setting-row"><label for="sensitivity">鼠标 / 视角同步 <small>1.35× 默认校准；按窗口视角与宽高比映射，滑块可细调</small></label><input type="range" id="sensitivity" min="0.25" max="2" step="0.05" value="1"></div><div class="setting-row"><label for="shot-select">击球方式 <small>左键智能回球，右键杀球；按 1–9 选择球路（8 劈杀、9 劈吊）（小键盘也支持）</small></label><select id="shot-select"><option value="auto">智能回球 · 1</option><option value="clear">高远球 · 2</option><option value="drop">吊球 · 3</option><option value="smash">杀球 · 4</option><option value="net">网前搓球 · 5</option><option value="push">推后场 · 6</option><option value="netcross">勾对角 · 7</option><option value="slicesmash">劈杀斜线 · 8</option><option value="slicedrop">劈吊对角 · 9</option></select></div><div class="setting-row"><label for="racket-style">球拍手感 <small>控制 · 强攻（更快重杀、耗体力）· 轻量连贯；默认配强攻拍</small></label><select id="racket-style"><option value="control">精准控制</option><option value="attack" selected>强攻速度</option><option value="aero">轻量连贯</option></select></div><div class="setting-row"><label for="racket-skin">球拍涂装 <small id="racket-skin-detail">ASTROX 100ZZ · 藏青配色</small></label><select id="racket-skin"><option value="astrox100zz">天斧 100ZZ · 藏青</option><option value="astrox88dpro">天斧 88D Pro · 黑银</option><option value="nanoflare1000z">疾光 1000Z · 闪电黄</option><option value="astrox99pro">天斧 99 Pro · 黑绿</option><option value="arcsaber11pro">弓箭 11 Pro · 灰珠红</option><option value="astrox77pro">天斧 77 Pro · 高橙</option><option value="control-original">青柠控制款</option><option value="aero-blue">冰蓝轻量款</option></select></div><div class="setting-row"><label for="stand-volume">看台音量 <small>设为 0 可单独关闭观众声</small></label><input id="stand-volume" type="range" min="0" max="100" step="5" value="75"></div><div class="setting-row"><label for="motion">镜头动作幅度 <small>0 为稳定镜头，1 为完整动作反馈</small></label><input type="range" id="motion" min="0" max="1" step="0.05" value="0.35"></div><div class="setting-row"><label for="quality">画面质量 <small>比赛上限 60 帧 · 暂停停止重绘 · 后台停止渲染</small></label><select id="quality"><option value="auto" selected>自动省电 · 设备自适应（推荐）</option><option value="balanced">低负载 · 适合轻薄本</option><option value="high">高画质 · 接触阴影</option><option value="ultra">精细 · 更高设备负载</option></select></div><div class="setting-row"><label for="eagle-auto">自动鹰眼 <small>边线附近落点自动慢放；按 B 随时复核上一拍</small></label><input type="checkbox" id="eagle-auto" checked></div><button type="button" class="btn-secondary" data-open-rackets>球拍收藏 · 查看涂装近景 ↗</button><button id="last-line-review" class="btn-secondary" disabled>查看上一拍鹰眼回放 · B</button><button id="open-technique-pause" data-open-technique class="btn-secondary">调整双方实力 · 六项技术拉杆</button><button id="resume-btn" class="btn-primary">继续比赛 <span>→</span></button><div class="modal-links"><button id="result-rematch" hidden>再战这位对手</button><button id="restart-btn">重新开始</button><button id="exit-btn">返回首页</button></div></div></div>
+    <button id="tour-next" class="btn-primary hidden" type="button">进入下一轮 <span>→</span></button><section id="training-result" class="hidden" aria-label="训练结果"><div><strong id="training-result-score"></strong><span id="training-result-best"></span></div><ol id="training-result-list"></ol><div class="training-complete-actions"><button id="training-repeat" type="button">再练一组</button><button id="training-change" type="button">换个项目</button></div></section><div class="pause-stats"><div><b id="stat-rally">0</b><span>最长回合</span></div><div><b id="stat-hits">0</b><span>成功击球</span></div><div><b id="stat-speed">0</b><span>最快球速 KM/H</span></div></div><div class="setting-row"><label for="camera-mode-pause">比赛视角 <small>F2 切换视角，Y 归正第三人称镜头</small></label><select id="camera-mode-pause" data-camera-mode><option value="first">第一人称</option><option value="third">第三人称 · 肩后近景</option></select></div><div class="setting-row"><label for="third-framing">第三人称镜头距离</label><select id="third-framing"><option value="near">近景</option><option value="wide">全场</option></select></div><div class="setting-row"><label for="ball-guide-toggle">两种视角找球辅助 <small>地面投影帮助判断远近，虚线显示高度，青色半环标记该站的位置，按提示上前或后退</small></label><input type="checkbox" id="ball-guide-toggle" checked></div><div class="setting-row"><label for="contact-hint-toggle">第三人称击球提示 <small>白弧：近身来球；浅绿：可起拍；蓝弧：已接收击球输入</small></label><input type="checkbox" id="contact-hint-toggle" checked></div><div class="setting-row"><label for="placement-hint">轻量落点提示 <small>可选显示下一拍区域；起拍时确认锁定，不改变鼠标控制</small></label><input type="checkbox" id="placement-hint"></div><div class="setting-row"><label for="high-ball-toggle">高球自动抬头 <small>默认开启；独立于自动跟球视角</small></label><input type="checkbox" id="high-ball-toggle" checked></div><div class="setting-row"><label for="auto-return-toggle">自动回球 <small>默认关闭；开启后按当前选中的击球方式自动接来球</small></label><input type="checkbox" id="auto-return-toggle"></div><div class="setting-row"><label for="receive-pace">对方来球节奏 <small>两个视角通用，只调你接球时的飞行速度</small></label><select id="receive-pace"><option value="0.6">慢练 · 60%</option><option value="0.74">舒适 · 74%</option><option value="1" selected>比赛原速 · 100%</option></select></div><div class="setting-row"><label for="sprint-assist">追球自动冲刺 <small>朝远球移动会加速。按住 Shift 可主动冲刺，点 Ctrl 跨步救球</small></label><input type="checkbox" id="sprint-assist" checked></div><div class="setting-row"><label for="assist-toggle">自动跑位 <small>默认关闭，需要时单独开启</small></label><input type="checkbox" id="assist-toggle"></div><div class="setting-row"><label for="comfortable-toggle">自动跟球视角 <small>轻缓水平跟随；高球抬头独立控制</small></label><input type="checkbox" id="comfortable-toggle"></div><div class="setting-row"><label for="focus-toggle">专注画面 <small>收起战术板和辅助标记，保留基本操作</small></label><input type="checkbox" id="focus-toggle"></div><div class="setting-row"><label for="sensitivity">鼠标 / 视角同步 <small>1.35× 默认校准；按窗口视角与宽高比映射，滑块可细调</small></label><input type="range" id="sensitivity" min="0.25" max="2" step="0.05" value="1"></div><div class="setting-row"><label for="shot-select">击球方式 <small>左键智能回球，右键杀球；按 1–9 选择球路（8 劈杀、9 劈吊）（小键盘也支持）</small></label><select id="shot-select"><option value="auto">智能回球 · 1</option><option value="clear">高远球 · 2</option><option value="drop">吊球 · 3</option><option value="smash">杀球 · 4</option><option value="net">网前搓球 · 5</option><option value="push">推后场 · 6</option><option value="netcross">勾对角 · 7</option><option value="slicesmash">劈杀斜线 · 8</option><option value="slicedrop">劈吊对角 · 9</option></select></div><div class="setting-row"><label for="racket-style">球拍手感 <small>控制 · 强攻（更快重杀、耗体力）· 轻量连贯；默认配强攻拍</small></label><select id="racket-style"><option value="control">精准控制</option><option value="attack" selected>强攻速度</option><option value="aero">轻量连贯</option></select></div><div class="setting-row"><label for="racket-skin">球拍涂装 <small id="racket-skin-detail">ASTROX 100ZZ · 藏青配色</small></label><select id="racket-skin"></select></div><div class="setting-row"><label for="stand-volume">看台音量 <small>设为 0 可单独关闭观众声</small></label><input id="stand-volume" type="range" min="0" max="100" step="5" value="75"></div><div class="setting-row"><label for="motion">镜头动作幅度 <small>0 为稳定镜头，1 为完整动作反馈</small></label><input type="range" id="motion" min="0" max="1" step="0.05" value="0.35"></div><div class="setting-row"><label for="quality">画面质量 <small>比赛上限 60 帧 · 暂停停止重绘 · 后台停止渲染</small></label><select id="quality"><option value="auto" selected>自动省电 · 设备自适应（推荐）</option><option value="balanced">低负载 · 适合轻薄本</option><option value="high">高画质 · 接触阴影</option><option value="ultra">精细 · 更高设备负载</option></select></div><div class="setting-row"><label for="eagle-auto">自动鹰眼 <small>边线附近落点自动慢放；按 B 随时复核上一拍</small></label><input type="checkbox" id="eagle-auto" checked></div><button type="button" class="btn-secondary" data-open-rackets>球拍收藏 · 查看涂装近景 ↗</button><button id="last-line-review" class="btn-secondary" disabled>查看上一拍鹰眼回放 · B</button><button id="open-technique-pause" data-open-technique class="btn-secondary">调整双方实力 · 六项技术拉杆</button><button id="resume-btn" class="btn-primary">继续比赛 <span>→</span></button><div class="modal-links"><button id="result-rematch" hidden>再战这位对手</button><button id="restart-btn">重新开始</button><button id="exit-btn">返回首页</button></div></div></div>
   <div id="help-overlay" class="overlay hidden"><div class="modal help-modal"><button id="close-help" class="close-btn" aria-label="关闭说明">×</button><span class="eyebrow">LOOK FREELY. PLACE YOUR SHOT.</span><h2>鼠标即可开打一整局。</h2><p>比赛画面默认简洁；鼠标移动看球，左键智能选择合适球路、寻找空当并接球，右键随时杀球。鼠标中键切换直线 / 斜线，滚轮调前后场。自动回球、自动跑位和自动跟球视角均可在暂停设置独立开关，默认关闭；移动与起跳也可自行控制。</p><div class="help-grid"><div><kbd>左键 / J / 1</kbd><b>智能回球</b><span>按住稍早准备；按 1 也会立即选择并击出智能球路。</span></div><div><kbd>2 · 3 · 4</kbd><b>高远、吊球、杀球</b><span>按下即出手；右键始终是杀球。</span></div><div><kbd>5 · 6 · 7</kbd><b>网前搓球、推后场、勾对角</b><span>主键盘数字行和右侧小键盘都能按 1–9 出球，按键动作完全一致。近网按 7，默认勾到触球位置的对角；中键切直线 / 斜线，X 恢复球路默认。按 8 劈杀斜线，9 劈吊对角。</span></div><div><kbd>Alt + 鼠标</kbd><b>快速调落点</b><span>向上打深、向下打短；滚轮微调前后场，鼠标看向不会改变落点。</span></div><div><kbd>空格 / WASD</kbd><b>跑位与起跳</b><span>朝来球方向移动可加速。Shift 冲刺，Ctrl 跨步；暂停可开启自动跑位。</span></div><div><kbd>H / Esc</kbd><b>操作提示 / 暂停</b><span>H 显示击球按钮；Esc 暂停并释放鼠标。</span></div></div><div class="tip"><b>鹰眼回放：死球后按 B。</b>压线附近自动放大首次落点；暂停面板可回看、拖动进度或关闭自动鹰眼。<br><b>发球先轻送到前发球区。</b>左键开始低手发球，避免把球送到对手舒服的进攻位。</div><button id="got-it" class="btn-primary">回到球场 <span>↗</span></button></div></div>
   <div id="error-panel" class="overlay hidden" role="alert"><div class="modal"><h2>球馆暂时无法打开</h2><p id="error-message"></p><button id="boot-retry" class="btn-primary">重新加载 ↻</button><button id="boot-safe" class="btn-secondary">低负载启动 →</button></div></div>
   <script type="module" src="./bootstrap.js"></script>

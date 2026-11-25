@@ -20,14 +20,14 @@ import { prepareHands } from './hand-sculpt.mjs';
 import {preparePlayerArm} from './player-arm.mjs';
 import { RenderBudget, AdaptiveResolution, renderProfile } from './render-budget.mjs';
 import {RenderLoop} from './render-loop.mjs';
-import { createRacketModel, disposeRacketModel, RACKET_PALETTES } from './racket-model.mjs';
+import { createRacketModel, disposeRacketModel } from './racket-model.mjs';
 import { swingPose, moveVelocity, groundedCameraOffset, serveSupportPose, supportHandPose } from './motion.mjs';
 import { dressHall } from './hall-details.mjs';
 import { hallSurfaces } from './hall-surfaces.mjs';
 import {createHallContext} from './hall-context.mjs';
 import {ARENA} from './arena-layout.mjs';
 import {createArenaBowl} from './arena-bowl.mjs';
-import {RACKET_SKINS,racketSkin} from './racket-catalog.mjs';
+import {RACKET_SKINS,racketSkin,firstTitleEvent,canEquipRacket} from './racket-catalog.mjs';
 import {createRacketGallery} from './racket-gallery.mjs';
 import { roofGeometry } from './roof-structure.mjs';
 import { createShuttleModel, shuttleVisualScale } from './shuttle-model.mjs';
@@ -285,8 +285,19 @@ function createHall() {
   courtScore.position.set(0, 11.7, -31.5); scene.add(courtScore);
 }
 
+function playerFirstTitle(){return firstTitleEvent(tourCareer,career,TOUR_EVENTS);}
+function refreshRacketOptions(){
+ const select=$('#racket-skin'),title=playerFirstTitle();
+ select.replaceChildren();
+ for(const [id,spec] of Object.entries(RACKET_SKINS)){
+  const locked=!canEquipRacket(id,title);
+  const option=new Option(spec.label+(locked?' · 首冠后解锁':''),id);
+  option.disabled=locked;select.add(option);
+ }
+ select.value=state.racketSkin;
+}
 function initRacketGallery(){
- racketGallery=createRacketGallery(THREE,{camera,getSkin:()=>state.racketSkin,
+ racketGallery=createRacketGallery(THREE,{getSkin:()=>state.racketSkin,getTitleEvent:playerFirstTitle,
   applySkin:skin=>{if(skin!==state.racketSkin){applyRacketSkin(skin);savePreferences();}},invalidate:()=>renderBudget.invalidate(),
   onOpen:()=>{
    galleryReturnScreen=state.screen;state.screen='racket-inspect';document.exitPointerLock?.();
@@ -317,7 +328,7 @@ function createNet() {
 }
 
 function createRacket(isPlayer=false) {
-  return createRacketModel(THREE,{skin:isPlayer?state.racketSkin:'aero-blue',player:isPlayer});
+  return createRacketModel(THREE,{skin:isPlayer?state.racketSkin:'aero-blue',player:isPlayer,titleName:isPlayer?playerFirstTitle()?.name:''});
 }
 
 function createPlayerRacket() {
@@ -334,13 +345,13 @@ function applyRacketStyle(style=state.racketStyle){
   const select=$('#racket-style');if(select&&select.value!==style)select.value=style;
 }
 function applyRacketSkin(skin=state.racketSkin){
- const palette=RACKET_PALETTES;
- if(!palette[skin])skin='astrox100zz';state.racketSkin=skin;
- if(racket?.userData?.racketModel){
-  const old=racket.userData.racketModel,next=createRacketModel(THREE,{skin,player:true});next.scale.copy(old.scale);racket.remove(old);racket.add(next);racket.userData.racketModel=next;
+ if(!canEquipRacket(skin,playerFirstTitle()))skin='astrox100zz';
+ state.racketSkin=skin;
+ if(racket?.userData?.racketModel&&racket.userData.racketModel.userData.skin!==skin){
+  const old=racket.userData.racketModel,next=createRacket(true);next.scale.copy(old.scale);racket.remove(old);racket.add(next);racket.userData.racketModel=next;
   disposeRacketModel(old);
  }
- if(playerAvatar){const mount=playerAvatar.racket,old=mount.userData.racketModel;mount.remove(old);disposeRacketModel(old);const next=createRacket(true);mount.add(next);mount.userData.racketModel=next;}
+ if(playerAvatar&&playerAvatar.racket.userData.racketModel.userData.skin!==skin){const mount=playerAvatar.racket,old=mount.userData.racketModel;mount.remove(old);disposeRacketModel(old);const next=createRacket(true);mount.add(next);mount.userData.racketModel=next;}
  const select=$('#racket-skin');if(select&&select.value!==skin)select.value=skin;
  const spec=racketSkin(skin);$('#racket-skin-detail').textContent=spec.model+' · '+spec.edition;
  for(const label of document.querySelectorAll('[data-current-racket]'))label.textContent=spec.label+' · '+spec.edition;
@@ -368,11 +379,25 @@ function applyOpponentIdentity(id){
 
 function resolveTournamentPoint(won){
   if(!state.tournamentId||!tour||tour.eventId!==state.tournamentId||tour.completed||tour.eliminated)return;
-  tour=advanceTour(tour,won);saveTour();
+  tour=advanceTour(tour,won);
   if(won&&!tour.completed)celebrateVictory(tour.eventId);
-  if(tour.completed){tourCareer.completed++;tourCareer.active=null;if(!tour.titleAwarded){tour.titleAwarded=true;tourCareer.titles++;tourCareer.trophies[tour.eventId]=(Number(tourCareer.trophies[tour.eventId])||0)+1;career.trophies[tour.eventId]=(Number(career.trophies?.[tour.eventId])||0)+1;try{if(!testing)localStorage.setItem(CAREER_KEY,JSON.stringify(career));}catch{}updateCareerUI();celebrateVictory(tour.eventId);}saveTour();$('#point-title').textContent='冠军属于你。';$('#point-subtitle').textContent=`五场连胜 · ${tourEvent(tour.eventId).name} 冠军 · 奖杯 ${tourCareer.trophies[tour.eventId]}`;}
+  if(tour.completed){
+   const previousTitle=playerFirstTitle();
+   tourCareer.completed++;tourCareer.active=null;
+   if(!tour.titleAwarded){
+    tour.titleAwarded=true;tourCareer.titles++;
+    tourCareer.firstTitleEvent=previousTitle?.id||tour.eventId;
+    tourCareer.trophies[tour.eventId]=(Number(tourCareer.trophies[tour.eventId])||0)+1;
+    career.trophies[tour.eventId]=(Number(career.trophies?.[tour.eventId])||0)+1;
+    saveTour();
+    try{if(!testing)localStorage.setItem(CAREER_KEY,JSON.stringify(career));}catch{}
+    refreshRacketOptions();updateCareerUI();celebrateVictory(tour.eventId);
+   }
+   $('#point-title').textContent='冠军属于你。';
+   $('#point-subtitle').textContent=tourEvent(tour.eventId).name+' 冠军 · '+(previousTitle?'奖杯 × '+tourCareer.trophies[tour.eventId]:'首冠纪念拍已解锁');
+  }
   else if(tour.eliminated){tourCareer.completed++;tourCareer.active=null;saveTour();$('#point-title').textContent=`止步${tourEvent(tour.eventId).rounds[state.tournamentRound]}`;$('#point-subtitle').textContent=`本届 ${tour.wins} 胜 · 下一站再战`;
-  }else{$('#point-title').textContent=`赢下${tourEvent(tour.eventId).rounds[state.tournamentRound]}`;$('#point-subtitle').textContent=`晋级${tourEvent(tour.eventId).rounds[tour.roundIndex]} · 下一场对阵${currentTourMatch(tour).opponent.name}`;}
+  }else{saveTour();$('#point-title').textContent=`赢下${tourEvent(tour.eventId).rounds[state.tournamentRound]}`;$('#point-subtitle').textContent=`晋级${tourEvent(tour.eventId).rounds[tour.roundIndex]} · 下一场对阵${currentTourMatch(tour).opponent.name}`;}
   renderTourHub();updateCareerUI();
 }
 
@@ -1980,6 +2005,7 @@ function animate() {
   const frameNow=performance.now(),rawFrameMs=renderBudget.take(frameNow,{screen:state.screen,hidden:document.hidden});
   if(rawFrameMs===null)return;
   lastFrameTime=frameNow;
+  if(state.screen==='racket-inspect'){racketGallery.render(renderer);return;}
   if(state.screen==='play'&&qualityMode==='auto'&&adaptiveResolution.sample(rawFrameMs,frameNow))applyRenderProfile();
   if(frameProbe){
     if(frameProbe.warmup-->0){}else {frameProbe.started??=frameNow;frameProbe.memoryStart??={...renderer.info.memory};frameProbe.samples.push(rawFrameMs);}
@@ -2180,7 +2206,7 @@ function restorePreferences(){
   state.receivePace=prefs.receivePace===.6||prefs.receivePaceVersion===2&&prefs.receivePace===.74?prefs.receivePace:1;
   $('#receive-pace').value=state.receivePace;
   state.sprintAssist=$('#sprint-assist').checked=prefs.sprintAssist!==false;
-  applyRacketStyle(prefs.racketStyle||'attack');applyRacketSkin(prefs.racketSkin||'astrox100zz');
+  refreshRacketOptions();applyRacketStyle(prefs.racketStyle||'attack');applyRacketSkin(prefs.racketSkin||'astrox100zz');
   const savedPlayer=prefs.playerStats||(prefs.playerStyle?playerStatsForStyle(prefs.playerStyle):normalizeSkills());
   techniquePanel.write('player',savedPlayer);refreshPlayerStats();
   state.opponentStats=normalizeSkills(prefs.opponentStats);techniquePanel.write('opponent',state.opponentStats);

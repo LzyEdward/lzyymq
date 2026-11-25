@@ -4,13 +4,29 @@ const navy=[17,30,48],blue=[39,101,168],ice=[141,185,219],white=[232,239,244],or
 const fract=x=>x-Math.floor(x);
 const rgbHex=hex=>[1,3,5].map(i=>parseInt(hex.slice(i,i+2),16));
 const pigments=new Map(Object.values(RACKET_SKINS).map(s=>[s,[s.palette.carbon,s.palette.rim,s.palette.accent,s.palette.gold].map(rgbHex)]));
+// t travels from crown (0) down either side to the T-joint (1).
+// Pigment indices are carbon, main paint, highlight and trim.
+const newPatterns={
+ sabre:(t,left,line)=>t>.70?3:t>.31&&t<.52&&line<.22?2:1,
+ blade:(t,left,line)=>t<.26||t>.68?1:line<.19?3:2,
+ scale:(t,left,line)=>t<.19?1:t>.62?0:line<.47?1:line<.56?2:0,
+ pulse:(t,left,line)=>t>.70?1:t<.12?2:left&&t>.26&&t<.60&&line<.5?3:0,
+ fault:(t,left,line)=>t>.76?3:t>.65?1:t>.26&&t<.46&&line<.29?2:0,
+ tide:(t,left,line)=>t>.72?3:left&&t<.51?1:t>.35&&t<.68&&line<.26?2:0,
+ split:(t,left,line)=>t>.81?0:t<.12?2:left?1:3,
+ wing:(t,left,line)=>t>.6?3:t<.32?1:line<.46?2:0,
+ rail:(t,left,line,v)=>t>.66?0:Math.abs(Math.sin(v*2*Math.PI))>.89?3:1,
+ circuit:(t,left,line)=>t<.18?1:t>.48&&t<.8&&line<.35?3:t>.74?2:0,
+ home:(t,left,line)=>t<.19||t>.80?1:t>.65||t>.53&&t<.58?3:2,
+ laurel:(t,left,line)=>t<.09||t>.66&&t<.73||t>.77&&t<.81?1:t<.49&&t>.18&&line<.28?2:0
+};
 export function framePaint(u,v,skin='astrox100zz'){
  u=fract(u);v=fract(v);
  const front=Math.abs(Math.sin(v*Math.PI*2));
  let rgb=navy,roughness=.33;
  // Asymmetric shoulder panel and tapered slash ribbons around the lower hoop.
  const diagonal=u+(v<.5?v:.5-v)*.032;
- const spec=racketSkin(skin),p=spec.palette;
+ const spec=racketSkin(skin);
  if(spec.pattern==='navy'){
  if(u>.025&&u<.105){rgb=orange;roughness=.29;}
  if(u>.31&&u<.91){
@@ -23,7 +39,11 @@ export function framePaint(u,v,skin='astrox100zz'){
   const [base,accent,light,detail]=pigments.get(spec);
   const slash=fract((u+Math.sin(v*Math.PI*2)*.018)*29);
   rgb=base;
-  if(spec.pattern==='silver'){
+  const motif=newPatterns[spec.pattern];
+  if(motif){
+   const distance=2*Math.abs(fract(u+.25)-.5),left=u>.25&&u<.75;
+   rgb=pigments.get(spec)[motif(distance,left,fract(distance*10+Math.sin(2*Math.PI*v)*.28),v)];
+  }else if(spec.pattern==='silver'){
    if(u<.36||u>.94)rgb=light;
    if((u<.065||u>.935)||(u>.45&&u<.56))rgb=detail;
    if(slash<.22&&(u<.42||u>.85))rgb=accent;

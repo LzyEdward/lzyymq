@@ -1,19 +1,44 @@
-#racket-gallery{position:fixed;inset:0;width:100%;height:100%;max-width:none;max-height:none;margin:0;padding:0;border:0;color:#eff1e9;background:linear-gradient(90deg,#0e211c30 0%,#0e211c10 50%,#0e211c80 100%);font-family:"Segoe UI","Microsoft YaHei",sans-serif;overflow:hidden}
+#racket-gallery {
+  position:fixed;inset:0;width:100%;height:100%;max-width:none;max-height:none;
+  margin:0;padding:0;border:0;overflow:hidden;color:#f2f4ea;
+  background:linear-gradient(110deg,#122a2652,#122a2626 48%,#122a2670);
+  font-family:"Segoe UI","Microsoft YaHei",sans-serif;
+}
 #racket-gallery::backdrop{background:transparent}
-.racket-stage{position:absolute;inset:0 430px 0 0;touch-action:none;cursor:grab}
+.racket-stage{position:absolute;inset:0 420px 0 0;touch-action:none;cursor:grab}
 .racket-stage:active{cursor:grabbing}
-.collection-caption{position:absolute;left:6vw;top:7vh;pointer-events:none;text-shadow:0 2px 20px #13261e}
-.collection-caption>span{font-size:10px;letter-spacing:2px;color:#dae1ca}.collection-caption h2{font-size:32px;font-weight:500;letter-spacing:2px;margin:14px 0 6px}.collection-caption p{font-size:13px;color:#d4ddcc;margin:0}
-.racket-turn{position:absolute;left:0;right:0;bottom:6vh;display:flex;align-items:center;justify-content:center;gap:18px;font-size:11px;color:#e1e6da}
-.racket-turn button{border:1px solid #d2dfbd66;color:#eff4e5;background:#17392dcc;width:38px;height:38px;border-radius:50%;font-size:23px;cursor:pointer}
-.collection-panel{position:absolute;inset:20px 20px 20px auto;width:390px;padding:30px 25px;background:#122922f5;border:1px solid #ccdeb32b;border-radius:18px;box-shadow:0 20px 70px #06181170;overflow:auto;box-sizing:border-box}
-.collection-close{position:absolute;right:15px;top:12px;border:0;background:none;color:#cdd6c5;font-size:28px;cursor:pointer}.collection-kicker{font-size:12px;letter-spacing:1px;color:#c5d994}.collection-panel h3{font-size:23px;font-weight:600;letter-spacing:.3px;margin:16px 0 7px}.collection-panel #collection-edition{font-size:12px;color:#a6baaa;margin:0 0 20px}
-.racket-grid{display:grid;gap:7px}.racket-grid button{width:100%;display:flex;align-items:center;text-align:left;gap:13px;padding:10px 12px;min-height:55px;border:1px solid #c6d3bc24;border-radius:9px;background:#19362b;color:#eef1e7;cursor:pointer;font:inherit}.racket-grid button:hover{background:#244532}.racket-grid button[aria-pressed=true]{border-color:#cbe78d;background:#2d4934}.racket-grid button>i{display:block;width:24px;height:33px;border:3px solid var(--rim);border-radius:47% 47% 44% 44%;background:repeating-linear-gradient(90deg,#dce6db3a 0 1px,transparent 1px 4px),repeating-linear-gradient(0deg,#dce6db3a 0 1px,transparent 1px 4px);box-shadow:2px 0 0 var(--base),-2px 0 0 var(--accent);transform:rotate(-17deg);flex-shrink:0}.racket-grid button>span{font-size:13px;font-weight:600}.racket-grid small{display:block;font-size:10px;font-weight:400;color:#aebfaf;margin-top:3px}.racket-grid b{margin-left:auto;color:#d4ed9e;opacity:0}.racket-grid [aria-pressed=true] b{opacity:1}.collection-note{font-size:10px;color:#93aa99;line-height:1.8;margin:17px 0}.collection-done{width:100%;font-size:13px!important;padding:14px!important}
-.collection-launch{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;border:1px solid #9aab8440;border-radius:9px;padding:12px 14px;background:#1e3a2529;color:inherit;cursor:pointer;text-align:left;font:inherit;margin:12px 0}.collection-launch span{font-size:13px}.collection-launch small{display:block;font-size:10px;opacity:.6;margin-top:4px}.collection-launch b{font-size:17px;font-weight:400}
-@media(max-width:719px){.racket-stage{inset:0 0 52%}.collection-caption{top:22px;left:22px}.collection-caption>span{font-size:8px}.collection-caption h2{font-size:22px}.collection-caption p{display:none}.racket-turn{bottom:7px;gap:12px;font-size:10px}.racket-turn button{width:30px;height:30px;font-size:20px}.collection-panel{inset:48% 10px 10px;width:auto;padding:19px}.collection-panel h3{font-size:19px;margin:9px 0 4px}.collection-panel #collection-edition{margin-bottom:12px}.racket-grid{grid-template-columns:1fr 1fr;gap:6px}.racket-grid button{padding:8px;gap:9px;min-height:52px}.racket-grid button>span{font-size:11px}.racket-grid button>i{width:16px;height:24px;border-width:2px}.racket-grid small{font-size:9px}.racket-grid b{display:none}.collection-note{font-size:9px;margin:12px 0}}
-
-/* Keep the title and equip action visible while the collection scrolls. */
-.collection-panel{display:flex;flex-direction:column;overflow:hidden}
-.collection-panel>h3,.collection-panel>p,.collection-panel>span,.collection-done{flex-shrink:0}
-.racket-grid{flex:1;min-height:0;overflow:auto;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:#6a8068 transparent;grid-auto-rows:minmax(54px,auto);padding-right:3px}
-@media(max-width:719px){.racket-grid{grid-auto-rows:minmax(52px,auto)}}
+.collection-caption{position:absolute;top:5%;left:5%;padding:10px 16px;background:#132e26e8;border-radius:12px;pointer-events:none}
+.collection-caption h2{font-size:24px;line-height:1.25;margin:0}
+.collection-caption p{font-size:13px;color:#d6e9b7;margin:4px 0 0}
+.racket-turn{position:absolute;left:50%;bottom:4%;transform:translateX(-50%);display:flex;align-items:center;gap:12px;background:#132e26ed;border-radius:28px;padding:2px 5px;font-size:12px;white-space:nowrap}
+.racket-turn button,.collection-close{color:inherit;font:inherit;cursor:pointer;background:none;border:none;width:40px;height:40px;font-size:23px}
+.racket-framing{font:inherit;color:inherit;background:#193b30;border:1px solid #759384;border-radius:6px;padding:5px}
+.collection-panel{position:absolute;inset:16px 16px 16px auto;width:388px;padding:22px;display:flex;flex-direction:column;gap:14px;box-sizing:border-box;background:#122b24fa;border:1px solid #c8dbb747;border-radius:18px;box-shadow:0 12px 38px #081c1859}
+.collection-close{position:absolute;right:10px;top:10px}
+.collection-filters{display:flex;align-items:center;gap:12px;margin-right:36px;font-size:13px;color:#d1dfcb}
+.collection-filters select{min-width:0;max-width:100%;font:inherit;color:#f4f5ee;background:#254237;border:1px solid #69836c;border-radius:7px;padding:7px}
+.racket-grid{flex:1;min-height:0;overflow:auto;overscroll-behavior:contain;display:grid;align-content:start;gap:6px;padding:2px 5px 2px 2px;scrollbar-width:thin;scrollbar-color:#708770 transparent}
+.racket-grid button{display:flex;align-items:center;gap:12px;text-align:left;min-width:0;min-height:54px;border:1px solid #466054;border-radius:8px;padding:7px 12px;background:#1b392f;color:#f0f2ec;cursor:pointer;font:inherit}
+.racket-grid button:hover{background:#294936}
+.racket-grid button[aria-pressed=true]{border-color:#c8e591;background:#334e37}
+.racket-grid i{width:19px;height:27px;flex:none;border:3px solid var(--rim);border-radius:47% 47% 44% 44%;background:repeating-linear-gradient(90deg,#dae2da64 0 1px,transparent 1px 4px),repeating-linear-gradient(0deg,#dae2da64 0 1px,transparent 1px 4px);box-shadow:2px 0 var(--accent),-2px 0 var(--base);transform:rotate(-15deg)}
+.racket-grid span{font-size:14px;font-weight:600}
+.racket-grid small,.racket-grid b{display:block;font-size:11px;font-weight:400}
+.racket-grid small{margin-top:3px;color:#c4d1c6}
+.racket-grid b{margin-left:auto;color:#d9edac;white-space:nowrap}
+.collection-selection{border-top:1px solid #466054;padding-top:12px}
+.collection-selection h3{margin:0;font-size:20px}
+.collection-selection p{margin:4px 0 0;font-size:13px;line-height:1.4;color:#c1d4c6}
+.collection-done{width:100%;min-height:42px}
+.collection-done:disabled{background:#33463b;color:#c1c9c1;cursor:default}
+#racket-gallery button:focus-visible,#racket-gallery select:focus-visible{outline:2px solid #efdd83;outline-offset:1px}
+@media(max-width:719px) and (orientation:portrait){
+ .racket-stage{inset:0 0 53%}.collection-caption{left:14px;top:14px;padding:6px 10px}.collection-caption h2{font-size:18px}
+ .collection-panel{inset:47% 8px 8px;width:auto;padding:14px;gap:8px}.racket-turn{bottom:4px}
+ .collection-selection{padding-top:6px}.collection-selection h3{font-size:17px}
+}
+@media(max-height:520px) and (orientation:landscape){
+ .collection-panel{inset:6px 6px 6px auto;width:45%;padding:10px;gap:6px}.racket-stage{right:46%}
+ .collection-caption{padding:5px 9px}.collection-caption h2{font-size:17px}.collection-selection{padding-top:5px}
+ .collection-selection h3{font-size:16px}.collection-selection p{margin-top:1px}
+}
