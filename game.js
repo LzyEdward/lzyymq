@@ -756,7 +756,7 @@ function startGame(mode = 'match', preserveSettings = false) {
   state.playerStats=playerStatsFromInputs();state.highBallAssist=$('#high-ball-toggle').checked;
   applyOpponentIdentity(mode==='match'?state.currentOpponentId:'');
   document.body.classList.remove('match-finished','match-victory','match-champion','tournament-finished');
-  Object.assign(state, { screen: 'play', phase: 'serve', score: [0, 0], rally: 0, maxRally: 0, hits: 0, maxSpeed: 0, finished: false, stamina: 100, swing: 0, swingContact: false, swingMissed: false, jump: 0, jumpV: 0, timer: 0, serveCount: 0, yaw: 0, pitch: -.03,manualPitch:-.03,autoPitchOffset:0, aim: 0, countdown: 0, pointDelay: 0, charge: 0, hitstop: 0, lastMove: -10, lastLook: -10, targetIndex: -1, target: null, targetArmed: false, targetHits: 0, targetShots: 0, targetStreak: 0, directionMode:'natural',tacticMessage:'' });
+  Object.assign(state, { screen: 'play', phase: 'serve', score: [0, 0], rally: 0, maxRally: 0, hits: 0, maxSpeed: 0, finished: false, stamina: 100, swing: 0, swingContact: false, swingMissed: false, jump: 0, jumpV: 0, timer: 0, serveCount: 0, returnDelay: 0, receiveStarted: -10, receiveRally: null, yaw: 0, pitch: -.03,manualPitch:-.03,autoPitchOffset:0, aim: 0, countdown: 0, pointDelay: 0, charge: 0, hitstop: 0, lastMove: -10, lastLook: -10, targetIndex: -1, target: null, targetArmed: false, targetHits: 0, targetShots: 0, targetStreak: 0, directionMode:'natural',tacticMessage:'' });
   updateCourtScore();
   opponentMemory.reset();matchTactics.reset();
   try { state.targetBest = testing ? 0 : Number(localStorage.getItem('feather-court-2-target-best')) || 0; } catch { state.targetBest = 0; }
@@ -944,6 +944,11 @@ function lunge() {
   state.stamina = Math.max(0, state.stamina - 14); state.lastMove = state.timer + .7;
   haptic(.62,.3,48);
   noise(.1, 380, .08, 'highpass');
+}
+function toggleServeStyle() {
+  if (state.screen !== 'play' || state.phase !== 'serve' || training || state.tutorial || state.mode === 'targets') return;
+  state.serveStyle = state.serveStyle === 'high' ? 'low' : 'high';
+  updateHud();
 }
 function serve() {
   if (state.screen !== 'play' || state.phase !== 'serve') return;
@@ -1851,11 +1856,16 @@ function updateHud() {
   $('#shot-cue').classList.toggle('visible',state.screen==='play'&&state.timer<state.shotCueUntil);
   const cue=$('#placement-cue');cue.classList.toggle('hidden',state.screen!=='play'||!$('#placement-hint').checked||state.phase!=='rally');
   if(!cue.classList.contains('hidden')){const locked=state.swing>0&&!state.swingContact&&state.swingTarget,target=locked||selectedLanding();cue.textContent=`${locked?'起拍已锁定':'下一拍'} · ${landingName(target)} · ${Math.abs(target.x).toFixed(1)}m / ${Math.abs(target.z).toFixed(1)}m`;}
-  $('#serve-key').textContent=state.phase==='opponentServe'?'接发':'左键';
+  $('#serve-key').textContent=state.phase==='opponentServe'?'接发':coarse?'智能回球':'左键';
+  const serveSwitch=$('#switch-serve');
+  serveSwitch.hidden=!(coarse&&state.phase==='serve'&&state.screen==='play'&&!training&&!state.tutorial&&state.mode!=='targets');
   if(state.phase==='serving')$('#serve-copy').textContent='轻抛后向前送拍 · 发球中';
   else if(state.phase==='serve'){
     const court=state.mode==='match'&&!training&&!state.tutorial?(singlesServiceSide('player',state.score)>0?'右区 · ':'左区 · '):'';
-    $('#serve-copy').textContent=court+(state.serveStyle==='high'?'高远发球 · G 切换低手':'低手发球 · G 切换高远');
+    const high=state.serveStyle==='high';
+    const switchLabel=high?'改发低手':'改发高远';
+    if(!serveSwitch.hidden)serveSwitch.textContent=switchLabel;
+    $('#serve-copy').textContent=state.mode==='targets'?'开始喂球':court+(high?'高远发球':'低手发球')+(coarse?'':' · G '+switchLabel);
   }
   const trainingHud = $('#training-hud');
   trainingHud.classList.toggle('hidden', !training || state.screen !== 'play');
@@ -2165,6 +2175,7 @@ function restorePreferences(){
 function showPlayer(){const avatar=ensurePlayerAvatar();for(const [material,original] of avatar.fadeMaterials)material.opacity=original;avatar.coverage=1;avatar.resetFeet();bot.root.visible=false;state.screen='inspect';state.inspectYaw=.08;state.inspectDistance=.83;$('#showroom-framing').textContent='看全身';state.inspectPitch=.035;state.inspectPose='idle';state.inspectTime=0;keys.clear();hitIntent.clear();document.exitPointerLock?.();$('#menu').classList.add('hidden');$('#hud').classList.add('hidden');$('#showroom').classList.remove('hidden');$('#pause-overlay').classList.add('hidden');document.body.classList.remove('playing');}
 
 function bindEvents() {
+  $('#switch-serve').addEventListener('click',toggleServeStyle);
   for(const button of document.querySelectorAll('[data-home-open]')){
     button.addEventListener('click',()=>document.getElementById(button.dataset.homeOpen).showModal());
   }
@@ -2295,7 +2306,7 @@ function bindEvents() {
       if (state.comfortable) document.exitPointerLock?.(); else requestLock();
       feedback(state.comfortable ? '跟球镜头' : '自由镜头', 'V 随时切换 · 跑位方向不受镜头影响');
     }
-    if(e.code==='KeyG'&&state.phase==='serve'){state.serveStyle=state.serveStyle==='high'?'low':'high';$('#serve-copy').textContent=state.serveStyle==='high'?'高远发球已选 · G 切回低发球，左键发球':'低发球已选 · G 切换高远发球，左键发球';feedback(state.serveStyle==='high'?'高远发球':'低发球',state.serveStyle==='high'?'发向后场，争取压后场':'发向前发球线，争取抢攻');return;}
+    if(e.code==='KeyG'){toggleServeStyle();return;}
     if (e.code === 'KeyR') { if (state.phase === 'serve') serve(); else lunge(); }
     if (e.code === 'ControlLeft' || e.code === 'ControlRight') { e.preventDefault(); lunge(); }
     if (e.code === 'KeyZ'||e.code==='KeyC') {chooseLanding({...selectedLanding(),x:selectedLanding().x+(e.code==='KeyZ'?-.65:.65)});showShotCue(state.shot);}
@@ -2450,9 +2461,9 @@ async function init() {
         $('#test-result').textContent=JSON.stringify({pass:results.every(r=>r.finished&&Object.keys(r.actions).length>=4&&r.review?.tip),results},null,2);pauseGame();
       };
       tacticsMatch.onclick=()=>{
-        const savedLevel=$('#difficulty').value,savedPoints=$('#match-points').value,savedAuto=$('#eagle-auto').checked,careerBefore=career,results=[];
+        const savedLevel=$('#difficulty').value,savedPoints=$('#match-points').value,savedAuto=$('#eagle-auto').checked,savedAssist=$('#assist-toggle').checked,careerBefore=career,results=[];
         try{
-          $('#eagle-auto').checked=false;$('#match-points').value='11';
+          $('#eagle-auto').checked=false;$('#match-points').value='11';$('#assist-toggle').checked=true;setAssist(true);
           for(const difficulty of ['easy','hard','master','pro','legend']){
             $('#difficulty').value=difficulty;startGame('match');state.sound=false;rng=101+opponentLevel(difficulty).tier*97;hitIntent.press(state.timer,null,'match-proof');
             const used=new Set();let wasIncoming=false;
@@ -2466,7 +2477,7 @@ async function init() {
             }
             results.push({difficulty,finished:state.finished,score:[...state.score],hits:state.hits,seconds:state.timer,methods:{...matchTactics.methods},opponentActions:{...opponent.actionCounts},playerShots:[...used],energy:state.stamina});
           }
-        }finally{$('#difficulty').value=savedLevel;$('#match-points').value=savedPoints;$('#eagle-auto').checked=savedAuto;career=careerBefore;updateCareerUI();}
+        }finally{$('#difficulty').value=savedLevel;$('#match-points').value=savedPoints;$('#eagle-auto').checked=savedAuto;$('#assist-toggle').checked=savedAssist;setAssist(savedAssist);career=careerBefore;updateCareerUI();}
         const variety=new Set(results.flatMap(r=>Object.keys(r.methods)));
         $('#test-result').textContent=JSON.stringify({type:'five complete tactical matches',pass:results.every(r=>r.finished)&&variety.size>=3,distinctWinningShots:[...variety],results},null,2);pauseGame();
       };
@@ -2671,7 +2682,7 @@ async function init() {
           ball.pos.set(x,y,z);ball.active=true;opponentHit();
           const action=opponent.history.at(-1);counts[action.action]=(counts[action.action]||0)+1;
           const end=predict(ball.pos,ball.vel,1).landing;
-          const legal=ball.vel.toArray().every(Number.isFinite)&&(action.fault||end?.z>0&&Number.isFinite(end.x));
+          const legal=Boolean(ball.vel.toArray().every(Number.isFinite)&&(action.fault||end?.z>0&&Number.isFinite(end.x)));
           if(!legal)invalidShots.push({index:i,type:action.type,fault:action.fault||null,pos:ball.pos.toArray(),velocity:ball.vel.toArray(),target:action.executedTarget||action.target,landing:end});
           allLegal&&=legal;
           if(action.type==='net'){netContacts++;lungePeak=Math.max(lungePeak,opponent.netLunge);}
@@ -2925,7 +2936,9 @@ async function init() {
        const nearCue=$('#contact-halo');
        checks.push({name:'incoming-shuttle-gets-a-visible-timing-cue',pass:!nearCue.classList.contains('hidden')&&['near','ready'].includes(nearCue.dataset.timing),timing:nearCue.dataset.timing});
        ball.pos.copy(camera.localToWorld(V(5,1,-3)));ball.renderPos.copy(ball.pos);updateContactHint();
-       checks.push({name:'offscreen-shuttle-gets-a-direction-arrow',pass:getComputedStyle($('#shuttle-indicator')).display!=='none'&&Number.isFinite(Number.parseFloat($('#shuttle-indicator').style.getPropertyValue('--shuttle-arrow'))),left:$('#shuttle-indicator').style.left,angle:$('#shuttle-indicator').style.getPropertyValue('--shuttle-arrow')});
+       const edgeIndicator=$('#shuttle-indicator');
+       const edgeAngle=edgeIndicator.style.getPropertyValue('--shuttle-arrow');
+       checks.push({name:'offscreen-shuttle-gets-a-direction-arrow',pass:edgeIndicator.getClientRects().length>0&&Number.isFinite(Number.parseFloat(edgeAngle)),left:edgeIndicator.style.left,angle:edgeAngle});
        const guideRing=shuttleFootprint.visible,guidePoint=[shuttleFootprint.position.x,shuttleFootprint.position.z];
        checks.push({name:'ground-footprint-follows-the-shuttle-coordinate',pass:guideRing&&Math.hypot(guidePoint[0]-ball.renderPos.x,guidePoint[1]-ball.renderPos.z)<.001,guidePoint});
        ball.pos.set(.2,3.4,2.3);ball.renderPos.copy(ball.pos);state.prediction={intercept:{x:.6,y:2,z:3.1}};

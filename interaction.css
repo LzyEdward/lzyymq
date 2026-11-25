@@ -108,7 +108,12 @@ body.training-mode.controls-visible .training-net-controls { display:flex; }
    Keep the clean score view and expose one
    small pause affordance so the cursor and controls can be released safely. */
 #hud>#pause-btn{display:none}
+#switch-serve{min-height:44px;padding:0 12px;background:#dcefaa;color:#183c31;border-radius:6px;font-weight:600;touch-action:manipulation}
 @media(pointer:coarse){
  body.playing #hud>#pause-btn{display:block!important;position:absolute;right:12px;top:18px;z-index:8;width:32px;height:32px;padding:0;border:1px solid #d9e8cc3d;border-radius:50%;background:#0b1d1cb0;color:#eef4df;font-size:12px;line-height:30px;text-align:center}
  body.playing #hud>#pause-btn span{display:none}
+}
+@media(pointer:coarse) and (max-width:800px){
+ #pause-overlay .pause-modal{padding:20px 18px 12px}
+ body:not(.match-finished) #pause-overlay #resume-btn{position:sticky;bottom:0;z-index:2;background:#dcf49a;box-shadow:0 -5px 10px #1a3832ed}
 }

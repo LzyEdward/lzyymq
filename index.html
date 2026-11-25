@@ -4,42 +4,42 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
   <meta name="theme-color" content="#fbf5e7">
-<title>来拍！· 羽毛球俱乐部 | LZYYMQ 7.60.0</title>
+<title>来拍！· 羽毛球俱乐部 | LZYYMQ 7.61.0</title>
   <link rel="icon" type="image/svg+xml" href="./favicon.svg">
   <script type="importmap">
     {"imports":{
-      "./game.js":"./game.js?v=7.60.0",
-      "./competition.mjs":"./competition.mjs?v=7.60.0",
-      "./stand-audio.mjs":"./stand-audio.mjs?v=7.60.0",
-      "./spectator-head.mjs":"./spectator-head.mjs?v=7.60.0",
-      "./controls.mjs":"./controls.mjs?v=7.60.0",
-      "./physics.mjs":"./physics.mjs?v=7.60.0",
-      "./motion.mjs":"./motion.mjs?v=7.60.0",
-      "./opponent-ai.mjs":"./opponent-ai.mjs?v=7.60.0",
-      "./match-mind.mjs":"./match-mind.mjs?v=7.60.0",
-      "./tracking.mjs":"./tracking.mjs?v=7.60.0",
-      "./tactics.mjs":"./tactics.mjs?v=7.60.0",
-      "./hand-pose.mjs":"./hand-pose.mjs?v=7.60.0",
-      "./player-arm.mjs":"./player-arm.mjs?v=7.60.0",
-      "./viewmodel.mjs":"./viewmodel.mjs?v=7.60.0",
-      "./arena-bowl.mjs":"./arena-bowl.mjs?v=7.60.0",
-      "./hall-details.mjs":"./hall-details.mjs?v=7.60.0",
-      "./portrait-head.mjs":"./portrait-head.mjs?v=7.60.0",
-      "./athlete-real.mjs":"./athlete-real.mjs?v=7.60.0"
+      "./game.js":"./game.js?v=7.61.0",
+      "./competition.mjs":"./competition.mjs?v=7.61.0",
+      "./stand-audio.mjs":"./stand-audio.mjs?v=7.61.0",
+      "./spectator-head.mjs":"./spectator-head.mjs?v=7.61.0",
+      "./controls.mjs":"./controls.mjs?v=7.61.0",
+      "./physics.mjs":"./physics.mjs?v=7.61.0",
+      "./motion.mjs":"./motion.mjs?v=7.61.0",
+      "./opponent-ai.mjs":"./opponent-ai.mjs?v=7.61.0",
+      "./match-mind.mjs":"./match-mind.mjs?v=7.61.0",
+      "./tracking.mjs":"./tracking.mjs?v=7.61.0",
+      "./tactics.mjs":"./tactics.mjs?v=7.61.0",
+      "./hand-pose.mjs":"./hand-pose.mjs?v=7.61.0",
+      "./player-arm.mjs":"./player-arm.mjs?v=7.61.0",
+      "./viewmodel.mjs":"./viewmodel.mjs?v=7.61.0",
+      "./arena-bowl.mjs":"./arena-bowl.mjs?v=7.61.0",
+      "./hall-details.mjs":"./hall-details.mjs?v=7.61.0",
+      "./portrait-head.mjs":"./portrait-head.mjs?v=7.61.0",
+      "./athlete-real.mjs":"./athlete-real.mjs?v=7.61.0"
     }}
   </script>
   <link rel="modulepreload" href="./vendor/three/build/three.core.js">
   <link rel="modulepreload" href="./vendor/three/build/three.module.js">
   <link rel="modulepreload" href="./assets/athlete-data.mjs">
-  <link rel="modulepreload" href="./athlete-real.mjs?v=7.60.0">
-  <link rel="modulepreload" href="./viewmodel.mjs?v=7.60.0">
-  <link rel="modulepreload" href="./game.js?v=7.60.0">
-  <link rel="stylesheet" href="./style.css?v=7.60.0">
-  <link rel="stylesheet" href="./competition.css?v=7.60.0">
-  <link rel="stylesheet" href="./interaction.css?v=7.60.0">
-  <link rel="stylesheet" href="./aiming.css?v=7.60.0">
+  <link rel="modulepreload" href="./athlete-real.mjs?v=7.61.0">
+  <link rel="modulepreload" href="./viewmodel.mjs?v=7.61.0">
+  <link rel="modulepreload" href="./game.js?v=7.61.0">
+  <link rel="stylesheet" href="./style.css?v=7.61.0">
+  <link rel="stylesheet" href="./competition.css?v=7.61.0">
+  <link rel="stylesheet" href="./interaction.css?v=7.61.0">
+  <link rel="stylesheet" href="./aiming.css?v=7.61.0">
   <link rel="stylesheet" href="./eagle-eye.css">
-  <link rel="stylesheet" href="./home.css?v=7.60.0">
+  <link rel="stylesheet" href="./home.css?v=7.61.0">
   <link rel="stylesheet" href="./racket-gallery.css">
   <link rel="stylesheet" href="./technique.css">
   <link rel="stylesheet" href="./tactics.css">
@@ -119,7 +119,7 @@
     <div id="shuttle-indicator" class="hidden"><i aria-hidden="true"></i><b aria-hidden="true">◆</b> <span>来球</span></div>
     <div id="point-toast" class="point-toast hidden"><span id="point-reason"></span><strong id="point-title"></strong><small id="point-subtitle"></small><button id="eagle-point-review" class="hidden">鹰眼回放 <kbd>B</kbd></button></div>
     <div id="hit-feedback"><strong></strong><span></span></div>
-    <div id="serve-hint" class="serve-hint"><span class="key" id="serve-key">左键</span><span><b id="serve-copy">低手发球 · G 切换高远发球</b></span></div>
+    <div id="serve-hint" class="serve-hint"><span class="key" id="serve-key">左键</span><span><b id="serve-copy">低手发球 · G 切换高远发球</b></span><button type="button" id="switch-serve" hidden>改发高远</button></div>
     <p id="training-hud" class="hidden" role="status"></p>
     <div id="control-dock"><p id="easy-cue-text">左键智能回球 · 右键杀球 · H 显示操作</p><div class="primary-controls"><div id="easy-cue"><button id="quick-hit" aria-label="按住智能回球，鼠标左键或 J"><span>智能回球</span><kbd>左键 / J</kbd></button></div><button id="drop-btn" aria-label="按住吊球 E 或按 3"><span>吊球</span><kbd>E / 3</kbd></button><button id="jump-btn" aria-label="起跳 空格"><i id="jump-height"></i><span id="jump-label">起跳</span><kbd>空格</kbd></button><button id="smash-btn" aria-label="按住杀球，鼠标右键或 L"><span>杀球</span><kbd>右键 / L</kbd></button></div><div class="slice-tools"><button id="slice-smash-btn">劈杀斜线<kbd>8</kbd></button><button id="slice-drop-btn">劈吊对角<kbd>9</kbd></button></div><div class="slice-tools training-net-controls"><button type="button" data-training-shot="net">网前搓球<kbd>5</kbd></button><button type="button" data-training-shot="netcross">勾对角<kbd>7</kbd></button></div><small id="jump-readout">5 搓球 · 6 推后场 · 7 勾对角 · 8 劈杀 · 9 劈吊</small></div>
     <aside id="lesson-card" class="hidden"><div><span id="lesson-step">操作练习 1 / 4</span><button id="lesson-exit" aria-label="退出操作练习">×</button></div><kbd id="lesson-key">W A S D</kbd><h2 id="lesson-title">先走两步</h2><p id="lesson-body"></p><div id="lesson-progress"><i data-step="0"></i><i data-step="1"></i><i data-step="2"></i><i data-step="3"></i></div><div id="lesson-finish" class="hidden"><button id="lesson-match">正式比赛 →</button><button id="lesson-practice">继续练习</button></div></aside>

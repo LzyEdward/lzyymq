@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {OPPONENT_LEVELS,singlesServiceSide} from '../competition.mjs';
-import {opponentFootwork,planOpponentStroke,recoveryBase,opponentReceiveMissChance,opponentStrokeExecution,opponentServeTarget,defensiveIntercept,opponentWeaknessProfile,opponentWeaknessKey} from '../opponent-ai.mjs';
+import {opponentFootwork,planOpponentStroke,recoveryBase,opponentReceiveMissChance,opponentStrokeExecution,opponentServeTarget,defensiveIntercept,opponentWeaknessProfile,opponentWeaknessKey,opponentStance} from '../opponent-ai.mjs';
 import {advance,COURT,predict,solveShot} from '../physics.mjs';
 
 const level=key=>OPPONENT_LEVELS[key];
@@ -123,6 +123,11 @@ test('opponent performs a readable anticipation split before full-speed pursuit'
  assert.ok(Math.hypot(split.velocity.x,split.velocity.z)>0,'split step should show movement');
  assert.ok(Math.hypot(chase.velocity.x,chase.velocity.z)>Math.hypot(split.velocity.x,split.velocity.z)*2,'reaction should release a clear acceleration');
  assert.ok(split.mode==='split'&&chase.mode==='net-approach');
+});
+test('partial intercept snapshots keep opponent stance finite and moving',()=>{
+ const stance=opponentStance({x:2,z:-5.8});
+ assert.ok(Number.isFinite(stance.x)&&Number.isFinite(stance.z));
+ assert.ok(stance.x>0&&stance.z<-5);
 });
 
 test('competent opponents visibly use both brush and cross-court net replies',()=>{

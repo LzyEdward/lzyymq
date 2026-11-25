@@ -39,7 +39,7 @@
 body.focus #tactics,body.focus #aim-widget,body.focus #action-tools,body.focus .controls-strip,body.focus #reticle,body.focus #contact-halo,body.focus #easy-cue-text{display:none!important}body.focus #easy-cue{background:transparent;border:0;backdrop-filter:none;padding:0;bottom:94px}body.focus #quick-hit{background:#173a2a70;border:1px solid #d9edb34d;color:#eef7dc;min-height:32px;opacity:.6}body.focus #quick-hit:hover{opacity:1}body.focus .shot-bar{background:#102a2580}body.focus #hit-feedback span{display:none}
 /* Clean match view: scores stay visible; transient service cue appears only before the rally. */
 body.playing .masthead,body.playing #vignette,body.playing .grain{display:none!important}
-body.playing #hud>*:not(.scoreboard):not(#serve-hint):not(#mobile-controls):not(#control-dock):not(#pause-btn){display:none!important}
+body.playing #hud > :where(:not(.scoreboard, #serve-hint, #mobile-controls, #pause-btn, #shuttle-indicator)){display:none!important}
 body.playing .scoreboard{gap:8px;padding:8px 14px;background:#0b1d1cb0;border-color:#dae6d51c;box-shadow:none;backdrop-filter:blur(8px);pointer-events:none}
 body.playing .scoreboard .score-person span{display:none}
 body.playing .scoreboard .score-mid{font-size:0;line-height:1;padding:0 7px;border:0}

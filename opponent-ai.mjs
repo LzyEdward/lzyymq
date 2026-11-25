@@ -37,7 +37,11 @@ export function opponentReceiveBase({serverX=.45,high=false}={}){
 // At shoulder height leave space for a defensive swing. For an overhead,
 // get under the cork with the racket shoulder slightly behind it.
 export function opponentStance(point){
- const overhead=clamp((point.y-1.85)/.65,0,1);
+ // Prediction snapshots normally include height, but a compact caller may
+ // only provide the court coordinates. Keep the stance finite so a partial
+ // snapshot never silently freezes the receiver's footwork.
+ const height=Number.isFinite(point?.y)?point.y:1.75;
+ const overhead=clamp((height-1.85)/.65,0,1);
  return {x:clamp(point.x+.13,-3.1,3.1),z:clamp(point.z-.61+overhead*.35,-7.05,-.7)};
 }
 export function defensiveIntercept(origin,velocity,feet,level,pace=1){
