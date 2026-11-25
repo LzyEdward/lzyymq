@@ -11,7 +11,7 @@ import { freeLook, landingFromMap, moveLanding, normalizeLanding, landingName, L
 import { createAthlete } from './athlete.mjs';
 import {cameraMode,toggleCameraMode,orbitLook,thirdPersonPose,thirdPersonLift,thirdPersonFov,shuttleScreenCue,THIRD_PERSON_PITCH,avatarObstruction,avatarSwingTime} from './camera-mode.mjs';
 import { movementVector, gradeContact, strokeOutcome, shotTarget, SHOT_DEPTHS, Dash, targetDistance, DRILL_TARGETS, practiceFeed, smartStroke, racketPowerBoost, techniqueTarget } from './gameplay.mjs';
-import { OPPONENT_LEVELS, LEVEL_DESCRIPTIONS, LEVEL_REFERENCES, opponentLevel, placementSpread, singlesServiceSide, matchFinished, rankName, freshCareer, parseCareer, settleMatch } from './competition.mjs';
+import { OPPONENT_LEVELS, LEVEL_DESCRIPTIONS, LEVEL_REFERENCES, opponentLevel, placementSpread, singlesServiceSide, matchFinished, rankName, freshCareer, parseCareer, settleMatch, worldStandings } from './competition.mjs';
 import {planOpponentStroke,recoveryBase,opponentFootwork,opponentReceiveMissChance,opponentStrokeExecution,opponentServeTarget,opponentContactWindow,opponentStance,defensiveIntercept,opponentReceiveBase,opponentWeaknessProfile,opponentWeaknessKey} from './opponent-ai.mjs';
 import { trackAngles, stepTracking, highBallOffset, stepHighBallOffset, manualLookTakeover, overheadPreparation } from './tracking.mjs';
 import { loadSurfaceMaps, createEnvironment, CourtPresentation } from './presentation.mjs';
@@ -678,6 +678,25 @@ function updateDifficultyUI(){
   if($('#difficulty').value==='auto'&&!selectedRival()&&state.screen==='menu'){$('#difficulty-detail').textContent='单场挑战按抽到的球星取巅峰等级，开场显示实际级别。自由对打默认 5 级。';return;}
   $('#difficulty-detail').textContent=`参考：${LEVEL_REFERENCES[level.tier]}。${LEVEL_DESCRIPTIONS[level.tier]}。移动 ${level.speed.toFixed(1)} m/s · 反应 ${(level.reaction*1000).toFixed(0)} ms · 覆盖 ${level.reach.toFixed(2)} m · 稳定 ${Math.round(level.accuracy*100)}%。`;
 }
+function rankTarget({player,next,rows}) {
+  if(next)return `距${next.name}还差 ${next.points-player.points} 分`;
+  return rows[1].rank===1?'并列榜首':`领先第 2 名 ${player.points-rows[1].points} 分`;
+}
+function openWorldBoard() {
+  const standings=worldStandings(career,PLAYER_NAME);
+  $('#world-place').textContent='第 '+standings.player.rank+' 名';
+  $('#world-points').textContent=standings.player.points+' 分';
+  $('#world-target').textContent=rankTarget(standings);
+  const table=$('#world-rows');
+  table.replaceChildren(...standings.rows.map(row=>{
+    const tr=document.createElement('tr');
+    if(row.id==='player')tr.className='world-player';
+    for(const value of [row.rank,row.name,row.points])tr.insertCell().textContent=value;
+    return tr;
+  }));
+  $('#world-board').showModal();
+  $('#world-board .world-scroll').scrollTop=0;
+}
 function updateCareerUI(){
   const current=tour&&!tour.completed&&!tour.eliminated?currentTourMatch(tour):null;
   $('#tour-home-title').textContent=current?current.event.name:'赛事生涯';
@@ -710,6 +729,7 @@ function commitMatch(){
   if(state.ratingDelta!==null)return;
   const result=settleMatch(career,{id:state.matchId,level:state.difficulty,score:state.score,points:state.matchPoints,mode:state.mode,date:new Date().toISOString(),opponentId:state.currentOpponentId,eventId:state.tournamentId,round:state.tournamentRound,highlight:matchHighlight(matchTactics.points)});
   if(!result.applied)return;
+  state.worldRankBefore=worldStandings(career,PLAYER_NAME).player.rank;
   career=result.career;state.ratingDelta=result.delta;
   try{if(!testing)localStorage.setItem(CAREER_KEY,JSON.stringify(career));}catch{}
   updateCareerUI();
@@ -762,7 +782,7 @@ function startGame(mode = 'match', preserveSettings = false) {
   try { state.targetBest = testing ? 0 : Number(localStorage.getItem('feather-court-2-target-best')) || 0; } catch { state.targetBest = 0; }
   state.depth = -4.7;state.manualLanding=false;state.landingKind=null;state.shotCueUntil=0;state.aiming=false;state.aimAlt=false;state.swingTarget=null;state.serveTarget=null;state.lastLanding=null;document.body.classList.remove('choosing-landing');state.contactFlash=0;dash.reset();setControlsVisible(false);
   jumping.reset();movementOwner.reset();state.manualOverride=false;state.tutorial=false;state.jumpPeak=0;state.cameraPeak=1.69;state.handsOn=false;state.inputTrace=[];$('#lesson-card').classList.add('hidden');
-  state.matchPoints=Number($('#match-points').value)||11;state.server='player';state.matchId=crypto.randomUUID?.()||`${Date.now()}-${random()}`;state.ratingDelta=null;
+  state.matchPoints=Number($('#match-points').value)||11;state.server='player';state.matchId=crypto.randomUUID?.()||`${Date.now()}-${random()}`;state.ratingDelta=null;state.worldRankBefore=null;
   state.smashes=0;state.winners=0;state.errors=0;state.lastShot=null;setShot('auto');
   if (!preserveSettings) {
     state.assists = $('#assist-toggle').checked; state.comfortable = $('#comfortable-toggle').checked;
@@ -2056,6 +2076,11 @@ function pauseGame(finished = false) {
     $('#result-outcome').textContent=champion?'捧起冠军奖杯！':won?'拿下这场！':'本场惜败';
     $('#result-player-name').textContent=PLAYER_NAME;$('#result-opponent-name').textContent=opponentName;
     $('#result-mine').textContent=state.score[0];$('#result-theirs').textContent=state.score[1];
+    const standings=worldStandings(career,PLAYER_NAME);
+    const moved=(state.worldRankBefore??standings.player.rank)-standings.player.rank;
+    const change=moved>0?'上升 '+moved+' 位':moved<0?'下降 '+(-moved)+' 位':'持平';
+    $('#result-world').textContent=`世界第 ${standings.player.rank} 名 · ${change}　↗`;
+    $('#result-world-target').textContent=rankTarget(standings);
     $('#result-rating').textContent=`${state.ratingDelta>=0?'+':''}${state.ratingDelta}`;
     $('#result-smashes').textContent=String(state.winners);$('#result-forced').textContent=String(matchTactics.points.filter(p=>p.scoring==='forced').length);$('#result-hits').textContent=String(state.hits);$('#result-errors').textContent=String(state.errors);
     $('#result-rally').textContent=String(Math.max(state.maxRally,state.rally));$('#result-speed').textContent=String(state.maxSpeed);
@@ -2175,6 +2200,7 @@ function restorePreferences(){
 function showPlayer(){const avatar=ensurePlayerAvatar();for(const [material,original] of avatar.fadeMaterials)material.opacity=original;avatar.coverage=1;avatar.resetFeet();bot.root.visible=false;state.screen='inspect';state.inspectYaw=.08;state.inspectDistance=.83;$('#showroom-framing').textContent='看全身';state.inspectPitch=.035;state.inspectPose='idle';state.inspectTime=0;keys.clear();hitIntent.clear();document.exitPointerLock?.();$('#menu').classList.add('hidden');$('#hud').classList.add('hidden');$('#showroom').classList.remove('hidden');$('#pause-overlay').classList.add('hidden');document.body.classList.remove('playing');}
 
 function bindEvents() {
+  for(const button of document.querySelectorAll('[data-world-table]'))button.addEventListener('click',openWorldBoard);
   $('#switch-serve').addEventListener('click',toggleServeStyle);
   for(const button of document.querySelectorAll('[data-home-open]')){
     button.addEventListener('click',()=>document.getElementById(button.dataset.homeOpen).showModal());

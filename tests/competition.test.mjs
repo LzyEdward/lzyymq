@@ -1,6 +1,23 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {OPPONENT_LEVELS,placementSpread,matchFinished,rankName,freshCareer,parseCareer,settleMatch} from '../competition.mjs';
+import {OPPONENT_LEVELS,placementSpread,matchFinished,rankName,freshCareer,parseCareer,settleMatch,worldStandings} from '../competition.mjs';
+import {EXHIBITION_ROSTER} from '../tournament.mjs';
+
+test('world singles includes every rival and the saved player, with shared ranks and a reachable next place',()=>{
+ const career=freshCareer();
+ const board=worldStandings(career,'林楠');
+ assert.equal(board.rows.length,EXHIBITION_ROSTER.length+1);
+ assert.equal(board.player.name,'林楠');
+ assert.equal(new Set(board.rows.map(row=>row.id)).size,board.rows.length);
+ const tied=worldStandings({...career,rating:board.next.points},'林楠');
+ assert.equal(tied.player.rank,board.next.rank);
+ assert.ok(tied.next.points>tied.player.points);
+ const result=settleMatch(career,{id:'opening',level:'legend',opponentId:board.next.id,score:[11,6]});
+ const after=worldStandings(parseCareer(JSON.stringify(result.career)),'林楠');
+ assert.ok(after.player.rank<board.player.rank);
+ assert.equal(after.rows.find(r=>r.id===board.next.id).points,board.next.points-result.delta);
+ assert.equal(worldStandings({...career,rating:3000},'林楠').next,null);
+});
 
 test('11 and 21 point games require two clear points and enforce their own caps',()=>{
  for(const [points,a,b,expected] of [[11,11,10,false],[11,12,10,true],[11,15,14,true],[21,21,20,false],[21,22,20,true],[21,30,29,true],[21,15,0,false]])assert.equal(matchFinished([a,b],points),expected);

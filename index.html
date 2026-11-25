@@ -4,42 +4,42 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
   <meta name="theme-color" content="#fbf5e7">
-<title>来拍！· 羽毛球俱乐部 | LZYYMQ 7.61.0</title>
+<title>来拍！· 羽毛球俱乐部 | LZYYMQ 7.62.0</title>
   <link rel="icon" type="image/svg+xml" href="./favicon.svg">
   <script type="importmap">
     {"imports":{
-      "./game.js":"./game.js?v=7.61.0",
-      "./competition.mjs":"./competition.mjs?v=7.61.0",
-      "./stand-audio.mjs":"./stand-audio.mjs?v=7.61.0",
-      "./spectator-head.mjs":"./spectator-head.mjs?v=7.61.0",
-      "./controls.mjs":"./controls.mjs?v=7.61.0",
-      "./physics.mjs":"./physics.mjs?v=7.61.0",
-      "./motion.mjs":"./motion.mjs?v=7.61.0",
-      "./opponent-ai.mjs":"./opponent-ai.mjs?v=7.61.0",
-      "./match-mind.mjs":"./match-mind.mjs?v=7.61.0",
-      "./tracking.mjs":"./tracking.mjs?v=7.61.0",
-      "./tactics.mjs":"./tactics.mjs?v=7.61.0",
-      "./hand-pose.mjs":"./hand-pose.mjs?v=7.61.0",
-      "./player-arm.mjs":"./player-arm.mjs?v=7.61.0",
-      "./viewmodel.mjs":"./viewmodel.mjs?v=7.61.0",
-      "./arena-bowl.mjs":"./arena-bowl.mjs?v=7.61.0",
-      "./hall-details.mjs":"./hall-details.mjs?v=7.61.0",
-      "./portrait-head.mjs":"./portrait-head.mjs?v=7.61.0",
-      "./athlete-real.mjs":"./athlete-real.mjs?v=7.61.0"
+      "./game.js":"./game.js?v=7.62.0",
+      "./competition.mjs":"./competition.mjs?v=7.62.0",
+      "./stand-audio.mjs":"./stand-audio.mjs?v=7.62.0",
+      "./spectator-head.mjs":"./spectator-head.mjs?v=7.62.0",
+      "./controls.mjs":"./controls.mjs?v=7.62.0",
+      "./physics.mjs":"./physics.mjs?v=7.62.0",
+      "./motion.mjs":"./motion.mjs?v=7.62.0",
+      "./opponent-ai.mjs":"./opponent-ai.mjs?v=7.62.0",
+      "./match-mind.mjs":"./match-mind.mjs?v=7.62.0",
+      "./tracking.mjs":"./tracking.mjs?v=7.62.0",
+      "./tactics.mjs":"./tactics.mjs?v=7.62.0",
+      "./hand-pose.mjs":"./hand-pose.mjs?v=7.62.0",
+      "./player-arm.mjs":"./player-arm.mjs?v=7.62.0",
+      "./viewmodel.mjs":"./viewmodel.mjs?v=7.62.0",
+      "./arena-bowl.mjs":"./arena-bowl.mjs?v=7.62.0",
+      "./hall-details.mjs":"./hall-details.mjs?v=7.62.0",
+      "./portrait-head.mjs":"./portrait-head.mjs?v=7.62.0",
+      "./athlete-real.mjs":"./athlete-real.mjs?v=7.62.0"
     }}
   </script>
   <link rel="modulepreload" href="./vendor/three/build/three.core.js">
   <link rel="modulepreload" href="./vendor/three/build/three.module.js">
   <link rel="modulepreload" href="./assets/athlete-data.mjs">
-  <link rel="modulepreload" href="./athlete-real.mjs?v=7.61.0">
-  <link rel="modulepreload" href="./viewmodel.mjs?v=7.61.0">
-  <link rel="modulepreload" href="./game.js?v=7.61.0">
-  <link rel="stylesheet" href="./style.css?v=7.61.0">
-  <link rel="stylesheet" href="./competition.css?v=7.61.0">
-  <link rel="stylesheet" href="./interaction.css?v=7.61.0">
-  <link rel="stylesheet" href="./aiming.css?v=7.61.0">
+  <link rel="modulepreload" href="./athlete-real.mjs?v=7.62.0">
+  <link rel="modulepreload" href="./viewmodel.mjs?v=7.62.0">
+  <link rel="modulepreload" href="./game.js?v=7.62.0">
+  <link rel="stylesheet" href="./style.css?v=7.62.0">
+  <link rel="stylesheet" href="./competition.css?v=7.62.0">
+  <link rel="stylesheet" href="./interaction.css?v=7.62.0">
+  <link rel="stylesheet" href="./aiming.css?v=7.62.0">
   <link rel="stylesheet" href="./eagle-eye.css">
-  <link rel="stylesheet" href="./home.css?v=7.61.0">
+  <link rel="stylesheet" href="./home.css?v=7.62.0">
   <link rel="stylesheet" href="./racket-gallery.css">
   <link rel="stylesheet" href="./technique.css">
   <link rel="stylesheet" href="./tactics.css">
@@ -50,7 +50,7 @@
   <div id="loading" role="status" aria-live="polite"><div class="load-mark">来<span>拍！</span></div><p><span id="load-status">正在点亮球馆</span> <span id="load-dots">···</span></p><div class="load-bar"><i></i></div><small id="load-detail">正在连接游戏文件…</small></div>
   <header class="masthead" id="masthead">
     <a class="brand" href="#" id="brand-home" aria-label="来拍首页"><img src="./favicon.svg" alt="" width="40" height="40"><span>LZYYMQ</span></a>
-    <nav aria-label="游戏工具"><button class="icon-btn" id="sound-btn" title="切换声音" aria-label="切换声音">♪</button><button class="icon-btn" id="help-btn" title="操作说明" aria-label="操作说明">?</button></nav>
+    <nav aria-label="游戏工具"><button type="button" class="world-entry" data-world-table aria-haspopup="dialog">世界排名</button><button class="icon-btn" id="sound-btn" title="切换声音" aria-label="切换声音">♪</button><button class="icon-btn" id="help-btn" title="操作说明" aria-label="操作说明">?</button></nav>
   </header>
   <main id="menu" class="menu-screen">
     <div class="lobby">
@@ -69,6 +69,17 @@
       <footer class="lobby-foot"><button id="tour-browse" type="button" hidden>其他赛事 ↗</button><button data-home-open="player-locker">林楠的球员柜 <span aria-hidden="true">↗</span></button><span>左键回球 · 右键杀球</span></footer>
     </div>
   </main>
+  <dialog class="lobby-dialog" id="world-board" aria-labelledby="world-title">
+    <header><h2 id="world-title">世界排名</h2><button data-home-close aria-label="关闭世界排名">×</button></header>
+    <section class="world-card" aria-label="我的排名">
+      <div><strong id="world-place"></strong><span>林楠</span><b id="world-points"></b></div>
+      <small id="world-target"></small>
+    </section>
+    <div class="world-scroll" tabindex="0" aria-label="浏览完整积分榜">
+      <table aria-label="生涯男单总榜"><thead><tr><th scope="col">名次</th><th scope="col">球员</th><th scope="col">积分</th></tr></thead><tbody id="world-rows"></tbody></table>
+    </div>
+    <small class="world-source">本机生涯模拟榜 · 正式单打与赛事计分，同分并列。</small>
+  </dialog>
   <dialog class="lobby-dialog" id="match-options" aria-labelledby="match-options-title">
     <header><h2 id="match-options-title">比赛设置</h2><button data-home-close aria-label="关闭">×</button></header>
     <div class="form-grid"><label>对手<select id="opponent-star"><option value="random" selected>知名球星随机</option></select></label><label>难度<select id="difficulty"><option value="auto" selected>球星巅峰 · 随对手</option><option value="easy">中羽参考 1 级 · 入门</option><option value="normal">中羽参考 2 级 · 基础</option><option value="hard">中羽参考 3 级 · 球会</option><option value="expert">中羽参考 4 级 · 熟练</option><option value="master">中羽参考 5 级 · 进阶</option><option value="elite">中羽参考 6 级 · 系统训练</option><option value="advanced">中羽参考 7 级 · 高水平竞技</option><option value="pro">中羽参考 8 级 · 专业风格</option><option value="national">中羽参考 9 级 · 高水平专业</option><option value="legend">中羽参考 10 级 · 顶尖竞技</option></select></label><label>分制<select id="match-points"><option value="11">11 分 · 快速比赛</option><option value="21">21 分 · 完整单局</option></select></label><label>视角<select id="camera-mode-home" data-camera-mode><option value="third">第三人称 · 肩后近景</option><option value="first">第一人称 · 沉浸击球</option></select></label><label>操作方式<select id="control-scheme"><option value="manual" selected>鼠标自由视角 · 手动跑位</option><option value="assisted">鼠标自由视角 · 辅助跑位</option><option value="tracking">跟球辅助 · 可选</option></select></label></div>
@@ -87,6 +98,7 @@
   <div id="tournament-hub" class="overlay hidden"><section class="modal tournament-modal" aria-labelledby="tour-title">
     <button type="button" class="close-btn" id="tour-close" aria-label="关闭赛事生涯">×</button>
     <span class="eyebrow">ROAD TO THE FINAL</span><h2 id="tour-title">国际赛事生涯</h2>
+    <button type="button" data-world-table class="world-entry" aria-haspopup="dialog">查看世界排名 ↗</button>
     <p class="tour-lead">从 32 强开始，一路打进决赛。每一轮都是完整比赛；签表囊括近三十年的男单名将。</p>
     <div id="tour-event-list" class="tour-event-list" role="listbox" aria-label="选择国际赛事"></div>
     <div id="tour-selected-info" class="tour-selected-info"></div>
@@ -164,6 +176,8 @@
         <i aria-hidden="true">:</i>
         <div><b id="result-theirs">0</b><span id="result-opponent-name">对手</span></div>
       </div>
+      <button type="button" id="result-world" data-world-table aria-haspopup="dialog"></button>
+      <small id="result-world-target"></small>
       <p id="result-highlight"></p><dl class="result-numbers">
         <div><dt>积分变化</dt><dd id="result-rating"></dd></div>
         <div><dt>直接制胜</dt><dd id="result-smashes"></dd></div>

@@ -36,6 +36,21 @@ body:has(#menu:not(.hidden)) .icon-btn {background:#fffdf4;color:#20392f;border:
 .lobby button:focus-visible,.lobby-dialog :focus-visible {outline:3px solid #006a56;outline-offset:4px;}
 .lobby-dialog {width:min(535px,calc(100vw - 30px));max-height:88dvh;overflow:auto;padding:24px;background:var(--paper);border:2px solid var(--line);border-radius:19px;box-shadow:0 5px 0 var(--line);}
 .lobby-dialog::backdrop,#technique-dialog::backdrop {background:#102d2480;}
+.world-entry{border:1px solid #446556;border-radius:20px;padding:8px 13px;background:#fffbef;color:#264a3b;font-weight:700;font-size:13px;letter-spacing:0}
+#world-board[open]{display:flex;flex-direction:column;gap:12px;max-height:min(88dvh,740px);overflow:hidden}
+#world-board header{margin:0}
+.world-card{padding:14px 16px;border-radius:12px;background:#244c40;color:#fffbed}
+.world-card>div{display:flex;align-items:baseline;gap:10px}
+.world-card strong{font-size:24px}.world-card b{margin-left:auto;font-variant-numeric:tabular-nums}
+.world-card small{display:block;margin-top:5px;color:#d8ecd9}
+.world-scroll{overflow:auto;min-height:0;overscroll-behavior:contain}
+.world-scroll table{width:100%;border-collapse:separate;border-spacing:0;font-size:14px;font-variant-numeric:tabular-nums}
+.world-scroll th,.world-scroll td{padding:9px 10px;text-align:left;border-bottom:1px solid #d7dfd2}
+.world-scroll th{position:sticky;top:0;background:#f1f2e5;color:#445c4c;font-size:12px}
+.world-scroll th:last-child,.world-scroll td:last-child{text-align:right}
+.world-player{background:#dbefcc;font-weight:750}.world-source{color:#526658;line-height:1.5}
+#result-world{background:transparent;color:#285d40;font-weight:750;padding:10px 0 2px}
+#result-world-target{display:block;color:#506659;font-size:12px}
 .lobby-dialog>header {display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;}
 .lobby-dialog h2 {font-size:23px;margin:0;}
 .lobby-dialog header button {font-size:24px;width:37px;height:37px;background:#f4ecd8;border-radius:50%;color:var(--line);}

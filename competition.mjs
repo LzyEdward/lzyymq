@@ -1,3 +1,5 @@
+import {TOUR_STARS,EXHIBITION_ROSTER} from './tournament.mjs';
+
 const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
 
 export const OPPONENT_LEVELS=Object.freeze({
@@ -16,6 +18,31 @@ export const LEVEL_DESCRIPTIONS=Object.freeze(['','初学运动概念；步法�
 // Concise paraphrases of the linked 2021 community addendum, not official titles.
 export const LEVEL_REFERENCES=Object.freeze(['','理解比赛规则，开始主动寻找对方空当','掌握部分基础动作，正反手转换和网前稳定性不足','基本完成六点步法，初步使用搓球和勾对角','基本技术熟练，非被动时能稳定回球到位','较强业余球员、非特招校队主力风格','系统训练、地区业余赛事高水平风格','竞技训练背景、强校队和省队非主力风格','普通职业、国青或高水平省队主力风格','优秀职业、国家队及高水平省队主力风格','顶尖职业和国际大赛主力风格']);
 export function opponentLevel(key){return OPPONENT_LEVELS[key]||OPPONENT_LEVELS.normal;}
+
+// Cross-era career ladder. Space the roster across the playable Elo range,
+// ordering equal game tiers by tournament seed.
+const worldSeeds = [...EXHIBITION_ROSTER].sort((a,b) =>
+ opponentLevel(TOUR_STARS[b].difficulty).tier - opponentLevel(TOUR_STARS[a].difficulty).tier ||
+ TOUR_STARS[a].seed - TOUR_STARS[b].seed
+);
+const topSeedPoints = 2950, entrySeedPoints = 1012;
+const startingPoints = new Map(worldSeeds.map((id,i) =>
+ [id, Math.round(topSeedPoints - (topSeedPoints-entrySeedPoints) * i / (worldSeeds.length - 1))]
+));
+
+export function worldStandings(career, playerName) {
+ const rows = worldSeeds.map(id => ({
+  id, name:TOUR_STARS[id].name, points:career.rivals?.[id]?.worldPoints ?? startingPoints.get(id)
+ }));
+ rows.push({id:'player', name:playerName, points:career.rating});
+ rows.sort((a,b) => b.points - a.points);
+ for (const [i,row] of rows.entries()) {
+  row.rank = i && rows[i-1].points === row.points ? rows[i-1].rank : i+1;
+ }
+ const player = rows.find(row => row.id === 'player');
+ const next = rows[player.rank-2] ?? null;
+ return {rows, player, next};
+}
 // Landing dispersion in metres; tired or stretched players lose precision.
 export function placementSpread(key,quality=1,energy=100){
  const accuracy=opponentLevel(key).accuracy;
@@ -47,6 +74,7 @@ export function parseCareer(raw){
   for(const [id,r] of Object.entries(p.rivals||{})){
    if(!/^[a-z][a-zA-Z0-9]{0,35}$/.test(id)||!r||!Number.isFinite(r.wins)||!Number.isFinite(r.losses))continue;
    const rival={wins:integer(r.wins),losses:integer(r.losses),lastWon:Boolean(r.lastWon)};
+   if(startingPoints.has(id)&&Number.isFinite(r.worldPoints))rival.worldPoints=clamp(Math.round(r.worldPoints),100,3000);
    const first=r.firstWin;
    if(rival.wins&&first&&Number.isInteger(first.match)&&first.match>0&&first.match<=played&&Array.isArray(first.score)&&first.score.length===2&&first.score.every(n=>Number.isInteger(n)&&n>=0&&n<=30)&&first.score[0]>first.score[1])rival.firstWin={match:first.match,score:[...first.score]};
    rivals[id]=rival;
@@ -64,6 +92,7 @@ export function settleMatch(career,{id,level='normal',score,points=11,mode='matc
  if(opponentId){
   const prior=rivals[opponentId]||{wins:0,losses:0};
   const record={...prior,wins:prior.wins+Number(won),losses:prior.losses+Number(!won),lastWon:won};
+  if(startingPoints.has(opponentId))record.worldPoints=clamp((prior.worldPoints??startingPoints.get(opponentId))-(rating-career.rating),100,3000);
   if(won&&!prior.wins)record.firstWin={match:career.played+1,score:[...score]};
   rivals[opponentId]=record;
  }
