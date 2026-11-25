@@ -38,6 +38,8 @@ import { OPPONENT_STYLES, effectiveOpponentLevel, playerStatsFromInputs, playerS
 import {OPPONENT_CHARACTERS,matchIntent,characterRecovery,resolveCharacter,strokeSoundProfile} from './match-mind.mjs';
 import {matchHighlight,OpponentMemory,MatchTactics,MATCH_OBJECTIVES,TACTICAL_LABELS,movementEnergyRate,directionalTarget,contactPressure} from './tactics.mjs';
 import {TOUR_EVENTS,TOUR_STARS,EXHIBITION_ROSTER,FEATURED_STARS,chooseRandomOpponent,event as tourEvent,star as tourStar,freshTour,buildBracket,currentTourMatch,advanceTour,tourStatus} from './tournament.mjs';
+import {createPlayerCosmetics,playerCosmeticOptions,playerCosmeticStatus} from './player-cosmetics.mjs';
+import {createPlayerCardBlob,createScorecardBlob} from './scorecard.mjs';
 
 const $ = (s) => document.querySelector(s);
 const canvas = $('#court');
@@ -66,7 +68,7 @@ const state = {
   advanced:false,manualOverride:false,tutorial:false,tutorialStage:0,jumpPeak:0,
   aiming:false,aimAlt:false,swingTarget:null,serveTarget:null,serveStyle:'low',lastLanding:null,racketStyle:'attack',racketSkin:'astrox100zz',courtPalette:'event',opponentStyle:'allround',playerStats:normalizeSkills(),opponentStats:normalizeSkills(),highBallAssist:true,manualPitch:-.03,autoPitchOffset:0,
   tournamentId:'',tournamentRound:0,tournamentOpponent:'',tournamentVenue:'',tournamentAccent:'#d8bf74',
-  currentOpponentId:'',cameraMode:'first',orbitYaw:0,orbitPitch:THIRD_PERSON_PITCH,thirdFraming:'near',thirdLift:0,avatarFade:0,contactHint:true,ballGuide:true,firstView:null,
+  currentOpponentId:'',cameraMode:'first',orbitYaw:0,orbitPitch:THIRD_PERSON_PITCH,thirdFraming:'near',thirdLift:0,avatarFade:0,contactHint:true,ballGuide:true,firstView:null,playerCosmetic:'linNan',
 };
 let career=freshCareer();
 const CAREER_KEY='feather-court-career-v1';
@@ -115,6 +117,7 @@ for(const entity of [player,opponent,ball]){entity.previous=entity.pos.clone();e
 let renderer, scene, camera, racket, shuttle, bot, landingMarker, targetMarker, aimMarker, shuttleShadow, shuttleFootprint, net, courtScore, presentation, surfaceMaps;
 let receiveMarker, shuttleHeightLine;
 let playerAvatar=null;
+let playerCosmetics=null;
 let umpire, standReaction=null;
 let audienceGroup=null, venueSign=null, venueAccent='#818e93',mainCourtMaterial=null,runoffMaterial=null,courtBasePixels=null,activeVenueSpec=null;
 let audio, master, trailLine, shuttleNoise, shuttleFilter, shuttleGain, shuttlePan, lastShuttleSoundUpdate=-1, menuTime = 0, accumulator = 0, fps = 60;
@@ -773,6 +776,7 @@ function updateCareerUI(){
     const row=document.createElement('li');row.textContent=`${h.score[0]>h.score[1]?'胜':'负'} · ${TOUR_STARS[h.opponentId]?.name||opponentLevel(h.level).name} ${h.score.join(':')}   ${h.delta>=0?'+':''}${h.delta}`;history.append(row);
   }
   if(!career.history.length){const row=document.createElement('li');row.textContent='完成正式比赛，记录首场战绩';history.append(row);}
+  refreshPlayerCosmeticOptions();
 }
 function commitMatch(){
   if(state.ratingDelta!==null)return;
@@ -1617,6 +1621,12 @@ function ensurePlayerAvatar(){
  const portraitMap=new THREE.TextureLoader().load(new URL('./assets/lin-nan-head.webp',import.meta.url).href,()=>renderBudget.invalidate());
  const uniformMap=new THREE.TextureLoader().load(new URL('./assets/textures/shenzhen-polo.webp',import.meta.url).href,()=>renderBudget.invalidate());
  playerAvatar=createAthlete(THREE,()=>{const mount=new THREE.Group(),model=createRacket(true);mount.add(model);mount.userData.racketModel=model;return mount;},{skinMap:surfaceMaps?.athleteSkin,mergeGeometries,portraitMap,uniformMap});
+ playerCosmetics=createPlayerCosmetics(THREE,playerAvatar);
+ const savedCosmetic=playerCosmeticStatus(career,tourCareer,state.playerCosmetic);
+ const selectedCosmetic=savedCosmetic.unlocked?savedCosmetic.cosmetic:playerCosmeticStatus(career,tourCareer,'linNan').cosmetic;
+ state.playerCosmetic=selectedCosmetic.id;
+ playerAvatar.setKit(selectedCosmetic.kit);
+ playerCosmetics.select(selectedCosmetic.accessory);
  // Dither coverage in the opaque pass to keep normal depth sorting.
  const fadeMaterials=new Map();
  playerAvatar.body.traverse(object=>{
@@ -1627,8 +1637,63 @@ function ensurePlayerAvatar(){
   }
  });
  playerAvatar.fadeMaterials=fadeMaterials;
- playerAvatar.root.name='Player · third person';playerAvatar.root.visible=false;playerAvatar.setKit('linNan');scene.add(playerAvatar.root);
+ playerAvatar.root.name='Player · third person';playerAvatar.root.visible=false;scene.add(playerAvatar.root);
  return playerAvatar;
+}
+function refreshPlayerCosmeticOptions(){
+ const container=$('#cosmetic-options');
+ if(!container)return;
+ container.replaceChildren(...playerCosmeticOptions(career,tourCareer).map(item=>{
+  const button=document.createElement('button');
+  button.type='button';button.className='cosmetic-option';button.dataset.cosmetic=item.id;
+  button.disabled=!item.unlocked;button.setAttribute('aria-pressed',String(item.id===state.playerCosmetic));
+  const icon=document.createElement('span');icon.className='cosmetic-icon';icon.setAttribute('aria-hidden','true');icon.textContent=item.emoji;
+  const name=document.createElement('b');name.textContent=item.name;
+  const description=document.createElement('small');description.textContent=item.unlocked?item.description:item.progress;
+  button.append(icon,name,description);
+  return button;
+ }));
+}
+function equipPlayerCosmetic(id){
+ const {cosmetic,unlocked}=playerCosmeticStatus(career,tourCareer,id);
+ if(!unlocked)return;
+ state.playerCosmetic=cosmetic.id;
+ if(playerAvatar){playerAvatar.setKit(cosmetic.kit);playerCosmetics?.select(cosmetic.accessory);}
+ refreshPlayerCosmeticOptions();savePreferences();renderBudget.invalidate();
+}
+function playerCardData(){
+ const selected=playerCosmeticStatus(career,tourCareer,state.playerCosmetic).cosmetic;
+ return {emoji:selected.emoji,costume:selected.name,rank:worldStandings(career,PLAYER_NAME).player.rank,rating:career.rating,wins:career.wins,bestStreak:career.bestStreak,titles:tourCareer.titles};
+}
+function matchScorecardData(){
+ const standings=worldStandings(career,PLAYER_NAME);
+ return {player:PLAYER_NAME,opponent:$('#result-opponent-name').textContent,score:[...state.score],event:$('#result-cup-label').textContent,
+  won:state.score[0]>state.score[1],champion:document.body.classList.contains('match-champion'),rank:standings.player.rank,
+  speed:state.maxSpeed,winners:state.winners,rally:Math.max(state.maxRally,state.rally),highlight:$('#result-highlight').textContent};
+}
+function downloadPng(blob,filename){
+ if(!blob)return;
+ const link=document.createElement('a'),url=URL.createObjectURL(blob);
+ link.download=filename;link.href=url;link.click();setTimeout(()=>URL.revokeObjectURL(url),2000);
+}
+async function shareOrDownload(blob,filename,title,text){
+ if(!blob)return;
+ if(typeof navigator.share==='function'){
+  const file=new File([blob],filename,{type:'image/png'});
+  try{await navigator.share({title,text,files:[file]});return;}
+  catch(error){if(error.name==='AbortError')return;}
+ }
+ downloadPng(blob,filename);
+}
+async function exportPlayerCard(share=false){
+ const blob=await createPlayerCardBlob(playerCardData());
+ if(share)await shareOrDownload(blob,'林楠-球员卡.png','林楠的球员卡','来看看我的羽境球员卡！');
+ else downloadPng(blob,'林楠-球员卡.png');
+}
+async function exportMatchScorecard(share=false){
+ const blob=await createScorecardBlob(matchScorecardData());
+ if(share)await shareOrDownload(blob,'林楠-赛后战绩.png','林楠的比赛战绩','刚打完一场羽毛球比赛，来看看这张战绩卡！');
+ else downloadPng(blob,'林楠-赛后战绩.png');
 }
 function setCameraMode(value){
  const mode=cameraMode(value),changed=mode!==state.cameraMode;
@@ -2210,7 +2275,7 @@ function applyRenderProfile(){
  presentation.setQuality(profile.quality);presentation.setSize(width,height);renderBudget.invalidate();
 }
 function applyQuality(quality){qualityMode=['auto','balanced','high','ultra'].includes(quality)?quality:'auto';adaptiveResolution.reset(performance.now());applyRenderProfile();}
-function savePreferences(){if(testing)return;try{localStorage.setItem('feather-court-3-settings',JSON.stringify({contactHint:state.contactHint,ballGuide:state.ballGuide,thirdFraming:state.thirdFraming,cameraMode:state.cameraMode,orbitYaw:state.orbitYaw,orbitPitch:state.orbitPitch,standVolume:state.standVolume,controlsChosen:state.controlsChosen,assistSettingsVersion:1,assists:$('#assist-toggle').checked,autoReturn:$('#auto-return-toggle').checked,comfortable:$('#comfortable-toggle').checked,difficulty:$('#difficulty').value,scheme:$('#control-scheme').value,points:$('#match-points').value,quality:$('#quality').value,performanceVersion:1,focus:state.focus,motion:state.motion,sensitivity:state.sensitivity,lookSyncVersion:2,pace:state.pace,receivePaceVersion:2,receivePace:state.receivePace,sprintAssist:state.sprintAssist,sound:state.sound,racketStyle:state.racketStyle,racketSkin:state.racketSkin,courtPalette:state.courtPalette,playerStats:playerStatsFromInputs(),opponentStats:state.opponentStats,highBallAssist:$('#high-ball-toggle').checked,placementHint:$('#placement-hint').checked,eagleAuto:$('#eagle-auto').checked}));}catch{}}
+function savePreferences(){if(testing)return;try{localStorage.setItem('feather-court-3-settings',JSON.stringify({contactHint:state.contactHint,ballGuide:state.ballGuide,thirdFraming:state.thirdFraming,cameraMode:state.cameraMode,orbitYaw:state.orbitYaw,orbitPitch:state.orbitPitch,standVolume:state.standVolume,controlsChosen:state.controlsChosen,assistSettingsVersion:1,assists:$('#assist-toggle').checked,autoReturn:$('#auto-return-toggle').checked,comfortable:$('#comfortable-toggle').checked,difficulty:$('#difficulty').value,scheme:$('#control-scheme').value,points:$('#match-points').value,quality:$('#quality').value,performanceVersion:1,focus:state.focus,motion:state.motion,sensitivity:state.sensitivity,lookSyncVersion:2,pace:state.pace,receivePaceVersion:2,receivePace:state.receivePace,sprintAssist:state.sprintAssist,sound:state.sound,racketStyle:state.racketStyle,racketSkin:state.racketSkin,courtPalette:state.courtPalette,playerCosmetic:state.playerCosmetic,playerStats:playerStatsFromInputs(),opponentStats:state.opponentStats,highBallAssist:$('#high-ball-toggle').checked,placementHint:$('#placement-hint').checked,eagleAuto:$('#eagle-auto').checked}));}catch{}}
 function restorePreferences(){
   try { const settings=JSON.parse(localStorage.getItem('feather-court-3-settings')||'{}');$('#eagle-auto').checked=settings.eagleAuto!==false; } catch {}
   $('#eagle-auto').addEventListener('change',savePreferences);
@@ -2233,6 +2298,9 @@ function restorePreferences(){
   refreshRacketOptions();applyRacketStyle(prefs.racketStyle||'attack');applyRacketSkin(prefs.racketSkin||'astrox100zz');
   const savedPlayer=prefs.playerStats||(prefs.playerStyle?playerStatsForStyle(prefs.playerStyle):normalizeSkills());
   techniquePanel.write('player',savedPlayer);refreshPlayerStats();
+  const savedCosmetic=playerCosmeticStatus(career,tourCareer,prefs.playerCosmetic||'linNan');
+  state.playerCosmetic=savedCosmetic.unlocked?savedCosmetic.cosmetic.id:'linNan';
+  if(playerAvatar){const outfit=playerCosmeticStatus(career,tourCareer,state.playerCosmetic).cosmetic;playerAvatar.setKit(outfit.kit);playerCosmetics?.select(outfit.accessory);}
   state.opponentStats=normalizeSkills(prefs.opponentStats);techniquePanel.write('opponent',state.opponentStats);
   $('#placement-hint').checked=prefs.placementHint===true;
   state.assists=$('#assist-toggle').checked=prefs.assists===true;
@@ -2245,9 +2313,9 @@ function restorePreferences(){
   state.thirdFraming=$('#third-framing').value=prefs.thirdFraming==='wide'?'wide':'near';
   const orbit=orbitLook({yaw:Number.isFinite(prefs.orbitYaw)?prefs.orbitYaw:0,pitch:Number.isFinite(prefs.orbitPitch)?prefs.orbitPitch:THIRD_PERSON_PITCH});state.orbitYaw=orbit.yaw;state.orbitPitch=orbit.pitch;setCameraMode(testing?'first':prefs.cameraMode);
   if(prefs.assistSettingsVersion!==1)savePreferences();
-  applyCourtPalette(prefs.courtPalette||'event');applyQuality($('#quality').value);updateDifficultyUI();updateCharacterPreview();
+  applyCourtPalette(prefs.courtPalette||'event');applyQuality($('#quality').value);updateDifficultyUI();updateCharacterPreview();refreshPlayerCosmeticOptions();
 }
-function showPlayer(){const avatar=ensurePlayerAvatar();for(const [material,original] of avatar.fadeMaterials)material.opacity=original;avatar.coverage=1;avatar.resetFeet();bot.root.visible=false;state.screen='inspect';state.inspectYaw=.08;state.inspectDistance=.83;$('#showroom-framing').textContent='看全身';state.inspectPitch=.035;state.inspectPose='idle';state.inspectTime=0;keys.clear();hitIntent.clear();document.exitPointerLock?.();$('#menu').classList.add('hidden');$('#hud').classList.add('hidden');$('#showroom').classList.remove('hidden');$('#pause-overlay').classList.add('hidden');document.body.classList.remove('playing');}
+function showPlayer(){const avatar=ensurePlayerAvatar();for(const [material,original] of avatar.fadeMaterials)material.opacity=original;avatar.coverage=1;avatar.resetFeet();bot.root.visible=false;state.screen='inspect';state.inspectYaw=.08;state.inspectDistance=.83;$('#showroom-framing').textContent='看全身';state.inspectPitch=.035;state.inspectPose='idle';state.inspectTime=0;refreshPlayerCosmeticOptions();keys.clear();hitIntent.clear();document.exitPointerLock?.();$('#menu').classList.add('hidden');$('#hud').classList.add('hidden');$('#showroom').classList.remove('hidden');$('#pause-overlay').classList.add('hidden');document.body.classList.remove('playing');}
 
 function bindEvents() {
   for(const button of document.querySelectorAll('[data-world-table]'))button.addEventListener('click',openWorldBoard);
@@ -2287,6 +2355,10 @@ function bindEvents() {
   };
   $('#showroom-btn').addEventListener('click',showPlayer);$('#showroom-close').addEventListener('click',exitGame);
   $('#photo-btn').addEventListener('click',()=>{presentation.render(scene,camera);const link=document.createElement('a');link.download='feather-court-5-photo.jpg';link.href=canvas.toDataURL('image/jpeg',.94);link.click();});
+  $('#cosmetic-options').addEventListener('click',event=>{const option=event.target.closest('[data-cosmetic]');if(option&&!option.disabled)equipPlayerCosmetic(option.dataset.cosmetic);});
+  $('#player-card-btn').addEventListener('click',()=>exportPlayerCard().catch(()=>{}));
+  $('#save-scorecard').addEventListener('click',()=>exportMatchScorecard().catch(()=>{}));
+  $('#share-scorecard').addEventListener('click',()=>exportMatchScorecard(true).catch(()=>{}));
   for(const pose of ['idle','run','swing'])$('#pose-'+pose).addEventListener('click',()=>{state.inspectPose=pose;state.inspectTime=0;for(const name of ['idle','run','swing'])$('#pose-'+name).classList.toggle('active',name===pose);});
   $('#focus-btn').addEventListener('click',()=>setControlsVisible(!state.controlsVisible));$('#focus-toggle').addEventListener('change',e=>setFocus(e.target.checked));$('#motion').addEventListener('input',e=>state.motion=Number(e.target.value));
   for(const id of ['difficulty','match-points','quality','focus-toggle','motion','sensitivity','pace','assist-toggle','auto-return-toggle','comfortable-toggle'])$('#'+id).addEventListener('change',()=>savePreferences());

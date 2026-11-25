@@ -60,6 +60,7 @@ await writeFile(htmlFile,(await readFile(htmlFile,'utf8')).replace('<script type
 for(const file of ['racket-catalog.mjs','racket-gallery.mjs','racket-gallery.css','hall-context.mjs','tactics.mjs','tactics.css','match-mind.mjs','court-palette.mjs','UPDATE-7.22.md','UPDATE-7.20.md','UPDATE-7.21.md'])await cp(path.join(root,file),path.join(out,file));
 for(const file of ['match-kit.mjs','camera-mode.mjs','UPDATE-7.32.md','UPDATE-7.33.md','UPDATE-7.34.md','VERIFICATION-7.34.md','UPDATE-7.35.md','VERIFICATION-7.35.md','training.mjs'])await cp(path.join(root,file),path.join(out,file));
 for(const file of ['stand-audio.mjs','spectator-head.mjs'])await cp(path.join(root,file),path.join(out,file));
+for(const file of ['player-cosmetics.mjs','scorecard.mjs'])await cp(path.join(root,file),path.join(out,file));
 await versionLocalAssets(out);
 await cp(path.join(root,'UPDATE-7.4.md'),path.join(out,'UPDATE-7.4.md'));
 await cp(path.join(root,'UPDATE-7.5.md'),path.join(out,'UPDATE-7.5.md'));
@@ -106,3 +107,4 @@ await cp(path.join(root,'UPDATE-7.58.md'),path.join(out,'UPDATE-7.58.md'));
 await cp(path.join(root,'UPDATE-7.59.md'),path.join(out,'UPDATE-7.59.md'));
 await cp(path.join(root,'UPDATE-7.60.md'),path.join(out,'UPDATE-7.60.md'));
 await cp(path.join(root,'UPDATE-7.61.md'),path.join(out,'UPDATE-7.61.md'));
+await cp(path.join(root,'UPDATE-7.66.md'),path.join(out,'UPDATE-7.66.md'));

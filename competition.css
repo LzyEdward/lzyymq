@@ -60,3 +60,5 @@ body.focus #stance-readout{display:none!important}
 .match-finished .pause-modal>.btn-primary{width:100%;justify-content:center;background:#ffcf68;border:2px solid var(--ink);border-radius:12px;box-shadow:0 3px 0 var(--ink);color:var(--ink);font-weight:800;margin:8px 0 0;min-height:44px}
 .match-finished .modal-links{justify-content:center;margin:12px 0 0}.match-finished #exit-btn{font-size:13px;color:#435f50;min-height:34px}
 @media(prefers-reduced-motion:reduce){.match-champion .result-sticker{animation:none}}
+.scorecard-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:13px}.scorecard-actions button{min-height:42px;border:2px solid var(--ink);border-radius:11px;background:#e6eddc;color:var(--ink);font:800 12px "Nunito","Microsoft YaHei",sans-serif;cursor:pointer}.scorecard-actions button:last-child{background:#ffcf68}.scorecard-actions button:focus-visible{outline:3px solid #27765b;outline-offset:2px}.scorecard-actions button:hover{filter:brightness(1.04)}
+@media(max-width:380px){.scorecard-actions{grid-template-columns:1fr}.scorecard-actions button{min-height:39px}}

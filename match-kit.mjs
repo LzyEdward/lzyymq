@@ -18,6 +18,9 @@ const known={
  viktorAxelsen:['AXELSEN V','DEN',5,'crew','#fff6ef','#664b34'],
  peterGade:['GADE P','DEN',5,'sweep','#fff5ec','#745d41'],ginting:['GINTING A S','INA',7,'crop','#eecdb2'],
  lakshya:['SEN L','IND',3,'wave','#ebc6ae'],prannoy:['PRANNOY H S','IND',7,'wave','#debba6'],
+ duckCaptain:['DUCKY','POND',2,'crop','#ffe9d7'],wideLens:['COOL KID','LOL',6,'part','#ffe9d7'],
+ bunny:['HOP FAST','BUNNY',6,'wave','#f2d3c2'],rooster:['COCK-A-DOODLE','KING',1,'crew','#ffe7d6'],
+ shuttle:['SHUTTLE HEAD','BIRDIE',4,'sweep','#ffe9d7'],
  leeZiiJia:['LEE Z J','MAS',6,'part','#ffead7'],jonatan:['CHRISTIE J','INA',4,'sweep','#f2d6c0']
 };
 const codes={'中国':'CHN','马来西亚':'MAS','印度尼西亚':'INA','丹麦':'DEN','日本':'JPN','中国台北':'TPE','韩国':'KOR','印度':'IND','泰国':'THA','中国香港':'HKG','德国':'GER','法国':'FRA','新加坡':'SGP','英格兰':'ENG'};
